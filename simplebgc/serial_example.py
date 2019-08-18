@@ -84,7 +84,7 @@ def read_cmd(connection: serial.Serial) -> RawCmd:
     return RawCmd(header.command_id, payload.payload)
 
 
-def rotate_gimbal(yaw_speed=0):
+def rotate_gimbal(yaw_speed: int = 0) -> None:
     control_data = ControlOutCmd(roll_mode=1, roll_speed=0, roll_angle=0,
                                  pitch_mode=1, pitch_speed=0, pitch_angle=0,
                                  yaw_mode=1, yaw_speed=yaw_speed, yaw_angle=0)

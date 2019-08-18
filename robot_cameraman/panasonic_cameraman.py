@@ -11,6 +11,7 @@ import argparse
 import io
 import os
 import time
+from typing import Dict, List, Tuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -18,6 +19,9 @@ import PIL.ImageFont
 import cv2
 import edgetpu.detection.engine
 import numpy
+from PIL.ImageDraw import ImageDraw
+from PIL.ImageFont import FreeTypeFont
+from edgetpu.detection.engine import DetectionCandidate
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
@@ -32,17 +36,20 @@ target_box = None
 target_detection_candidate = None
 
 
-def center(box):
+def center(box: List[float]) -> Tuple[float, float]:
     x1, y1, x2, y2 = box
     return abs(x1 + x2) / 2, abs(y1 + y2) / 2
 
 
 class ImageAnnotator:
-    def __init__(self, labels, font):
+    def __init__(self, labels: Dict[int, str], font: FreeTypeFont) -> None:
         self.labels = labels
         self.font = font
 
-    def annotate(self, image, inference_results):
+    def annotate(
+            self,
+            image: PIL.Image.Image,
+            inference_results: List[DetectionCandidate]) -> None:
         global target_box
         global target_detection_candidate
         draw = PIL.ImageDraw.Draw(image)
@@ -66,7 +73,12 @@ class ImageAnnotator:
         self.draw_annotated_box(draw, target_box, target_detection_candidate,
                                 (255, 0, 0))
 
-    def draw_annotated_box(self, draw, box, obj, color):
+    def draw_annotated_box(
+            self,
+            draw: ImageDraw,
+            box: List[float],
+            obj: DetectionCandidate,
+            color: Tuple[int, int, int]) -> None:
         draw.rectangle(box, outline=color)
         draw_point(draw, center(box), color)
         # Annotate image with label and confidence score
@@ -77,7 +89,7 @@ class ImageAnnotator:
 
 class Destination:
 
-    def __init__(self, image_size, variance=50):
+    def __init__(self, image_size: Tuple[int, int], variance: int = 50) -> None:
         width, height = image_size
         x, y = width / 2, height / 2
         self.center = (x, y)
@@ -86,13 +98,20 @@ class Destination:
         self.variance = variance
 
 
-def draw_destination(image, destination, color=(255, 0, 255)):
+def draw_destination(
+        image: PIL.Image.Image,
+        destination: Destination,
+        color: Tuple[int, int, int] = (255, 0, 255)) -> None:
     draw = PIL.ImageDraw.Draw(image)
     draw_point(draw, destination.center, color)
     draw.rectangle(destination.box, outline=color)
 
 
-def draw_point(draw, point, color, radius=3):
+def draw_point(
+        draw: ImageDraw,
+        point: Tuple[float, float],
+        color: Tuple[int, int, int],
+        radius: int = 3) -> None:
     x, y = point
     draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
 
@@ -102,30 +121,33 @@ max_speed = 0
 
 class CameraController:
 
-    def __init__(self, destination, max_allowed_speed=1000):
+    def __init__(
+            self,
+            destination: Destination,
+            max_allowed_speed: int = 1000) -> None:
         self.destination = destination
         self.max_allowed_speed = max_allowed_speed
         self.search_speed = round(max_allowed_speed / 2)
         self.yaw_speed = 0
 
-    def is_camera_moving(self):
+    def is_camera_moving(self) -> bool:
         return self.yaw_speed != 0
 
-    def stop(self):
+    def stop(self) -> None:
         self.rotate(0)
 
-    def rotate(self, yaw_speed):
+    def rotate(self, yaw_speed: int) -> None:
         if self.yaw_speed != yaw_speed:
             self.yaw_speed = yaw_speed
             rotate_gimbal(self.yaw_speed)
 
-    def update(self):
+    def update(self) -> None:
         if target_box is None:
             self.search_target()
         else:
             self.move_to_target()
 
-    def move_to_target(self):
+    def move_to_target(self) -> None:
         global target_box
         global max_speed
         tx, ty = center(target_box)
@@ -151,18 +173,18 @@ class CameraController:
                 speed = -speed
             self.rotate(speed)
 
-    def rotate_right(self):
+    def rotate_right(self) -> None:
         self.rotate(100)
 
-    def rotate_left(self):
+    def rotate_left(self) -> None:
         self.rotate(-100)
 
-    def search_target(self):
+    def search_target(self) -> None:
         self.rotate(self.search_speed)
 
 
 # Main flow
-def main():
+def main() -> None:
     # Store labels for matching with inference results
     labels = read_label_file(ARGS.labels) if ARGS.labels else None
 

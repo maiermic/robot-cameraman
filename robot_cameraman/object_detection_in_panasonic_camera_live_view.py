@@ -11,6 +11,7 @@ import argparse
 import io
 import os
 import time
+from typing import Dict, List
 
 import PIL.Image
 import PIL.ImageDraw
@@ -18,6 +19,7 @@ import PIL.ImageFont
 import cv2
 import edgetpu.detection.engine
 import numpy
+from edgetpu.detection.engine import DetectionCandidate
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
@@ -27,7 +29,12 @@ from robot_cameraman.resource import read_label_file
 ARGS = None
 
 
-def annotate(image, inferenceResults, elapsedMs, labels, font):
+def annotate(
+        image: PIL.Image.Image,
+        inferenceResults: List[DetectionCandidate],
+        elapsedMs: float,
+        labels: Dict[int, str],
+        font: PIL.ImageFont.FreeTypeFont) -> None:
     # Iterate through result list. Note that results are already sorted by
     # confidence score (highest to lowest) and records with a lower score
     # than the threshold are already removed.
@@ -58,7 +65,7 @@ def annotate(image, inferenceResults, elapsedMs, labels, font):
 
 
 # Main flow
-def main():
+def main() -> None:
     # Store labels for matching with inference results
     labels = read_label_file(ARGS.labels) if ARGS.labels else None
 
