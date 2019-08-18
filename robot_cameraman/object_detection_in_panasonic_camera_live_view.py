@@ -21,20 +21,10 @@ import numpy
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
+from robot_cameraman.resource import read_label_file
 
 # Variable to store command line arguments
 ARGS = None
-
-
-# Read labels from text files.
-def ReadLabelFile(file_path):
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
-        ret = {}
-    for line in lines:
-        pair = line.strip().split(maxsplit=1)
-        ret[int(pair[0])] = pair[1].strip()
-    return ret
 
 
 def annotate(image, inferenceResults, elapsedMs, labels, font):
@@ -70,7 +60,7 @@ def annotate(image, inferenceResults, elapsedMs, labels, font):
 # Main flow
 def main():
     # Store labels for matching with inference results
-    labels = ReadLabelFile(ARGS.labels) if ARGS.labels else None
+    labels = read_label_file(ARGS.labels) if ARGS.labels else None
 
     # Specify font for labels
     # font = PIL.ImageFont.truetype("/usr/share/fonts/truetype/piboto/Piboto-Regular.ttf", 20)
