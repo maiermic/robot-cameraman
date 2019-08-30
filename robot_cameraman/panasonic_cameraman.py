@@ -13,8 +13,10 @@ import os
 import signal
 import threading
 import time
+from dataclasses import dataclass
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from typing import Optional
 
 import PIL.Image
 import PIL.ImageDraw
@@ -29,10 +31,16 @@ from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.tracking import Destination, CameraController
 
+
+@dataclass
+class ImageContainer:
+    image: Optional[PIL.Image.Image]
+
+
 # Variable to store command line arguments
 ARGS = None
 to_exit: threading.Event = threading.Event()
-server_image: PIL.Image
+server_image: ImageContainer = ImageContainer(image=None)
 server: ThreadingHTTPServer
 
 
@@ -46,7 +54,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             self.end_headers()
             global to_exit, server_image
             while not to_exit.wait(0.05):
-                jpg = server_image
+                jpg = server_image.image
                 jpg_bytes = jpg.tobytes()
                 self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
                 self.send_header('Content-type', 'image/jpeg')
@@ -128,7 +136,7 @@ def main() -> None:
                 print(e)
                 pass
 
-            server_image = image
+            server_image.image = image
             cv2_image = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2BGR)
             # out.write(cv2_image)
             if 'DISPLAY' in os.environ:
