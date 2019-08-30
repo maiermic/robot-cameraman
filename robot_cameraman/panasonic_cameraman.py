@@ -10,7 +10,10 @@
 import argparse
 import io
 import os
+import signal
+import threading
 import time
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -35,6 +38,10 @@ ARGS = None
 # Last detected box of tracked object
 target_box = None
 target_detection_candidate = None
+to_exit: bool = False
+server_image: PIL.Image
+server: ThreadingHTTPServer
+live_view: LiveView
 
 
 def center(box: List[float]) -> Tuple[float, float]:
@@ -184,6 +191,53 @@ class CameraController:
         self.rotate(self.search_speed)
 
 
+class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        if self.path.endswith('.mjpg'):
+            self.send_response(200)
+            self.send_header('Content-type',
+                             'multipart/x-mixed-replace; boundary=jpgboundary')
+            self.end_headers()
+            global to_exit, server_image
+            while not to_exit:
+                # rc, img = capture.read()
+                # if not rc:
+                #     continue
+                # image_rgb = cv2.cvtColor(server_image, cv2.COLOR_BGR2RGB)
+                image_rgb = server_image
+                jpg = PIL.Image.fromarray(image_rgb)
+                jpg_bytes = jpg.tobytes()
+                self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
+                self.send_header('Content-type', 'image/jpeg')
+                self.send_header('Content-length', len(jpg_bytes))
+                self.end_headers()
+                jpg.save(self.wfile, 'JPEG')
+                time.sleep(0.05)
+                # break
+            return
+        if self.path.endswith('.html'):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write("""
+                    <html>
+                        <head></head>
+                        <body><img src="cam.mjpg"/></body>
+                    </html>
+                """.encode())
+            return
+
+
+def quit(sig=None, frame=None):
+    print("Exiting...")
+    global to_exit
+    global server
+    to_exit = True
+    server.shutdown()
+    exit(0)
+
+
 # Main flow
 def main() -> None:
     # Store labels for matching with inference results
@@ -206,11 +260,12 @@ def main() -> None:
     # Use imutils to count Frames Per Second (FPS)
     fps = FPS().start()
 
+    global live_view, server_image, to_exit
     live_view = LiveView(ARGS.ip, ARGS.port)
     annotator = ImageAnnotator(labels, font)
     destination = None
     camera_controller = None
-    while True:
+    while not to_exit:
         try:
             image = PIL.Image.open(io.BytesIO(live_view.image()))
             if destination is None:
@@ -231,8 +286,11 @@ def main() -> None:
                 print(e)
                 pass
 
-            cv2_image = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2BGR)
-            out.write(cv2_image)
+            image_array = numpy.asarray(image)
+            # server_image = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
+            server_image = image_array
+            cv2_image = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+            # out.write(cv2_image)
             if 'DISPLAY' in os.environ:
                 cv2.imshow('NCS Improved live inference', cv2_image)
 
@@ -254,6 +312,7 @@ def main() -> None:
     print("Approx FPS: :" + str(fps.fps()))
 
     cv2.destroyAllWindows()
+    quit()
 
 
 if __name__ == '__main__':
@@ -297,4 +356,9 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    main()
+    signal.signal(signal.SIGINT, quit)
+    signal.signal(signal.SIGTERM, quit)
+    threading.Thread(target=main, daemon=True).start()
+    server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
+    print('Open http://localhost:9000/index.html in your browser')
+    server.serve_forever()
