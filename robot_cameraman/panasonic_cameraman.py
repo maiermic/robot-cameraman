@@ -54,9 +54,11 @@ class PanasonicCameraman:
 
     def __init__(
             self,
+            live_view: LiveView,
             annotator: ImageAnnotator,
             detection_engine: DetectionEngine,
             output: Optional[cv2.VideoWriter]) -> None:
+        self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
         self._output = output
@@ -66,12 +68,11 @@ class PanasonicCameraman:
         fps = FPS().start()
 
         global server_image, to_exit
-        live_view = LiveView(ARGS.ip, ARGS.port)
         destination = None
         camera_controller = None
         while not to_exit.is_set():
             try:
-                image = PIL.Image.open(io.BytesIO(live_view.image()))
+                image = PIL.Image.open(io.BytesIO(self._live_view.image()))
                 if destination is None:
                     destination = Destination(image.size, variance=20)
                     camera_controller = CameraController(destination)
@@ -190,6 +191,7 @@ if __name__ == '__main__':
     labels = read_label_file(ARGS.labels) if ARGS.labels else None
     font = PIL.ImageFont.truetype(str(ARGS.font), ARGS.fontSize)
     cameraman = PanasonicCameraman(
+        live_view=LiveView(ARGS.ip, ARGS.port),
         annotator=ImageAnnotator(ARGS.targetLabelId, labels, font),
         detection_engine=DetectionEngine(
             model=ARGS.model,
