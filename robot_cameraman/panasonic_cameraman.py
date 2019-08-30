@@ -156,7 +156,7 @@ def parse_arguments():
 
 
 if __name__ == '__main__':
-    ARGS = parse_arguments()
+    args = parse_arguments()
 
     to_exit: threading.Event = threading.Event()
     server_image: ImageContainer = ImageContainer(image=None)
@@ -175,16 +175,16 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
 
-    labels = read_label_file(ARGS.labels) if ARGS.labels else None
-    font = PIL.ImageFont.truetype(str(ARGS.font), ARGS.fontSize)
+    labels = read_label_file(args.labels) if args.labels else None
+    font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
     cameraman = PanasonicCameraman(
-        live_view=LiveView(ARGS.ip, ARGS.port),
-        annotator=ImageAnnotator(ARGS.targetLabelId, labels, font),
+        live_view=LiveView(args.ip, args.port),
+        annotator=ImageAnnotator(args.targetLabelId, labels, font),
         detection_engine=DetectionEngine(
-            model=ARGS.model,
-            confidence=ARGS.confidence,
-            max_objects=ARGS.maxObjects),
-        output=create_video_writer(ARGS.output))
+            model=args.model,
+            confidence=args.confidence,
+            max_objects=args.maxObjects),
+        output=create_video_writer(args.output))
 
 
     def run_cameraman():
