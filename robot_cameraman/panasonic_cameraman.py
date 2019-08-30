@@ -31,24 +31,6 @@ from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, CameraController
 
-# Variable to store command line arguments
-ARGS = None
-to_exit: threading.Event = threading.Event()
-server_image: ImageContainer = ImageContainer(image=None)
-server: ThreadingHTTPServer
-
-
-def quit(sig=None, frame=None):
-    print("Exiting...")
-    global to_exit
-    global server
-    to_exit.set()
-    # Regular server.shutdown() waits forever if server.serve_forever() is not
-    # running anymore. Hence, this work around that only sets the flag to
-    # shutdown, but does not wait.
-    server._BaseServer__shutdown_request = True
-    exit(0)
-
 
 class PanasonicCameraman:
 
@@ -63,11 +45,11 @@ class PanasonicCameraman:
         self.detection_engine = detection_engine
         self._output = output
 
-    def run(self) -> None:
+    def run(self,
+            server_image: ImageContainer,
+            to_exit: threading.Event) -> None:
         # Use imutils to count Frames Per Second (FPS)
         fps = FPS().start()
-
-        global server_image, to_exit
         destination = None
         camera_controller = None
         while not to_exit.is_set():
@@ -116,7 +98,6 @@ class PanasonicCameraman:
         print("Approx FPS: :" + str(fps.fps()))
 
         cv2.destroyAllWindows()
-        quit()
 
 
 def create_video_writer(output_file: Path):
@@ -185,6 +166,20 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
+    to_exit: threading.Event = threading.Event()
+    server_image: ImageContainer = ImageContainer(image=None)
+
+
+    def quit(sig=None, frame=None):
+        print("Exiting...")
+        to_exit.set()
+        # Regular server.shutdown() waits forever if server.serve_forever() is
+        # not running anymore. Hence, this work around that only sets the flag
+        # to shutdown, but does not wait.
+        server._BaseServer__shutdown_request = True
+        exit(0)
+
+
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
 
@@ -198,7 +193,16 @@ if __name__ == '__main__':
             confidence=ARGS.confidence,
             max_objects=ARGS.maxObjects),
         output=create_video_writer(ARGS.output))
-    threading.Thread(target=cameraman.run, daemon=True).start()
+
+
+    def run_cameraman():
+        cameraman.run(server_image, to_exit)
+        quit()
+
+
+    threading.Thread(
+        target=run_cameraman,
+        daemon=True).start()
 
     RobotCameramanHttpHandler.to_exit = to_exit
     RobotCameramanHttpHandler.server_image = server_image
