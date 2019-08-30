@@ -49,81 +49,84 @@ def quit(sig=None, frame=None):
     exit(0)
 
 
-# Main flow
-def main() -> None:
-    # Store labels for matching with inference results
-    labels = read_label_file(ARGS.labels) if ARGS.labels else None
+class PanasonicCameraman:
 
-    # Specify font for labels
-    # font = PIL.ImageFont.truetype("/usr/share/fonts/truetype/piboto/Piboto-Regular.ttf", 20)
-    font = PIL.ImageFont.truetype(
-        "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
-    # font = None
-    engine = edgetpu.detection.engine.DetectionEngine(str(ARGS.model))
+    def run(self) -> None:
+        # Store labels for matching with inference results
+        labels = read_label_file(ARGS.labels) if ARGS.labels else None
 
-    width = 640
-    height = 480
-    out = cv2.VideoWriter('output.avi',
-                          cv2.VideoWriter_fourcc(*'MJPG'),
-                          30,
-                          (width, height))
+        # Specify font for labels
+        # font = PIL.ImageFont.truetype("/usr/share/fonts/truetype/piboto/Piboto-Regular.ttf", 20)
+        font = PIL.ImageFont.truetype(
+            "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
+        # font = None
+        engine = edgetpu.detection.engine.DetectionEngine(str(ARGS.model))
 
-    # Use imutils to count Frames Per Second (FPS)
-    fps = FPS().start()
+        width = 640
+        height = 480
+        out = cv2.VideoWriter('output.avi',
+                              cv2.VideoWriter_fourcc(*'MJPG'),
+                              30,
+                              (width, height))
 
-    global server_image, to_exit
-    live_view = LiveView(ARGS.ip, ARGS.port)
-    annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
-    destination = None
-    camera_controller = None
-    while not to_exit.is_set():
-        try:
-            image = PIL.Image.open(io.BytesIO(live_view.image()))
-            if destination is None:
-                destination = Destination(image.size, variance=20)
-                camera_controller = CameraController(destination)
-            # Perform inference and note time taken
-            start_ms = time.time()
+        # Use imutils to count Frames Per Second (FPS)
+        fps = FPS().start()
+
+        global server_image, to_exit
+        live_view = LiveView(ARGS.ip, ARGS.port)
+        annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
+        destination = None
+        camera_controller = None
+        while not to_exit.is_set():
             try:
-                inference_results = engine.DetectWithImage(image,
-                                                           threshold=ARGS.confidence,
-                                                           keep_aspect_ratio=True,
-                                                           relative_coord=False,
-                                                           top_k=ARGS.maxobjects)
-                draw_destination(image, destination)
-                annotator.annotate(image, inference_results)
-                target = annotator.target
-                camera_controller.update(None if target is None else target.box)
-            except OSError as e:
-                print(e)
-                pass
+                image = PIL.Image.open(io.BytesIO(live_view.image()))
+                if destination is None:
+                    destination = Destination(image.size, variance=20)
+                    camera_controller = CameraController(destination)
+                # Perform inference and note time taken
+                start_ms = time.time()
+                try:
+                    inference_results = engine.DetectWithImage(image,
+                                                               threshold=ARGS.confidence,
+                                                               keep_aspect_ratio=True,
+                                                               relative_coord=False,
+                                                               top_k=ARGS.maxobjects)
+                    draw_destination(image, destination)
+                    annotator.annotate(image, inference_results)
+                    target = annotator.target
+                    camera_controller.update(
+                        None if target is None else target.box)
+                except OSError as e:
+                    print(e)
+                    pass
 
-            server_image.image = image
-            cv2_image = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2BGR)
-            # out.write(cv2_image)
-            if 'DISPLAY' in os.environ:
-                cv2.imshow('NCS Improved live inference', cv2_image)
+                server_image.image = image
+                cv2_image = cv2.cvtColor(numpy.asarray(image),
+                                         cv2.COLOR_RGB2BGR)
+                # out.write(cv2_image)
+                if 'DISPLAY' in os.environ:
+                    cv2.imshow('NCS Improved live inference', cv2_image)
 
-            # Display the frame for 5ms, and close the window so that the next
-            # frame can be displayed. Close the window if 'q' or 'Q' is pressed.
-            if cv2.waitKey(5) & 0xFF == ord('q'):
+                # Display the frame for 5ms, and close the window so that the next
+                # frame can be displayed. Close the window if 'q' or 'Q' is pressed.
+                if cv2.waitKey(5) & 0xFF == ord('q'):
+                    break
+
+                fps.update()
+
+            # Allows graceful exit using ctrl-c (handy for headless mode).
+            except KeyboardInterrupt:
                 break
 
-            fps.update()
+        if camera_controller:
+            print('Stop camera')
+            camera_controller.stop()
+        fps.stop()
+        print("Elapsed time: " + str(fps.elapsed()))
+        print("Approx FPS: :" + str(fps.fps()))
 
-        # Allows graceful exit using ctrl-c (handy for headless mode).
-        except KeyboardInterrupt:
-            break
-
-    if camera_controller:
-        print('Stop camera')
-        camera_controller.stop()
-    fps.stop()
-    print("Elapsed time: " + str(fps.elapsed()))
-    print("Approx FPS: :" + str(fps.fps()))
-
-    cv2.destroyAllWindows()
-    quit()
+        cv2.destroyAllWindows()
+        quit()
 
 
 if __name__ == '__main__':
@@ -169,7 +172,8 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
-    threading.Thread(target=main, daemon=True).start()
+    cameraman = PanasonicCameraman()
+    threading.Thread(target=cameraman.run, daemon=True).start()
     RobotCameramanHttpHandler.to_exit = to_exit
     RobotCameramanHttpHandler.server_image = server_image
     server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
