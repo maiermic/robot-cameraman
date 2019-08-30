@@ -51,15 +51,10 @@ def quit(sig=None, frame=None):
 
 class PanasonicCameraman:
 
-    def run(self) -> None:
-        # Store labels for matching with inference results
-        labels = read_label_file(ARGS.labels) if ARGS.labels else None
+    def __init__(self, annotator: ImageAnnotator) -> None:
+        self.annotator = annotator
 
-        # Specify font for labels
-        # font = PIL.ImageFont.truetype("/usr/share/fonts/truetype/piboto/Piboto-Regular.ttf", 20)
-        font = PIL.ImageFont.truetype(
-            "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
-        # font = None
+    def run(self) -> None:
         engine = edgetpu.detection.engine.DetectionEngine(str(ARGS.model))
 
         width = 640
@@ -74,7 +69,6 @@ class PanasonicCameraman:
 
         global server_image, to_exit
         live_view = LiveView(ARGS.ip, ARGS.port)
-        annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
         destination = None
         camera_controller = None
         while not to_exit.is_set():
@@ -92,8 +86,8 @@ class PanasonicCameraman:
                                                                relative_coord=False,
                                                                top_k=ARGS.maxobjects)
                     draw_destination(image, destination)
-                    annotator.annotate(image, inference_results)
-                    target = annotator.target
+                    self.annotator.annotate(image, inference_results)
+                    target = self.annotator.target
                     camera_controller.update(
                         None if target is None else target.box)
                 except OSError as e:
@@ -172,8 +166,14 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
-    cameraman = PanasonicCameraman()
+
+    labels = read_label_file(ARGS.labels) if ARGS.labels else None
+    font = PIL.ImageFont.truetype(
+        "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
+    cameraman = PanasonicCameraman(
+        annotator=ImageAnnotator(ARGS.targetLabelId, labels, font))
     threading.Thread(target=cameraman.run, daemon=True).start()
+
     RobotCameramanHttpHandler.to_exit = to_exit
     RobotCameramanHttpHandler.server_image = server_image
     server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
