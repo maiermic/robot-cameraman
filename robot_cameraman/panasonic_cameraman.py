@@ -34,7 +34,6 @@ ARGS = None
 to_exit: threading.Event = threading.Event()
 server_image: PIL.Image
 server: ThreadingHTTPServer
-live_view: LiveView
 
 
 class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
@@ -102,7 +101,7 @@ def main() -> None:
     # Use imutils to count Frames Per Second (FPS)
     fps = FPS().start()
 
-    global live_view, server_image, to_exit
+    global server_image, to_exit
     live_view = LiveView(ARGS.ip, ARGS.port)
     annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
     destination = None
