@@ -54,18 +54,13 @@ class PanasonicCameraman:
     def __init__(
             self,
             annotator: ImageAnnotator,
-            detection_engine: DetectionEngine) -> None:
+            detection_engine: DetectionEngine,
+            output: cv2.VideoWriter) -> None:
         self.annotator = annotator
         self.detection_engine = detection_engine
+        self._output = output
 
     def run(self) -> None:
-        width = 640
-        height = 480
-        out = cv2.VideoWriter('output.avi',
-                              cv2.VideoWriter_fourcc(*'MJPG'),
-                              30,
-                              (width, height))
-
         # Use imutils to count Frames Per Second (FPS)
         fps = FPS().start()
 
@@ -95,7 +90,7 @@ class PanasonicCameraman:
                 server_image.image = image
                 cv2_image = cv2.cvtColor(numpy.asarray(image),
                                          cv2.COLOR_RGB2BGR)
-                # out.write(cv2_image)
+                self._output.write(cv2_image)
                 if 'DISPLAY' in os.environ:
                     cv2.imshow('NCS Improved live inference', cv2_image)
 
@@ -119,6 +114,16 @@ class PanasonicCameraman:
 
         cv2.destroyAllWindows()
         quit()
+
+
+def create_video_writer():
+    width = 640
+    height = 480
+    return cv2.VideoWriter(
+        'output.avi',
+        cv2.VideoWriter_fourcc(*'MJPG'),
+        30,
+        (width, height))
 
 
 if __name__ == '__main__':
@@ -182,7 +187,8 @@ if __name__ == '__main__':
         detection_engine=DetectionEngine(
             model=ARGS.model,
             confidence=ARGS.confidence,
-            max_objects=ARGS.maxObjects))
+            max_objects=ARGS.maxObjects),
+        output=create_video_writer())
     threading.Thread(target=cameraman.run, daemon=True).start()
 
     RobotCameramanHttpHandler.to_exit = to_exit
