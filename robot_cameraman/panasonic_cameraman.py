@@ -175,7 +175,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
 
-    labels = read_label_file(args.labels) if args.labels else None
+    labels = read_label_file(args.labels)
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
     cameraman = PanasonicCameraman(
         live_view=LiveView(args.ip, args.port),
