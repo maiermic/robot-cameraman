@@ -116,11 +116,11 @@ class PanasonicCameraman:
         quit()
 
 
-def create_video_writer():
+def create_video_writer(output_file: Path):
     width = 640
     height = 480
     return cv2.VideoWriter(
-        'output.avi',
+        str(output_file),
         cv2.VideoWriter_fourcc(*'MJPG'),
         30,
         (width, height))
@@ -165,6 +165,11 @@ if __name__ == '__main__':
                         default=0,
                         help="ID of label to track.")
 
+    parser.add_argument('--output',
+                        type=Path,
+                        default='output.avi',
+                        help="Video output file of annotated image stream.")
+
     parser.add_argument('--font',
                         type=Path,
                         default=resources / 'Roboto-Regular.ttf',
@@ -188,7 +193,7 @@ if __name__ == '__main__':
             model=ARGS.model,
             confidence=ARGS.confidence,
             max_objects=ARGS.maxObjects),
-        output=create_video_writer())
+        output=create_video_writer(ARGS.output))
     threading.Thread(target=cameraman.run, daemon=True).start()
 
     RobotCameramanHttpHandler.to_exit = to_exit
