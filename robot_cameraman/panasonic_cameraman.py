@@ -29,7 +29,7 @@ from edgetpu.detection.engine import DetectionCandidate
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
-from robot_cameraman.box import center
+from robot_cameraman.box import center, Box
 from robot_cameraman.resource import read_label_file
 from simplebgc.serial_example import rotate_gimbal
 
@@ -39,8 +39,6 @@ to_exit: bool = False
 server_image: PIL.Image
 server: ThreadingHTTPServer
 live_view: LiveView
-
-Box = numpy.array
 
 
 class Target(NamedTuple):
