@@ -1,7 +1,9 @@
 import io
+import logging
 import os
 import threading
 import time
+from logging import Logger
 from typing import Optional
 
 import PIL.Image
@@ -16,6 +18,8 @@ from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination, CameraController
+
+logger: Logger = logging.getLogger(__name__)
 
 
 class PanasonicCameraman:
@@ -54,7 +58,7 @@ class PanasonicCameraman:
                     camera_controller.update(
                         None if target is None else target.box)
                 except OSError as e:
-                    print(e)
+                    logger.error(str(e))
                     pass
 
                 server_image.image = image
@@ -77,10 +81,10 @@ class PanasonicCameraman:
                 break
 
         if camera_controller:
-            print('Stop camera')
+            logger.debug('Stop camera')
             camera_controller.stop()
         fps.stop()
-        print("Elapsed time: " + str(fps.elapsed()))
-        print("Approx FPS: :" + str(fps.fps()))
+        logger.debug("Elapsed time: " + str(fps.elapsed()))
+        logger.debug("Approx FPS: :" + str(fps.fps()))
 
         cv2.destroyAllWindows()
