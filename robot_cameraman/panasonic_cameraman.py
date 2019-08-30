@@ -47,12 +47,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             self.end_headers()
             global to_exit, server_image
             while not to_exit.wait(0.05):
-                # rc, img = capture.read()
-                # if not rc:
-                #     continue
-                # image_rgb = cv2.cvtColor(server_image, cv2.COLOR_BGR2RGB)
-                image_rgb = server_image
-                jpg = PIL.Image.fromarray(image_rgb)
+                jpg = server_image
                 jpg_bytes = jpg.tobytes()
                 self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
                 self.send_header('Content-type', 'image/jpeg')
@@ -134,10 +129,8 @@ def main() -> None:
                 print(e)
                 pass
 
-            image_array = numpy.asarray(image)
-            # server_image = cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB)
-            server_image = image_array
-            cv2_image = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+            server_image = image
+            cv2_image = cv2.cvtColor(numpy.asarray(image), cv2.COLOR_RGB2BGR)
             # out.write(cv2_image)
             if 'DISPLAY' in os.environ:
                 cv2.imshow('NCS Improved live inference', cv2_image)
