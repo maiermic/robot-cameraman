@@ -51,7 +51,12 @@ class Target(NamedTuple):
 class ImageAnnotator:
     target: Optional[Target] = None
 
-    def __init__(self, labels: Dict[int, str], font: FreeTypeFont) -> None:
+    def __init__(
+            self,
+            target_label_id: int,
+            labels: Dict[int, str],
+            font: FreeTypeFont) -> None:
+        self.target_label_id = target_label_id
         self.labels = labels
         self.font = font
 
@@ -66,7 +71,7 @@ class ImageAnnotator:
         target_box_found = False
         for idx, obj in enumerate(inference_results):
             box = obj.bounding_box.flatten().tolist()
-            if obj.label_id != ARGS.targetLabelId:
+            if obj.label_id != self.target_label_id:
                 color = (255, 255, 255)
             else:
                 color = (0, 255, 0)
@@ -251,7 +256,7 @@ def main() -> None:
 
     global live_view, server_image, to_exit
     live_view = LiveView(ARGS.ip, ARGS.port)
-    annotator = ImageAnnotator(labels, font)
+    annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
     destination = None
     camera_controller = None
     while not to_exit:
