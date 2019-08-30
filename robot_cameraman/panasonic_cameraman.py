@@ -120,9 +120,6 @@ def draw_point(
     draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
 
 
-max_speed = 0
-
-
 class CameraController:
 
     def __init__(
@@ -153,7 +150,6 @@ class CameraController:
 
     def move_to_target(self) -> None:
         global target_box
-        global max_speed
         tx, ty = center(target_box)
         dx, dy = self.destination.center
         distance = tx - dx
@@ -167,11 +163,6 @@ class CameraController:
             # image_width / speed_steps = 640 / 20 = 32
             # max_allowed_speed / speed_steps = 1000 / 20 = 100
             speed = round(abs_distance / 32 * 100)
-            if speed > max_speed:
-                print(speed)
-                max_speed = speed
-                if speed > self.max_allowed_speed:
-                    print('surpassed maximum speed')
             speed = min(self.max_allowed_speed, speed)
             if distance < 0:
                 speed = -speed
