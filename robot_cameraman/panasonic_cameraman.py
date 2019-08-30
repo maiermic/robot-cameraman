@@ -45,6 +45,9 @@ server: ThreadingHTTPServer
 
 
 class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
+    # static members
+    to_exit: threading.Event
+    server_image: ImageContainer
 
     def do_GET(self):
         if self.path.endswith('.mjpg'):
@@ -52,9 +55,8 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type',
                              'multipart/x-mixed-replace; boundary=jpgboundary')
             self.end_headers()
-            global to_exit, server_image
-            while not to_exit.wait(0.05):
-                jpg = server_image.image
+            while not self.to_exit.wait(0.05):
+                jpg = self.server_image.image
                 jpg_bytes = jpg.tobytes()
                 self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
                 self.send_header('Content-type', 'image/jpeg')
@@ -208,6 +210,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
     threading.Thread(target=main, daemon=True).start()
+    RobotCameramanHttpHandler.to_exit = to_exit
+    RobotCameramanHttpHandler.server_image = server_image
     server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
     print('Open http://localhost:9000/index.html in your browser')
     server.serve_forever()
