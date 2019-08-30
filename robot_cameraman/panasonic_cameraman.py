@@ -162,14 +162,23 @@ if __name__ == '__main__':
                         default=0,
                         help="ID of label to track.")
 
+    parser.add_argument('--font',
+                        type=Path,
+                        default=resources / 'Roboto-Regular.ttf',
+                        help="Font used in image annotations.")
+
+    parser.add_argument('--fontSize',
+                        type=int,
+                        default=30,
+                        help="Font size used in image annotations.")
+
     ARGS = parser.parse_args()
 
     signal.signal(signal.SIGINT, quit)
     signal.signal(signal.SIGTERM, quit)
 
     labels = read_label_file(ARGS.labels) if ARGS.labels else None
-    font = PIL.ImageFont.truetype(
-        "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
+    font = PIL.ImageFont.truetype(str(ARGS.font), ARGS.fontSize)
     cameraman = PanasonicCameraman(
         annotator=ImageAnnotator(ARGS.targetLabelId, labels, font))
     threading.Thread(target=cameraman.run, daemon=True).start()
