@@ -13,10 +13,8 @@ import os
 import signal
 import threading
 import time
-from dataclasses import dataclass
-from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer
 from pathlib import Path
-from typing import Optional
 
 import PIL.Image
 import PIL.ImageDraw
@@ -29,52 +27,14 @@ from imutils.video import FPS
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.resource import read_label_file
+from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, CameraController
-
-
-@dataclass
-class ImageContainer:
-    image: Optional[PIL.Image.Image]
-
 
 # Variable to store command line arguments
 ARGS = None
 to_exit: threading.Event = threading.Event()
 server_image: ImageContainer = ImageContainer(image=None)
 server: ThreadingHTTPServer
-
-
-class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
-    # static members
-    to_exit: threading.Event
-    server_image: ImageContainer
-
-    def do_GET(self):
-        if self.path.endswith('.mjpg'):
-            self.send_response(200)
-            self.send_header('Content-type',
-                             'multipart/x-mixed-replace; boundary=jpgboundary')
-            self.end_headers()
-            while not self.to_exit.wait(0.05):
-                jpg = self.server_image.image
-                jpg_bytes = jpg.tobytes()
-                self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
-                self.send_header('Content-type', 'image/jpeg')
-                self.send_header('Content-length', len(jpg_bytes))
-                self.end_headers()
-                jpg.save(self.wfile, 'JPEG')
-            return
-        if self.path.endswith('.html'):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write("""
-                    <html>
-                        <head></head>
-                        <body><img src="cam.mjpg"/></body>
-                    </html>
-                """.encode())
-            return
 
 
 def quit(sig=None, frame=None):
