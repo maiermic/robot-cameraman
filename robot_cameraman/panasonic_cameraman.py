@@ -15,7 +15,7 @@ import threading
 import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, NamedTuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -35,17 +35,22 @@ from simplebgc.serial_example import rotate_gimbal
 
 # Variable to store command line arguments
 ARGS = None
-
-# Last detected box of tracked object
-target_box = None
-target_detection_candidate = None
 to_exit: bool = False
 server_image: PIL.Image
 server: ThreadingHTTPServer
 live_view: LiveView
 
+Box = numpy.array
+
+
+class Target(NamedTuple):
+    box: Box
+    detection_candidate: DetectionCandidate
+
 
 class ImageAnnotator:
+    target: Optional[Target] = None
+
     def __init__(self, labels: Dict[int, str], font: FreeTypeFont) -> None:
         self.labels = labels
         self.font = font
@@ -53,9 +58,7 @@ class ImageAnnotator:
     def annotate(
             self,
             image: PIL.Image.Image,
-            inference_results: List[DetectionCandidate]) -> None:
-        global target_box
-        global target_detection_candidate
+            inference_results: List[DetectionCandidate]) -> Optional[Target]:
         draw = PIL.ImageDraw.Draw(image)
         # Iterate through result list. Note that results are already sorted by
         # confidence score (highest to lowest) and records with a lower score
@@ -69,12 +72,12 @@ class ImageAnnotator:
                 color = (0, 255, 0)
                 if not target_box_found:
                     target_box_found = True
-                    target_box = box
-                    target_detection_candidate = obj
+                    self.target = Target(box, obj)
             self.draw_annotated_box(draw, box, obj, color)
-        if target_box is None or target_box_found:
+        if self.target is None or target_box_found:
             return
-        self.draw_annotated_box(draw, target_box, target_detection_candidate,
+        self.draw_annotated_box(draw, self.target.box,
+                                self.target.detection_candidate,
                                 (255, 0, 0))
 
     def draw_annotated_box(
@@ -142,14 +145,13 @@ class CameraController:
             self.yaw_speed = yaw_speed
             rotate_gimbal(self.yaw_speed)
 
-    def update(self) -> None:
+    def update(self, target_box: Box) -> None:
         if target_box is None:
             self.search_target()
         else:
-            self.move_to_target()
+            self.move_to_target(target_box)
 
-    def move_to_target(self) -> None:
-        global target_box
+    def move_to_target(self, target_box: Box) -> None:
         tx, ty = center(target_box)
         dx, dy = self.destination.center
         distance = tx - dx
@@ -268,7 +270,8 @@ def main() -> None:
                                                            top_k=ARGS.maxobjects)
                 draw_destination(image, destination)
                 annotator.annotate(image, inference_results)
-                camera_controller.update()
+                target = annotator.target
+                camera_controller.update(None if target is None else target.box)
             except OSError as e:
                 print(e)
                 pass
