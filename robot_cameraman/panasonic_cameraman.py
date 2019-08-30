@@ -20,12 +20,12 @@ import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
 import cv2
-import edgetpu.detection.engine
 import numpy
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
+from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, CameraController
@@ -51,12 +51,14 @@ def quit(sig=None, frame=None):
 
 class PanasonicCameraman:
 
-    def __init__(self, annotator: ImageAnnotator) -> None:
+    def __init__(
+            self,
+            annotator: ImageAnnotator,
+            detection_engine: DetectionEngine) -> None:
         self.annotator = annotator
+        self.detection_engine = detection_engine
 
     def run(self) -> None:
-        engine = edgetpu.detection.engine.DetectionEngine(str(ARGS.model))
-
         width = 640
         height = 480
         out = cv2.VideoWriter('output.avi',
@@ -80,11 +82,7 @@ class PanasonicCameraman:
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
-                    inference_results = engine.DetectWithImage(image,
-                                                               threshold=ARGS.confidence,
-                                                               keep_aspect_ratio=True,
-                                                               relative_coord=False,
-                                                               top_k=ARGS.maxobjects)
+                    inference_results = self.detection_engine.detect(image)
                     draw_destination(image, destination)
                     self.annotator.annotate(image, inference_results)
                     target = self.annotator.target
@@ -142,7 +140,7 @@ if __name__ == '__main__':
         default=resources / 'coco_labels.txt',
         help="Path to labels file.")
 
-    parser.add_argument('--maxobjects', type=int,
+    parser.add_argument('--maxObjects', type=int,
                         default=10,
                         help="Maximum objects to infer in each frame of video.")
 
@@ -180,7 +178,11 @@ if __name__ == '__main__':
     labels = read_label_file(ARGS.labels) if ARGS.labels else None
     font = PIL.ImageFont.truetype(str(ARGS.font), ARGS.fontSize)
     cameraman = PanasonicCameraman(
-        annotator=ImageAnnotator(ARGS.targetLabelId, labels, font))
+        annotator=ImageAnnotator(ARGS.targetLabelId, labels, font),
+        detection_engine=DetectionEngine(
+            model=ARGS.model,
+            confidence=ARGS.confidence,
+            max_objects=ARGS.maxObjects))
     threading.Thread(target=cameraman.run, daemon=True).start()
 
     RobotCameramanHttpHandler.to_exit = to_exit
