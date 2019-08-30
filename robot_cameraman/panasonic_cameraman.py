@@ -11,6 +11,7 @@ import argparse
 import io
 import os
 import time
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 import PIL.Image
@@ -193,7 +194,7 @@ def main() -> None:
     font = PIL.ImageFont.truetype(
         "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
     # font = None
-    engine = edgetpu.detection.engine.DetectionEngine(ARGS.model)
+    engine = edgetpu.detection.engine.DetectionEngine(str(ARGS.model))
 
     width = 640
     height = 480
@@ -256,16 +257,23 @@ def main() -> None:
 
 
 if __name__ == '__main__':
+    resources: Path = Path(__file__).parent / 'resources'
+    mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
+
     parser = argparse.ArgumentParser(
         description="Detect objects in a video file using Google Coral USB.")
 
-    parser.add_argument('--model', type=str,
-                        default='resources/mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite',
-                        help="Path to the neural network graph file.")
+    parser.add_argument(
+        '--model',
+        type=Path,
+        default=resources / mobilenet,
+        help="Path to the neural network graph file.")
 
-    parser.add_argument('--labels', type=str,
-                        default='resources/coco_labels.txt',
-                        help="Path to labels file.")
+    parser.add_argument(
+        '--labels',
+        type=Path,
+        default=resources / 'coco_labels.txt',
+        help="Path to labels file.")
 
     parser.add_argument('--maxobjects', type=int,
                         default=10,
