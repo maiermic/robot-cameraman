@@ -15,6 +15,7 @@ import threading
 import time
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from typing import Optional
 
 import PIL.Image
 import PIL.ImageDraw
@@ -55,7 +56,7 @@ class PanasonicCameraman:
             self,
             annotator: ImageAnnotator,
             detection_engine: DetectionEngine,
-            output: cv2.VideoWriter) -> None:
+            output: Optional[cv2.VideoWriter]) -> None:
         self.annotator = annotator
         self.detection_engine = detection_engine
         self._output = output
@@ -90,7 +91,8 @@ class PanasonicCameraman:
                 server_image.image = image
                 cv2_image = cv2.cvtColor(numpy.asarray(image),
                                          cv2.COLOR_RGB2BGR)
-                self._output.write(cv2_image)
+                if self._output:
+                    self._output.write(cv2_image)
                 if 'DISPLAY' in os.environ:
                     cv2.imshow('NCS Improved live inference', cv2_image)
 
@@ -167,7 +169,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--output',
                         type=Path,
-                        default='output.avi',
+                        default=None,
                         help="Video output file of annotated image stream.")
 
     parser.add_argument('--font',
