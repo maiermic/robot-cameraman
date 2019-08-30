@@ -110,61 +110,53 @@ def create_video_writer(output_file: Path):
         (width, height))
 
 
-if __name__ == '__main__':
+def parse_arguments():
     resources: Path = Path(__file__).parent / 'resources'
     mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
-
     parser = argparse.ArgumentParser(
         description="Detect objects in a video file using Google Coral USB.")
-
     parser.add_argument(
         '--model',
         type=Path,
         default=resources / mobilenet,
         help="Path to the neural network graph file.")
-
     parser.add_argument(
         '--labels',
         type=Path,
         default=resources / 'coco_labels.txt',
         help="Path to labels file.")
-
     parser.add_argument('--maxObjects', type=int,
                         default=10,
                         help="Maximum objects to infer in each frame of video.")
-
     parser.add_argument('--confidence', type=float,
                         default=0.50,
                         help="Minimum confidence threshold to tag objects.")
-
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
                         help="UDP Socket IP address.")
-
     parser.add_argument('--port', type=int,
                         default=49199,
                         help="UDP Socket port.")
-
     parser.add_argument('--targetLabelId', type=int,
                         default=0,
                         help="ID of label to track.")
-
     parser.add_argument('--output',
                         type=Path,
                         default=None,
                         help="Video output file of annotated image stream.")
-
     parser.add_argument('--font',
                         type=Path,
                         default=resources / 'Roboto-Regular.ttf',
                         help="Font used in image annotations.")
-
     parser.add_argument('--fontSize',
                         type=int,
                         default=30,
                         help="Font size used in image annotations.")
+    return parser.parse_args()
 
-    ARGS = parser.parse_args()
+
+if __name__ == '__main__':
+    ARGS = parse_arguments()
 
     to_exit: threading.Event = threading.Event()
     server_image: ImageContainer = ImageContainer(image=None)
