@@ -145,7 +145,6 @@ def main() -> None:
             # Display the frame for 5ms, and close the window so that the next
             # frame can be displayed. Close the window if 'q' or 'Q' is pressed.
             if cv2.waitKey(5) & 0xFF == ord('q'):
-                fps.stop()
                 camera_controller.stop()
                 break
 
@@ -153,7 +152,6 @@ def main() -> None:
 
         # Allows graceful exit using ctrl-c (handy for headless mode).
         except KeyboardInterrupt:
-            fps.stop()
             break
 
     fps.stop()
