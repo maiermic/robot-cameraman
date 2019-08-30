@@ -153,6 +153,7 @@ def main() -> None:
             fps.stop()
             break
 
+    fps.stop()
     print("Elapsed time: " + str(fps.elapsed()))
     print("Approx FPS: :" + str(fps.fps()))
 
