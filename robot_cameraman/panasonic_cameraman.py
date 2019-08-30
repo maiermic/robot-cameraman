@@ -31,7 +31,7 @@ from robot_cameraman.tracking import Destination, CameraController
 
 # Variable to store command line arguments
 ARGS = None
-to_exit: bool = False
+to_exit: threading.Event = threading.Event()
 server_image: PIL.Image
 server: ThreadingHTTPServer
 live_view: LiveView
@@ -46,7 +46,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
                              'multipart/x-mixed-replace; boundary=jpgboundary')
             self.end_headers()
             global to_exit, server_image
-            while not to_exit:
+            while not to_exit.wait(0.05):
                 # rc, img = capture.read()
                 # if not rc:
                 #     continue
@@ -59,8 +59,6 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-length', len(jpg_bytes))
                 self.end_headers()
                 jpg.save(self.wfile, 'JPEG')
-                time.sleep(0.05)
-                # break
             return
         if self.path.endswith('.html'):
             self.send_response(200)
@@ -79,7 +77,7 @@ def quit(sig=None, frame=None):
     print("Exiting...")
     global to_exit
     global server
-    to_exit = True
+    to_exit.set()
     server.shutdown()
     exit(0)
 
@@ -111,7 +109,7 @@ def main() -> None:
     annotator = ImageAnnotator(ARGS.targetLabelId, labels, font)
     destination = None
     camera_controller = None
-    while not to_exit:
+    while not to_exit.is_set():
         try:
             image = PIL.Image.open(io.BytesIO(live_view.image()))
             if destination is None:
