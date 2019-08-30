@@ -155,26 +155,30 @@ def parse_arguments():
     return parser.parse_args()
 
 
+to_exit: threading.Event
+server: ThreadingHTTPServer
+server_image: ImageContainer
+
+
+def quit(sig=None, frame=None):
+    global server, to_exit
+    print("Exiting...")
+    to_exit.set()
+    # Regular server.shutdown() waits forever if server.serve_forever() is
+    # not running anymore. Hence, this work around that only sets the flag
+    # to shutdown, but does not wait.
+    server._BaseServer__shutdown_request = True
+    exit(0)
+
+
+def run_cameraman():
+    global server_image, to_exit
+    cameraman.run(server_image, to_exit)
+    quit()
+
+
 if __name__ == '__main__':
     args = parse_arguments()
-
-    to_exit: threading.Event = threading.Event()
-    server_image: ImageContainer = ImageContainer(image=None)
-
-
-    def quit(sig=None, frame=None):
-        print("Exiting...")
-        to_exit.set()
-        # Regular server.shutdown() waits forever if server.serve_forever() is
-        # not running anymore. Hence, this work around that only sets the flag
-        # to shutdown, but does not wait.
-        server._BaseServer__shutdown_request = True
-        exit(0)
-
-
-    signal.signal(signal.SIGINT, quit)
-    signal.signal(signal.SIGTERM, quit)
-
     labels = read_label_file(args.labels)
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
     cameraman = PanasonicCameraman(
@@ -186,18 +190,15 @@ if __name__ == '__main__':
             max_objects=args.maxObjects),
         output=create_video_writer(args.output))
 
-
-    def run_cameraman():
-        cameraman.run(server_image, to_exit)
-        quit()
-
-
-    threading.Thread(
-        target=run_cameraman,
-        daemon=True).start()
-
+    to_exit = threading.Event()
+    server_image = ImageContainer(image=None)
     RobotCameramanHttpHandler.to_exit = to_exit
     RobotCameramanHttpHandler.server_image = server_image
     server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
+
+    signal.signal(signal.SIGINT, quit)
+    signal.signal(signal.SIGTERM, quit)
+
+    threading.Thread(target=run_cameraman, daemon=True).start()
     print('Open http://localhost:9000/index.html in your browser')
     server.serve_forever()
