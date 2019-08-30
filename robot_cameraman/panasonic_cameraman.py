@@ -29,6 +29,7 @@ from edgetpu.detection.engine import DetectionCandidate
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
+from robot_cameraman.box import center
 from robot_cameraman.resource import read_label_file
 from simplebgc.serial_example import rotate_gimbal
 
@@ -42,11 +43,6 @@ to_exit: bool = False
 server_image: PIL.Image
 server: ThreadingHTTPServer
 live_view: LiveView
-
-
-def center(box: List[float]) -> Tuple[float, float]:
-    x1, y1, x2, y2 = box
-    return abs(x1 + x2) / 2, abs(y1 + y2) / 2
 
 
 class ImageAnnotator:
