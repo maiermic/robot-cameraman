@@ -145,7 +145,6 @@ def main() -> None:
             # Display the frame for 5ms, and close the window so that the next
             # frame can be displayed. Close the window if 'q' or 'Q' is pressed.
             if cv2.waitKey(5) & 0xFF == ord('q'):
-                camera_controller.stop()
                 break
 
             fps.update()
@@ -154,6 +153,9 @@ def main() -> None:
         except KeyboardInterrupt:
             break
 
+    if camera_controller:
+        print('Stop camera')
+        camera_controller.stop()
     fps.stop()
     print("Elapsed time: " + str(fps.elapsed()))
     print("Approx FPS: :" + str(fps.fps()))
