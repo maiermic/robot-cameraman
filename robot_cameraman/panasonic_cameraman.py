@@ -78,7 +78,10 @@ def quit(sig=None, frame=None):
     global to_exit
     global server
     to_exit.set()
-    server.shutdown()
+    # Regular server.shutdown() waits forever if server.serve_forever() is not
+    # running anymore. Hence, this work around that only sets the flag to
+    # shutdown, but does not wait.
+    server._BaseServer__shutdown_request = True
     exit(0)
 
 
