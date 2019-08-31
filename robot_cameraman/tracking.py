@@ -1,6 +1,7 @@
+import serial
 from typing import Tuple
 
-from robot_cameraman.box import Box, center
+from robot_cameraman.box import Box
 from simplebgc.serial_example import rotate_gimbal
 
 
@@ -34,8 +35,12 @@ class CameraController:
 
     def rotate(self, yaw_speed: int) -> None:
         if self.yaw_speed != yaw_speed:
-            self.yaw_speed = yaw_speed
-            rotate_gimbal(self.yaw_speed)
+            try:
+                print('rotate gimbal with speed {}'.format(self.yaw_speed))
+                rotate_gimbal(self.yaw_speed)
+                self.yaw_speed = yaw_speed
+            except serial.serialutil.SerialException:
+                print('caught SerialException')
 
     def update(self, target_box: Box) -> None:
         if target_box is None:
@@ -44,7 +49,7 @@ class CameraController:
             self.move_to_target(target_box)
 
     def move_to_target(self, target_box: Box) -> None:
-        tx, ty = center(target_box)
+        tx, ty = target_box.center
         dx, dy = self.destination.center
         distance = tx - dx
         # print(distance)
@@ -60,7 +65,7 @@ class CameraController:
             speed = min(self.max_allowed_speed, speed)
             if distance < 0:
                 speed = -speed
-            self.rotate(speed)
+            self.rotate(int(speed))
 
     def rotate_right(self) -> None:
         self.rotate(100)

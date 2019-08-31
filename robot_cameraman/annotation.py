@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List, Tuple, NamedTuple
+from typing import Optional, Dict, Iterable, Tuple, NamedTuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -6,7 +6,7 @@ from PIL.ImageDraw import ImageDraw
 from PIL.ImageFont import FreeTypeFont
 from edgetpu.detection.engine import DetectionCandidate
 
-from robot_cameraman.box import center, Box
+from robot_cameraman.box import Box
 from robot_cameraman.tracking import Destination
 
 
@@ -30,14 +30,14 @@ class ImageAnnotator:
     def annotate(
             self,
             image: PIL.Image.Image,
-            inference_results: List[DetectionCandidate]) -> Optional[Target]:
+            inference_results: Iterable[DetectionCandidate]) -> None:
         draw = PIL.ImageDraw.Draw(image)
         # Iterate through result list. Note that results are already sorted by
         # confidence score (highest to lowest) and records with a lower score
         # than the threshold are already removed.
         target_box_found = False
         for idx, obj in enumerate(inference_results):
-            box = obj.bounding_box.flatten().tolist()
+            box = obj.bounding_box
             if obj.label_id != self.target_label_id:
                 color = (255, 255, 255)
             else:
@@ -55,15 +55,15 @@ class ImageAnnotator:
     def draw_annotated_box(
             self,
             draw: ImageDraw,
-            box: List[float],
+            box: Box,
             obj: DetectionCandidate,
             color: Tuple[int, int, int]) -> None:
-        draw.rectangle(box, outline=color)
-        draw_point(draw, center(box), color)
+        draw.rectangle(box.coordinates, outline=color)
+        draw_point(draw, box.center, color)
         # Annotate image with label and confidence score
         display_str = self.labels[obj.label_id] + ": " + str(
             round(obj.score * 100, 2)) + "%"
-        draw.text((box[0], box[1]), display_str, font=self.font)
+        draw.text((box.x, box.y), display_str, font=self.font)
 
 
 def draw_destination(
