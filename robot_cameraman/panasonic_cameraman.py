@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+import socket
 import threading
 import time
 from logging import Logger
@@ -44,7 +45,11 @@ class PanasonicCameraman:
         camera_controller = None
         while not to_exit.is_set():
             try:
-                image = PIL.Image.open(io.BytesIO(self._live_view.image()))
+                try:
+                    image = PIL.Image.open(io.BytesIO(self._live_view.image()))
+                except socket.timeout:
+                    logger.error('timeout reading live view image')
+                    continue
                 if destination is None:
                     destination = Destination(image.size, variance=20)
                     camera_controller = CameraController(destination)
