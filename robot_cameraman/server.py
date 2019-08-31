@@ -1,6 +1,7 @@
 import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 from typing import Optional
 
 import PIL.Image
@@ -31,14 +32,10 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 jpg.save(self.wfile, 'JPEG')
             return
+        templates: Path = Path(__file__).parent / 'templates'
         if self.path.endswith('.html'):
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write("""
-                    <html>
-                        <head></head>
-                        <body><img src="cam.mjpg"/></body>
-                    </html>
-                """.encode())
+            self.wfile.write((templates / 'index.html').read_text().encode())
             return
