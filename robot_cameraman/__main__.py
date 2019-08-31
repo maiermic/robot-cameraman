@@ -75,13 +75,16 @@ def parse_arguments():
 
 
 def quit(sig=None, frame=None):
-    global server, to_exit
+    global cameraman_thread, server, to_exit
     print("Exiting...")
     to_exit.set()
     # Regular server.shutdown() waits forever if server.serve_forever() is
     # not running anymore. Hence, this work around that only sets the flag
     # to shutdown, but does not wait.
     server._BaseServer__shutdown_request = True
+    if threading.current_thread() != cameraman_thread:
+        print('wait for cameraman thread')
+        cameraman_thread.join()
     exit(0)
 
 
@@ -112,6 +115,7 @@ server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
 signal.signal(signal.SIGINT, quit)
 signal.signal(signal.SIGTERM, quit)
 
-threading.Thread(target=run_cameraman, daemon=True).start()
+cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
+cameraman_thread.start()
 print('Open http://localhost:9000/index.html in your browser')
 server.serve_forever()
