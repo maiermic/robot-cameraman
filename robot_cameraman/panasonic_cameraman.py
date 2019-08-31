@@ -18,7 +18,8 @@ from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination, CameraController
+from robot_cameraman.tracking import Destination, CameraController, \
+    SimpleTrackingStrategy, CameraSpeeds, TrackingStrategy
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -43,6 +44,8 @@ class PanasonicCameraman:
         fps: FPS = FPS().start()
         destination: Optional[Destination] = None
         camera_controller: Optional[CameraController] = None
+        tracking_strategy: Optional[TrackingStrategy] = None
+        camera_speeds: CameraSpeeds = CameraSpeeds()
         while not to_exit.is_set():
             try:
                 try:
@@ -53,6 +56,7 @@ class PanasonicCameraman:
                 if destination is None:
                     destination = Destination(image.size, variance=20)
                     camera_controller = CameraController(destination)
+                    tracking_strategy = SimpleTrackingStrategy(destination)
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
@@ -60,8 +64,12 @@ class PanasonicCameraman:
                     draw_destination(image, destination)
                     self.annotator.annotate(image, inference_results)
                     target = self.annotator.target
-                    camera_controller.update(
-                        None if target is None else target.box)
+                    if target is None:
+                        # search target
+                        camera_controller.rotate(500)
+                    else:
+                        tracking_strategy.update(camera_speeds, target.box)
+                        camera_controller.rotate(camera_speeds.pan_speed)
                 except OSError as e:
                     logger.error(str(e))
                     pass

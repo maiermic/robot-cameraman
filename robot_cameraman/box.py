@@ -1,5 +1,21 @@
-from typing import Tuple, Iterable
+from dataclasses import dataclass
+from typing import Iterable
+
 from typing_extensions import Protocol
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    def set(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def __iter__(self):
+        yield self.x
+        yield self.y
 
 
 class Box(Protocol):
@@ -7,7 +23,7 @@ class Box(Protocol):
     y: float
     width: float
     height: float
-    center: Tuple[float, float]
+    center: Point
     coordinates: Iterable[float]
 
     @staticmethod
@@ -32,6 +48,5 @@ class TwoPointsBox(Box):
         self.y = y1
         self.width = abs(x2 - x1)
         self.height = abs(y2 - y1)
-        self.center = (abs(x1 + x2) / 2, abs(y1 + y2) / 2)
+        self.center = Point(abs(x1 + x2) / 2, abs(y1 + y2) / 2)
         self.coordinates = [x1, y1, x2, y2]
-
