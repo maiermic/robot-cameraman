@@ -9,6 +9,7 @@ class LiveView:
     def __init__(self, ip: str, port: int) -> None:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
+        self.sock.settimeout(0.5)
 
     def image(self) -> bytes:
         """
