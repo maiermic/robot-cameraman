@@ -16,10 +16,11 @@ from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
+from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination, CameraController, \
-    SimpleTrackingStrategy, CameraSpeeds, TrackingStrategy
+from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
+    CameraSpeeds, TrackingStrategy
 
 logger: Logger = logging.getLogger(__name__)
 

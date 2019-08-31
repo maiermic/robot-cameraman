@@ -4,11 +4,9 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import Tuple
 
-import serial
 from typing_extensions import Protocol
 
 from robot_cameraman.box import Box, TwoPointsBox
-from simplebgc.serial_example import rotate_gimbal
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -40,32 +38,6 @@ class Destination:
         self.min_size_box.x = x - self.min_size_box.width / 2
         self.min_size_box.y = y - self.min_size_box.height / 2
         self.min_size_box.center.set(x, y)
-
-
-class CameraController:
-
-    def __init__(
-            self,
-            destination: Destination,
-            max_allowed_speed: int = 1000) -> None:
-        self.destination = destination
-        self.max_allowed_speed = max_allowed_speed
-        self.yaw_speed = 0
-
-    def is_camera_moving(self) -> bool:
-        return self.yaw_speed != 0
-
-    def stop(self) -> None:
-        self.rotate(0)
-
-    def rotate(self, yaw_speed: int) -> None:
-        if self.yaw_speed != yaw_speed:
-            try:
-                logger.debug('rotate gimbal with speed {}'.format(yaw_speed))
-                rotate_gimbal(yaw_speed)
-                self.yaw_speed = yaw_speed
-            except serial.serialutil.SerialException:
-                logger.error('caught SerialException')
 
 
 @dataclass
