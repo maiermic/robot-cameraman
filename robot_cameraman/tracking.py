@@ -36,8 +36,8 @@ class CameraController:
     def rotate(self, yaw_speed: int) -> None:
         if self.yaw_speed != yaw_speed:
             try:
-                print('rotate gimbal with speed {}'.format(self.yaw_speed))
-                rotate_gimbal(self.yaw_speed)
+                print('rotate gimbal with speed {}'.format(yaw_speed))
+                rotate_gimbal(yaw_speed)
                 self.yaw_speed = yaw_speed
             except serial.serialutil.SerialException:
                 print('caught SerialException')
