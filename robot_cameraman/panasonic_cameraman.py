@@ -40,9 +40,9 @@ class PanasonicCameraman:
             server_image: ImageContainer,
             to_exit: threading.Event) -> None:
         # Use imutils to count Frames Per Second (FPS)
-        fps = FPS().start()
-        destination = None
-        camera_controller = None
+        fps: FPS = FPS().start()
+        destination: Optional[Destination] = None
+        camera_controller: Optional[CameraController] = None
         while not to_exit.is_set():
             try:
                 try:
