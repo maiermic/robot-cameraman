@@ -1,3 +1,4 @@
+import re
 import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler
@@ -16,6 +17,11 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
     # static members
     to_exit: threading.Event
     server_image: ImageContainer
+
+    # type hints
+    path: str
+
+    api_regex = re.compile(r'/api/(\w+)')
 
     def do_GET(self):
         if self.path.endswith('.mjpg'):
@@ -38,4 +44,16 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write((templates / 'index.html').read_text().encode())
+            return
+        api_match = self.api_regex.fullmatch(self.path)
+        if api_match:
+            action = api_match.group(1)
+            if action == 'left':
+                print('left')
+            if action == 'right':
+                print('right')
+            if action == 'stop':
+                print('stop')
+            self.send_response(200)
+            self.end_headers()
             return

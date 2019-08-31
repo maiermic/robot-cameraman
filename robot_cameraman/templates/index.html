@@ -4,8 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Robot Cameraman</title>
+    <style>
+        html, body {
+            margin: 0;
+            display: flex;
+            width: 100%;
+        }
+
+        .live-view {
+            width: 100%;
+            max-width: 640px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .button {
+            flex-grow: 1;
+        }
+    </style>
 </head>
 <body>
-    <img src="cam.mjpg" alt="Live View">
+    <img class="live-view" src="cam.mjpg" alt="Live View">
+    <div class="buttons">
+        <input id="left" class="button" type="button" value="Left"
+               onpointerdown="fetch('api/left')"
+               onpointerup="fetch('api/stop')">
+        <input id="right" class="button" type="button" value="Right"
+               onpointerdown="fetch('api/right')"
+               onpointerup="fetch('api/stop')">
+    </div>
 </body>
 </html>
