@@ -119,6 +119,7 @@ to_exit = threading.Event()
 server_image = ImageContainer(image=None)
 RobotCameramanHttpHandler.to_exit = to_exit
 RobotCameramanHttpHandler.server_image = server_image
+RobotCameramanHttpHandler.cameraman_mode_manager = cameraman_mode_manager
 server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
 
 signal.signal(signal.SIGINT, quit)

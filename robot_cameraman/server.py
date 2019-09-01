@@ -7,6 +7,8 @@ from typing import Optional
 
 import PIL.Image
 
+from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+
 
 @dataclass
 class ImageContainer:
@@ -17,6 +19,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
     # static members
     to_exit: threading.Event
     server_image: ImageContainer
+    cameraman_mode_manager: CameramanModeManager
 
     # type hints
     path: str
@@ -47,13 +50,17 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             return
         api_match = self.api_regex.fullmatch(self.path)
         if api_match:
+            self.cameraman_mode_manager.manual_mode()
             action = api_match.group(1)
             if action == 'left':
                 print('left')
+                self.cameraman_mode_manager.manual_rotate(-100)
             if action == 'right':
                 print('right')
+                self.cameraman_mode_manager.manual_rotate(100)
             if action == 'stop':
                 print('stop')
+                self.cameraman_mode_manager.stop()
             self.send_response(200)
             self.end_headers()
             return
