@@ -47,6 +47,10 @@ class PanasonicCameraman:
         self._target_label_id = target_label_id
         self._output = output
 
+    def _is_target_id_registered(self) -> bool:
+        return (self._target_id is not None
+                and self._object_tracker.is_registered(self._target_id))
+
     def run(self,
             server_image: ImageContainer,
             to_exit: threading.Event) -> None:
@@ -71,7 +75,7 @@ class PanasonicCameraman:
                     candidates = self._object_tracker.update(
                         target_inference_results)
                     target: Optional[DetectionCandidate] = None
-                    if self._target_id is not None:
+                    if self._is_target_id_registered():
                         if self._target_id in candidates:
                             target = candidates[self._target_id]
                     else:

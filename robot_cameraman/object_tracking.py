@@ -38,6 +38,9 @@ class CentroidTracker:
         del self.objects[object_id]
         del self.disappeared[object_id]
 
+    def is_registered(self, object_id: int) -> bool:
+        return object_id in self.objects
+
     def update(self, input_centroids: numpy.ndarray):
         # check to see if the list of input bounding box rectangles
         # is empty
@@ -165,3 +168,6 @@ class ObjectTracker:
         return {object_id: centroid_to_inference_result[(x, y)]
                 for object_id, (x, y) in objects.items()
                 if (x, y) in centroid_to_inference_result}
+
+    def is_registered(self, object_id: int) -> bool:
+        return self._centroid_tracker.is_registered(object_id)
