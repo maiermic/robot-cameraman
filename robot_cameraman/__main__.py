@@ -12,6 +12,7 @@ from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
@@ -113,6 +114,8 @@ cameraman = PanasonicCameraman(
         max_objects=args.maxObjects),
     destination=destination,
     mode_manager=cameraman_mode_manager,
+    object_tracker=ObjectTracker(),
+    target_label_id=args.targetLabelId,
     output=create_video_writer(args.output))
 
 to_exit = threading.Event()

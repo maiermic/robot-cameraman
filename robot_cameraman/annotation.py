@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Iterable, Tuple
+from typing import Optional, Dict, Tuple, NamedTuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -10,8 +10,13 @@ from robot_cameraman.image_detection import DetectionCandidate
 from robot_cameraman.tracking import Destination
 
 
+class _Target(NamedTuple):
+    id: int
+    candidate: DetectionCandidate
+
+
 class ImageAnnotator:
-    target: Optional[DetectionCandidate] = None
+    _target: Optional[_Target] = None
 
     def __init__(
             self,
@@ -25,28 +30,30 @@ class ImageAnnotator:
     def annotate(
             self,
             image: PIL.Image.Image,
-            inference_results: Iterable[DetectionCandidate]) -> None:
+            target_id: Optional[int],
+            candidates: Dict[int, DetectionCandidate]) -> None:
         draw = PIL.ImageDraw.Draw(image)
         # Iterate through result list. Note that results are already sorted by
         # confidence score (highest to lowest) and records with a lower score
         # than the threshold are already removed.
         target_found = False
-        for idx, obj in enumerate(inference_results):
-            if obj.label_id != self.target_label_id:
-                color = (255, 255, 255)
-            else:
+        for candidate_id, candidate in candidates.items():
+            color = (255, 255, 255)
+            if candidate_id == target_id:
                 color = (0, 255, 0)
-                if not target_found:
-                    target_found = True
-                    self.target = obj
-            self.draw_detection_candidate(draw, obj, color)
-        if self.target is None or target_found:
+                target_found = True
+                self._target = _Target(target_id, candidate)
+            self.draw_detection_candidate(draw, candidate_id, candidate, color)
+        if self._target is None or target_found:
             return
-        self.draw_detection_candidate(draw, self.target, (255, 0, 0))
+        self.draw_detection_candidate(draw, self._target.id,
+                                      self._target.candidate,
+                                      (255, 0, 0))
 
     def draw_detection_candidate(
             self,
             draw: ImageDraw,
+            candidate_id: int,
             obj: DetectionCandidate,
             color: Tuple[int, int, int]) -> None:
         box = obj.bounding_box
@@ -56,6 +63,8 @@ class ImageAnnotator:
         display_str = self.labels[obj.label_id] + ": " + str(
             round(obj.score * 100, 2)) + "%"
         draw.text((box.x, box.y), display_str, font=self.font)
+        draw.text((box.center.x, box.center.y), str(candidate_id),
+                  font=self.font)
 
 
 def draw_destination(
