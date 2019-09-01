@@ -1,22 +1,17 @@
-from typing import Optional, Dict, Iterable, Tuple, NamedTuple
+from typing import Optional, Dict, Iterable, Tuple
 
 import PIL.Image
 import PIL.ImageDraw
 from PIL.ImageDraw import ImageDraw
 from PIL.ImageFont import FreeTypeFont
-from edgetpu.detection.engine import DetectionCandidate
 
-from robot_cameraman.box import Box, Point
+from robot_cameraman.box import Point
+from robot_cameraman.image_detection import DetectionCandidate
 from robot_cameraman.tracking import Destination
 
 
-class Target(NamedTuple):
-    box: Box
-    detection_candidate: DetectionCandidate
-
-
 class ImageAnnotator:
-    target: Optional[Target] = None
+    target: Optional[DetectionCandidate] = None
 
     def __init__(
             self,
@@ -35,29 +30,26 @@ class ImageAnnotator:
         # Iterate through result list. Note that results are already sorted by
         # confidence score (highest to lowest) and records with a lower score
         # than the threshold are already removed.
-        target_box_found = False
+        target_found = False
         for idx, obj in enumerate(inference_results):
-            box = obj.bounding_box
             if obj.label_id != self.target_label_id:
                 color = (255, 255, 255)
             else:
                 color = (0, 255, 0)
-                if not target_box_found:
-                    target_box_found = True
-                    self.target = Target(box, obj)
-            self.draw_annotated_box(draw, box, obj, color)
-        if self.target is None or target_box_found:
+                if not target_found:
+                    target_found = True
+                    self.target = obj
+            self.draw_detection_candidate(draw, obj, color)
+        if self.target is None or target_found:
             return
-        self.draw_annotated_box(draw, self.target.box,
-                                self.target.detection_candidate,
-                                (255, 0, 0))
+        self.draw_detection_candidate(draw, self.target, (255, 0, 0))
 
-    def draw_annotated_box(
+    def draw_detection_candidate(
             self,
             draw: ImageDraw,
-            box: Box,
             obj: DetectionCandidate,
             color: Tuple[int, int, int]) -> None:
+        box = obj.bounding_box
         draw.rectangle(box.coordinates, outline=color)
         draw_point(draw, box.center, color)
         # Annotate image with label and confidence score

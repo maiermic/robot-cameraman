@@ -2,7 +2,7 @@ import logging
 from logging import Logger
 from typing import Optional
 
-from robot_cameraman.annotation import Target
+from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds
 
@@ -20,14 +20,13 @@ class CameramanModeManager:
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self._is_manual_mode = False
 
-    def update(self, target: Optional[Target] = None) -> None:
+    def update(self, target: Optional[Box] = None) -> None:
         if not self._is_manual_mode:
             if target is None:
                 # search target
                 self._camera_speeds.pan_speed = 500
             else:
-                self._tracking_strategy.update(self._camera_speeds,
-                                               target.box)
+                self._tracking_strategy.update(self._camera_speeds, target)
         self._camera_controller.update(self._camera_speeds)
 
     def start(self):

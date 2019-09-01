@@ -62,7 +62,10 @@ class PanasonicCameraman:
                     draw_destination(image, self._destination)
                     self.annotator.annotate(image, inference_results)
                     target = self.annotator.target
-                    self._mode_manager.update(target)
+                    if target:
+                        self._mode_manager.update(target.bounding_box)
+                    else:
+                        self._mode_manager.update()
                 except OSError as e:
                     logger.error(str(e))
                     pass
