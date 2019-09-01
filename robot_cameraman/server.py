@@ -1,13 +1,17 @@
+import logging
 import re
 import threading
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler
+from logging import Logger
 from pathlib import Path
 from typing import Optional
 
 import PIL.Image
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+
+logger: Logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -53,13 +57,13 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             self.cameraman_mode_manager.manual_mode()
             action = api_match.group(1)
             if action == 'left':
-                print('left')
+                logger.debug('manually rotate left')
                 self.cameraman_mode_manager.manual_rotate(-100)
             if action == 'right':
-                print('right')
+                logger.debug('manually rotate right')
                 self.cameraman_mode_manager.manual_rotate(100)
             if action == 'stop':
-                print('stop')
+                logger.debug('manually stop')
                 self.cameraman_mode_manager.stop()
             self.send_response(200)
             self.end_headers()
