@@ -56,7 +56,7 @@ class PanasonicCameraman:
                     continue
                 if destination is None:
                     destination = Destination(image.size, variance=20)
-                    camera_controller = CameraController(destination)
+                    camera_controller = CameraController()
                     tracking_strategy = SimpleTrackingStrategy(destination)
                 # Perform inference and note time taken
                 start_ms = time.time()

@@ -3,21 +3,13 @@ from logging import Logger
 
 import serial
 
-from robot_cameraman.tracking import Destination
 from simplebgc.serial_example import rotate_gimbal
 
 logger: Logger = logging.getLogger(__name__)
 
 
 class CameraController:
-
-    def __init__(
-            self,
-            destination: Destination,
-            max_allowed_speed: int = 1000) -> None:
-        self.destination = destination
-        self.max_allowed_speed = max_allowed_speed
-        self.yaw_speed = 0
+    yaw_speed: int = 0
 
     def is_camera_moving(self) -> bool:
         return self.yaw_speed != 0
