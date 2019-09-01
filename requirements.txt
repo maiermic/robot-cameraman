@@ -13,6 +13,7 @@ pyserial==3.4
 python-dateutil==2.8.0
 requests==2.22.0
 six==1.12.0
+typing-extensions==3.7.4
 uPnPClient==0.0.8
 urllib3==1.25.3
 zeroconf==0.23.0
