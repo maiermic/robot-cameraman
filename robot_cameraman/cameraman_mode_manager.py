@@ -20,24 +20,26 @@ class CameramanModeManager:
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self._is_manual_mode = False
 
-    def update(self, target: Optional[Target]) -> None:
-        if self._is_manual_mode:
-            return
-        if target is None:
-            # search target
-            self._camera_controller.rotate(500)
-        else:
-            self._tracking_strategy.update(self._camera_speeds,
-                                           target.box)
-            self._camera_controller.rotate(self._camera_speeds.pan_speed)
+    def update(self, target: Optional[Target] = None) -> None:
+        if not self._is_manual_mode:
+            if target is None:
+                # search target
+                self._camera_speeds.pan_speed = 500
+            else:
+                self._tracking_strategy.update(self._camera_speeds,
+                                               target.box)
+        self._camera_controller.update(self._camera_speeds)
 
-    def stop(self):
+    def start(self):
+        self._camera_controller.start()
+
+    def stop(self) -> None:
         if self._camera_controller:
             logger.debug('Stop camera')
             self._camera_controller.stop()
 
-    def manual_mode(self):
+    def manual_mode(self) -> None:
         self._is_manual_mode = True
 
-    def manual_rotate(self, pan_speed: int):
-        self._camera_controller.rotate(pan_speed)
+    def manual_rotate(self, pan_speed: int) -> None:
+        self._camera_speeds.pan_speed = pan_speed

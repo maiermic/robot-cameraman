@@ -44,7 +44,7 @@ class PanasonicCameraman:
     def run(self,
             server_image: ImageContainer,
             to_exit: threading.Event) -> None:
-        # Use imutils to count Frames Per Second (FPS)
+        self._mode_manager.start()
         fps: FPS = FPS().start()
         while not to_exit.is_set():
             try:
@@ -52,6 +52,7 @@ class PanasonicCameraman:
                     image = PIL.Image.open(io.BytesIO(self._live_view.image()))
                 except socket.timeout:
                     logger.error('timeout reading live view image')
+                    self._mode_manager.update()
                     continue
                 assert image.size == (640, 480)
                 # Perform inference and note time taken
@@ -86,8 +87,8 @@ class PanasonicCameraman:
             except KeyboardInterrupt:
                 break
 
-        self._mode_manager.stop()
         fps.stop()
+        self._mode_manager.stop()
         logger.debug("Elapsed time: " + str(fps.elapsed()))
         logger.debug("Approx FPS: :" + str(fps.fps()))
 

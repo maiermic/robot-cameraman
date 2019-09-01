@@ -9,7 +9,7 @@ import cv2
 
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
-from robot_cameraman.camera_controller import CameraController
+from robot_cameraman.camera_controller import SmoothCameraController
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
@@ -102,7 +102,7 @@ labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=20)
 cameraman_mode_manager = CameramanModeManager(
-    camera_controller=CameraController(),
+    camera_controller=SmoothCameraController(),
     tracking_strategy=SimpleTrackingStrategy(destination))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
