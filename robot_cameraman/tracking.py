@@ -6,7 +6,7 @@ from typing import Tuple
 
 from typing_extensions import Protocol
 
-from robot_cameraman.box import Box, TwoPointsBox
+from robot_cameraman.box import Box, TwoPointsBox, Point
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class Destination:
     def __init__(self, image_size: Tuple[int, int], variance: int = 50) -> None:
         width, height = image_size
         x, y = width / 2, height / 2
-        self.center = (x, y)
+        self.center = Point(x, y)
         self.box = (x - variance, 0,
                     x + variance, height)
         self.variance = variance
