@@ -10,9 +10,9 @@ import cv2
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import CameraController
+from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.image_detection import DetectionEngine
-from robot_cameraman.panasonic_cameraman import PanasonicCameraman, \
-    CameramanModeManager
+from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy

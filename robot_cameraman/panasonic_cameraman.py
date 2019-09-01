@@ -15,38 +15,13 @@ import numpy
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
-from robot_cameraman.annotation import ImageAnnotator, draw_destination, Target
-from robot_cameraman.camera_controller import CameraController
+from robot_cameraman.annotation import ImageAnnotator, draw_destination
+from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination, CameraSpeeds, TrackingStrategy
+from robot_cameraman.tracking import Destination
 
 logger: Logger = logging.getLogger(__name__)
-
-
-class CameramanModeManager:
-
-    def __init__(
-            self,
-            camera_controller: CameraController,
-            tracking_strategy: TrackingStrategy) -> None:
-        self._camera_controller = camera_controller
-        self._tracking_strategy = tracking_strategy
-        self._camera_speeds: CameraSpeeds = CameraSpeeds()
-
-    def update(self, target: Optional[Target]) -> None:
-        if target is None:
-            # search target
-            self._camera_controller.rotate(500)
-        else:
-            self._tracking_strategy.update(self._camera_speeds,
-                                           target.box)
-            self._camera_controller.rotate(self._camera_speeds.pan_speed)
-
-    def stop(self):
-        if self._camera_controller:
-            logger.debug('Stop camera')
-            self._camera_controller.stop()
 
 
 class PanasonicCameraman:
