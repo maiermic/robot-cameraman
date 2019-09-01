@@ -19,8 +19,7 @@ from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
-    CameraSpeeds, TrackingStrategy
+from robot_cameraman.tracking import Destination, CameraSpeeds, TrackingStrategy
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -32,10 +31,16 @@ class PanasonicCameraman:
             live_view: LiveView,
             annotator: ImageAnnotator,
             detection_engine: DetectionEngine,
+            destination: Destination,
+            camera_controller: CameraController,
+            tracking_strategy: TrackingStrategy,
             output: Optional[cv2.VideoWriter]) -> None:
         self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
+        self._destination = destination
+        self._camera_controller = camera_controller
+        self._tracking_strategy = tracking_strategy
         self._output = output
 
     def run(self,
@@ -43,9 +48,6 @@ class PanasonicCameraman:
             to_exit: threading.Event) -> None:
         # Use imutils to count Frames Per Second (FPS)
         fps: FPS = FPS().start()
-        destination: Optional[Destination] = None
-        camera_controller: Optional[CameraController] = None
-        tracking_strategy: Optional[TrackingStrategy] = None
         camera_speeds: CameraSpeeds = CameraSpeeds()
         while not to_exit.is_set():
             try:
@@ -54,23 +56,21 @@ class PanasonicCameraman:
                 except socket.timeout:
                     logger.error('timeout reading live view image')
                     continue
-                if destination is None:
-                    destination = Destination(image.size, variance=20)
-                    camera_controller = CameraController()
-                    tracking_strategy = SimpleTrackingStrategy(destination)
+                assert image.size == (640, 480)
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
                     inference_results = self.detection_engine.detect(image)
-                    draw_destination(image, destination)
+                    draw_destination(image, self._destination)
                     self.annotator.annotate(image, inference_results)
                     target = self.annotator.target
                     if target is None:
                         # search target
-                        camera_controller.rotate(500)
+                        self._camera_controller.rotate(500)
                     else:
-                        tracking_strategy.update(camera_speeds, target.box)
-                        camera_controller.rotate(camera_speeds.pan_speed)
+                        self._tracking_strategy.update(camera_speeds,
+                                                       target.box)
+                        self._camera_controller.rotate(camera_speeds.pan_speed)
                 except OSError as e:
                     logger.error(str(e))
                     pass
@@ -95,9 +95,9 @@ class PanasonicCameraman:
             except KeyboardInterrupt:
                 break
 
-        if camera_controller:
+        if self._camera_controller:
             logger.debug('Stop camera')
-            camera_controller.stop()
+            self._camera_controller.stop()
         fps.stop()
         logger.debug("Elapsed time: " + str(fps.elapsed()))
         logger.debug("Approx FPS: :" + str(fps.fps()))
