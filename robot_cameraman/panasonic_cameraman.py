@@ -15,13 +15,38 @@ import numpy
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
-from robot_cameraman.annotation import ImageAnnotator, draw_destination
+from robot_cameraman.annotation import ImageAnnotator, draw_destination, Target
 from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination, CameraSpeeds, TrackingStrategy
 
 logger: Logger = logging.getLogger(__name__)
+
+
+class CameramanModeManager:
+
+    def __init__(
+            self,
+            camera_controller: CameraController,
+            tracking_strategy: TrackingStrategy) -> None:
+        self._camera_controller = camera_controller
+        self._tracking_strategy = tracking_strategy
+        self._camera_speeds: CameraSpeeds = CameraSpeeds()
+
+    def update(self, target: Optional[Target]) -> None:
+        if target is None:
+            # search target
+            self._camera_controller.rotate(500)
+        else:
+            self._tracking_strategy.update(self._camera_speeds,
+                                           target.box)
+            self._camera_controller.rotate(self._camera_speeds.pan_speed)
+
+    def stop(self):
+        if self._camera_controller:
+            logger.debug('Stop camera')
+            self._camera_controller.stop()
 
 
 class PanasonicCameraman:
@@ -32,15 +57,13 @@ class PanasonicCameraman:
             annotator: ImageAnnotator,
             detection_engine: DetectionEngine,
             destination: Destination,
-            camera_controller: CameraController,
-            tracking_strategy: TrackingStrategy,
+            mode_manager: CameramanModeManager,
             output: Optional[cv2.VideoWriter]) -> None:
         self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
         self._destination = destination
-        self._camera_controller = camera_controller
-        self._tracking_strategy = tracking_strategy
+        self._mode_manager = mode_manager
         self._output = output
 
     def run(self,
@@ -48,7 +71,6 @@ class PanasonicCameraman:
             to_exit: threading.Event) -> None:
         # Use imutils to count Frames Per Second (FPS)
         fps: FPS = FPS().start()
-        camera_speeds: CameraSpeeds = CameraSpeeds()
         while not to_exit.is_set():
             try:
                 try:
@@ -64,13 +86,7 @@ class PanasonicCameraman:
                     draw_destination(image, self._destination)
                     self.annotator.annotate(image, inference_results)
                     target = self.annotator.target
-                    if target is None:
-                        # search target
-                        self._camera_controller.rotate(500)
-                    else:
-                        self._tracking_strategy.update(camera_speeds,
-                                                       target.box)
-                        self._camera_controller.rotate(camera_speeds.pan_speed)
+                    self._mode_manager.update(target)
                 except OSError as e:
                     logger.error(str(e))
                     pass
@@ -95,9 +111,7 @@ class PanasonicCameraman:
             except KeyboardInterrupt:
                 break
 
-        if self._camera_controller:
-            logger.debug('Stop camera')
-            self._camera_controller.stop()
+        self._mode_manager.stop()
         fps.stop()
         logger.debug("Elapsed time: " + str(fps.elapsed()))
         logger.debug("Approx FPS: :" + str(fps.fps()))

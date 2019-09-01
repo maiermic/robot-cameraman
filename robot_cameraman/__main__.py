@@ -11,7 +11,8 @@ from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.image_detection import DetectionEngine
-from robot_cameraman.panasonic_cameraman import PanasonicCameraman
+from robot_cameraman.panasonic_cameraman import PanasonicCameraman, \
+    CameramanModeManager
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy
@@ -100,6 +101,9 @@ args = parse_arguments()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=20)
+cameraman_mode_manager = CameramanModeManager(
+    camera_controller=CameraController(),
+    tracking_strategy=SimpleTrackingStrategy(destination))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
@@ -108,8 +112,7 @@ cameraman = PanasonicCameraman(
         confidence=args.confidence,
         max_objects=args.maxObjects),
     destination=destination,
-    camera_controller=CameraController(),
-    tracking_strategy=SimpleTrackingStrategy(destination),
+    mode_manager=cameraman_mode_manager,
     output=create_video_writer(args.output))
 
 to_exit = threading.Event()
