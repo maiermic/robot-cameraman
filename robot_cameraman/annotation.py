@@ -6,7 +6,7 @@ from PIL.ImageDraw import ImageDraw
 from PIL.ImageFont import FreeTypeFont
 from edgetpu.detection.engine import DetectionCandidate
 
-from robot_cameraman.box import Box
+from robot_cameraman.box import Box, Point
 from robot_cameraman.tracking import Destination
 
 
@@ -77,7 +77,7 @@ def draw_destination(
 
 def draw_point(
         draw: ImageDraw,
-        point: Tuple[float, float],
+        point: Point,
         color: Tuple[int, int, int],
         radius: int = 3) -> None:
     x, y = point
