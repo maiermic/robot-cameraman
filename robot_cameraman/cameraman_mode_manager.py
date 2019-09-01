@@ -24,7 +24,7 @@ class CameramanModeManager:
         if not self._is_manual_mode:
             if target is None:
                 # search target
-                self._camera_speeds.pan_speed = 500
+                self._camera_speeds.pan_speed = 200
             else:
                 self._tracking_strategy.update(self._camera_speeds, target)
         self._camera_controller.update(self._camera_speeds)
