@@ -64,7 +64,7 @@ class PanasonicCameraman:
                     logger.error('timeout reading live view image')
                     self._mode_manager.update()
                     continue
-                assert image.size == (640, 480)
+                assert image.size == (640, 480), image.size
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
