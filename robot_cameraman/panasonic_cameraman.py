@@ -103,7 +103,7 @@ class PanasonicCameraman:
                 if self._output:
                     self._output.write(cv2_image)
                 if 'DISPLAY' in os.environ:
-                    cv2.imshow('NCS Improved live inference', cv2_image)
+                    cv2.imshow('Robot Cameraman', cv2_image)
 
                 # Display the frame for 5ms, and close the window so that the
                 # next frame can be displayed. Close the window if 'q' or 'Q'
