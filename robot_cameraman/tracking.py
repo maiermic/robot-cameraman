@@ -2,7 +2,7 @@ import logging
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from typing import Tuple
+from typing import Tuple, Optional
 
 from typing_extensions import Protocol
 
@@ -49,7 +49,11 @@ class CameraSpeeds:
 
 class TrackingStrategy(Protocol):
     @abstractmethod
-    def update(self, camera_speeds: CameraSpeeds, target: Box) -> None:
+    def update(
+            self,
+            camera_speeds: CameraSpeeds,
+            target: Optional[Box],
+            is_target_lost: bool) -> None:
         raise NotImplementedError
 
 
@@ -60,7 +64,13 @@ class SimpleTrackingStrategy(TrackingStrategy):
     def __init__(self, destination: Destination):
         self._destination = destination
 
-    def update(self, camera_speeds: CameraSpeeds, target: Box) -> None:
+    def update(
+            self,
+            camera_speeds: CameraSpeeds,
+            target: Optional[Box],
+            is_target_lost: bool) -> None:
+        if target is None or is_target_lost:
+            return
         tx, ty = target.center
         self._destination.update_size_box_center(tx, ty)
         dx, dy = self._destination.center

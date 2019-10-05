@@ -16,8 +16,9 @@ from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
+from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
-from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
+from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination
@@ -27,6 +28,7 @@ logger: Logger = logging.getLogger(__name__)
 
 class PanasonicCameraman:
     _target_id: Optional[int] = None
+    _target_box: Optional[Box] = None
 
     def __init__(
             self,
@@ -74,21 +76,23 @@ class PanasonicCameraman:
                         if obj.label_id == self._target_label_id]
                     candidates = self._object_tracker.update(
                         target_inference_results)
-                    target: Optional[DetectionCandidate] = None
+                    is_target_lost = False
                     if self._is_target_id_registered():
                         if self._target_id in candidates:
                             target = candidates[self._target_id]
+                            self._target_box = target.bounding_box
                     else:
                         ts = candidates.items()
                         if ts:
                             (self._target_id, target) = next(iter(ts))
+                            self._target_box = target.bounding_box
                             logger.debug('track target %d', self._target_id)
+                        else:
+                            is_target_lost = True
+                            self._target_box = None
                     draw_destination(image, self._destination)
                     self.annotator.annotate(image, self._target_id, candidates)
-                    if target:
-                        self._mode_manager.update(target.bounding_box)
-                    else:
-                        self._mode_manager.update()
+                    self._mode_manager.update(self._target_box, is_target_lost)
                 except OSError as e:
                     logger.error(str(e))
                     pass
