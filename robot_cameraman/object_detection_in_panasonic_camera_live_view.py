@@ -89,7 +89,11 @@ def main() -> None:
     live_view = LiveView(ARGS.ip, ARGS.port)
     while True:
         try:
-            image = PIL.Image.open(io.BytesIO(live_view.image()))
+            try:
+                image = PIL.Image.open(io.BytesIO(live_view.image()))
+            except OSError:
+                print('could not identify image file')
+                continue
             # Perform inference and note time taken
             startMs = time.time()
             try:
