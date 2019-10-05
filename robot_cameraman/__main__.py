@@ -101,7 +101,7 @@ def run_cameraman():
 args = parse_arguments()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-destination = Destination((640, 480), variance=20)
+destination = Destination((640, 480), variance=80)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(),
     tracking_strategy=SimpleTrackingStrategy(destination))
