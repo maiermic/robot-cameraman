@@ -107,7 +107,8 @@ cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(),
     tracking_strategy=StopIfLostTrackingStrategy(destination,
                                                  SimpleTrackingStrategy(
-                                                     destination),
+                                                     destination,
+                                                     max_allowed_speed=500),
                                                  slow_down_time=1))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
