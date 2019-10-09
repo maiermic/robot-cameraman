@@ -19,13 +19,16 @@ class CameramanModeManager:
         self._tracking_strategy = tracking_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self._is_manual_mode = False
+        self.mode_name = ''
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         if not self._is_manual_mode:
             if target is None and is_target_lost:
                 # search target
+                self.mode_name = 'searching'
                 self._camera_speeds.pan_speed = 200
             else:
+                self.mode_name = 'tracking'
                 self._tracking_strategy.update(self._camera_speeds, target,
                                                is_target_lost)
         self._camera_controller.update(self._camera_speeds)
@@ -43,6 +46,7 @@ class CameramanModeManager:
 
     def manual_mode(self) -> None:
         self._is_manual_mode = True
+        self.mode_name = 'manual'
 
     def manual_rotate(self, pan_speed: int) -> None:
         self._camera_speeds.pan_speed = pan_speed
