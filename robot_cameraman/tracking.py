@@ -1,4 +1,5 @@
 import logging
+import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
@@ -94,3 +95,42 @@ class SimpleTrackingStrategy(TrackingStrategy):
             if distance < 0:
                 speed = -speed
             return int(speed)
+
+
+class StopIfLostTrackingStrategy(TrackingStrategy):
+    _destination: Destination
+    _trackingStrategy: TrackingStrategy
+    _slowDownTime: float
+    _hasTargetBeenLost: bool
+    _timeOfLoss: float
+
+    def __init__(
+            self,
+            destination: Destination,
+            tracking_strategy: TrackingStrategy,
+            slow_down_time: float):
+        self._destination = destination
+        self._trackingStrategy = tracking_strategy
+        self._slowDownTime = slow_down_time
+        self._hasTargetBeenLost = False
+        self._timeOfLoss = time.time()
+
+    def update(self,
+               camera_speeds: CameraSpeeds,
+               target: Optional[Box],
+               is_target_lost: bool) -> None:
+        self._trackingStrategy.update(camera_speeds, target, is_target_lost)
+        if is_target_lost:
+            if not self._hasTargetBeenLost:
+                self._timeOfLoss = time.time()
+            else:
+                delta_time = time.time() - self._timeOfLoss
+                t = min(delta_time, self._slowDownTime)
+                slow_down_factor = 1 - (t / self._slowDownTime)
+                camera_speeds.pan_speed = int(
+                    camera_speeds.pan_speed * slow_down_factor)
+                camera_speeds.tilt_speed = int(
+                    camera_speeds.tilt_speed * slow_down_factor)
+                camera_speeds.zoom_speed = int(
+                    camera_speeds.zoom_speed * slow_down_factor)
+        self._hasTargetBeenLost = is_target_lost

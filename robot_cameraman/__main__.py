@@ -16,7 +16,8 @@ from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
-from robot_cameraman.tracking import Destination, SimpleTrackingStrategy
+from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
+    StopIfLostTrackingStrategy
 
 to_exit: threading.Event
 server: ThreadingHTTPServer
@@ -104,7 +105,10 @@ font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=80)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(),
-    tracking_strategy=SimpleTrackingStrategy(destination))
+    tracking_strategy=StopIfLostTrackingStrategy(destination,
+                                                 SimpleTrackingStrategy(
+                                                     destination),
+                                                 slow_down_time=1))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
