@@ -31,8 +31,10 @@ class ImageAnnotator:
             self,
             image: PIL.Image.Image,
             target_id: Optional[int],
-            candidates: Dict[int, DetectionCandidate]) -> None:
+            candidates: Dict[int, DetectionCandidate],
+            mode_name: str) -> None:
         draw = PIL.ImageDraw.Draw(image)
+        draw.text((0, 0), mode_name, font=self.font)
         # Iterate through result list. Note that results are already sorted by
         # confidence score (highest to lowest) and records with a lower score
         # than the threshold are already removed.
