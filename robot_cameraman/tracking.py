@@ -47,6 +47,11 @@ class CameraSpeeds:
     tilt_speed: int = 0
     zoom_speed: int = 0
 
+    def reset(self):
+        self.pan_speed = 0
+        self.tilt_speed = 0
+        self.zoom_speed = 0
+
 
 class TrackingStrategy(Protocol):
     @abstractmethod

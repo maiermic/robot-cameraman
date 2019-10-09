@@ -19,7 +19,7 @@ class CameraController(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def stop(self) -> None:
+    def stop(self, camera_speeds: CameraSpeeds) -> None:
         raise NotImplementedError
 
     @abstractmethod
@@ -37,8 +37,8 @@ class SimpleCameraController(CameraController):
     def start(self) -> None:
         return
 
-    def stop(self) -> None:
-        self.update(CameraSpeeds(0, 0, 0))
+    def stop(self, camera_speeds: CameraSpeeds) -> None:
+        self.update(camera_speeds)
 
     def is_camera_moving(self) -> bool:
         return self.yaw_speed != 0
@@ -105,7 +105,6 @@ class SmoothCameraController(CameraController):
     def is_camera_moving(self) -> bool:
         return self._rotate_speed_manager.current_speed != 0
 
-    def stop(self) -> None:
-        camera_speeds = CameraSpeeds(0, 0, 0)
+    def stop(self, camera_speeds: CameraSpeeds) -> None:
         while self.is_camera_moving():
             self.update(camera_speeds)

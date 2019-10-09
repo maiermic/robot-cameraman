@@ -34,9 +34,9 @@ class CameramanModeManager:
         self._camera_controller.start()
 
     def stop(self) -> None:
-        if self._camera_controller:
-            logger.debug('Stop camera')
-            self._camera_controller.stop()
+        logger.debug('Stop camera')
+        self._camera_speeds.reset()
+        self._camera_controller.stop(self._camera_speeds)
 
     def manual_mode(self) -> None:
         self._is_manual_mode = True
