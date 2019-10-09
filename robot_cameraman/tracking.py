@@ -96,7 +96,7 @@ class SimpleTrackingStrategy(TrackingStrategy):
         if abs_distance < self._destination.variance:
             return 0
         else:
-            speed = round(abs_distance / 32 * 100)
+            speed = round(abs_distance / 320 * self._maxAllowedSpeed)
             speed = min(self._maxAllowedSpeed, speed)
             if distance < 0:
                 speed = -speed
