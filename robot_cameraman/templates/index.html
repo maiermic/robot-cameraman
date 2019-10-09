@@ -14,11 +14,14 @@
         .live-view {
             width: 100%;
             max-width: 640px;
+            max-height: 480px;
         }
 
         .buttons {
             display: flex;
             flex-grow: 1;
+            flex-direction: column;
+            height: 100vh;
         }
 
         .button {
@@ -35,6 +38,11 @@
         <input id="right" class="button" type="button" value="Right"
                onpointerdown="fetch('api/right')"
                onpointerup="fetch('api/stop')">
+        <input id="startTrackingButton"
+               type="button"
+               class="button"
+               value="Track"
+               onpointerup="fetch('api/start_tracking')">
     </div>
 </body>
 </html>

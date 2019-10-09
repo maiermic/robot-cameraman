@@ -38,6 +38,9 @@ class CameramanModeManager:
         self._camera_speeds.reset()
         self._camera_controller.stop(self._camera_speeds)
 
+    def tracking_mode(self) -> None:
+        self._is_manual_mode = False
+
     def manual_mode(self) -> None:
         self._is_manual_mode = True
 

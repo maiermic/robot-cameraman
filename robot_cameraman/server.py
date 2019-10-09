@@ -54,17 +54,24 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             return
         api_match = self.api_regex.fullmatch(self.path)
         if api_match:
-            self.cameraman_mode_manager.manual_mode()
             action = api_match.group(1)
-            if action == 'left':
-                logger.debug('manually rotate left')
-                self.cameraman_mode_manager.manual_rotate(-100)
-            if action == 'right':
-                logger.debug('manually rotate right')
-                self.cameraman_mode_manager.manual_rotate(100)
-            if action == 'stop':
-                logger.debug('manually stop')
-                self.cameraman_mode_manager.stop()
+            if action == 'start_tracking':
+                self.cameraman_mode_manager.tracking_mode()
+            else:
+                self.cameraman_mode_manager.manual_mode()
+                if action == 'left':
+                    logger.debug('manually rotate left')
+                    self.cameraman_mode_manager.manual_rotate(-100)
+                elif action == 'right':
+                    logger.debug('manually rotate right')
+                    self.cameraman_mode_manager.manual_rotate(100)
+                elif action == 'stop':
+                    logger.debug('manually stop')
+                    self.cameraman_mode_manager.stop()
+                else:
+                    self.send_response(404)
+                    self.end_headers()
+                    return
             self.send_response(200)
             self.end_headers()
             return
