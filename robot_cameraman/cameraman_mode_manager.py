@@ -4,7 +4,8 @@ from typing import Optional
 
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController
-from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds
+from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
+    AlignTrackingStrategy
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -14,8 +15,10 @@ class CameramanModeManager:
     def __init__(
             self,
             camera_controller: CameraController,
+            align_tracking_strategy: AlignTrackingStrategy,
             tracking_strategy: TrackingStrategy) -> None:
         self._camera_controller = camera_controller
+        self._align_tracking_strategy = align_tracking_strategy
         self._tracking_strategy = tracking_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self._is_manual_mode = False
@@ -27,6 +30,11 @@ class CameramanModeManager:
                 # search target
                 self.mode_name = 'searching'
                 self._camera_speeds.pan_speed = 200
+            elif (self.mode_name in ['searching', 'aligning']
+                  and not self._align_tracking_strategy.is_aligned(target)):
+                self.mode_name = 'aligning'
+                self._align_tracking_strategy.update(
+                    self._camera_speeds, target, is_target_lost)
             else:
                 self.mode_name = 'tracking'
                 self._tracking_strategy.update(self._camera_speeds, target,

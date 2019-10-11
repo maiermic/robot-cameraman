@@ -44,6 +44,11 @@ class Box(Protocol):
     def from_center_and_size(center: Point, width: float, height: float):
         return CenterSizeBox(center, width, height)
 
+    def contains_point(self, point: Point):
+        x, y = point
+        return (self.x <= x <= self.x + self.width
+                and self.y <= y <= self.y + self.height)
+
 
 class TwoPointsBox(Box):
 

@@ -139,3 +139,15 @@ class StopIfLostTrackingStrategy(TrackingStrategy):
                 camera_speeds.zoom_speed = int(
                     camera_speeds.zoom_speed * slow_down_factor)
         self._hasTargetBeenLost = is_target_lost
+
+
+class AlignTrackingStrategy(TrackingStrategy):
+    @abstractmethod
+    def is_aligned(self, target: Box) -> bool:
+        raise NotImplementedError
+
+
+class SimpleAlignTrackingStrategy(SimpleTrackingStrategy,
+                                  AlignTrackingStrategy):
+    def is_aligned(self, target: Box) -> bool:
+        return self._destination.box.contains_point(target.center)
