@@ -18,8 +18,7 @@ class Destination:
         width, height = image_size
         x, y = width / 2, height / 2
         self.center = Point(x, y)
-        self.box = (x - variance, 0,
-                    x + variance, height)
+        self.box = TwoPointsBox(x - variance, 0, x + variance, height)
         self.variance = variance
         x_padding = 0.3 * width
         y_padding = 0.2 * height

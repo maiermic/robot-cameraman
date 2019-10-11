@@ -75,7 +75,7 @@ def draw_destination(
         color: Tuple[int, int, int] = (255, 0, 255)) -> None:
     draw = PIL.ImageDraw.Draw(image)
     draw_point(draw, destination.center, color)
-    draw.rectangle(destination.box, outline=color)
+    draw.rectangle(destination.box.coordinates, outline=color)
 
 
 def draw_point(
