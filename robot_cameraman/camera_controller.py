@@ -105,7 +105,7 @@ class SmoothCameraController(CameraController):
                          self._rotate_speed_manager.current_speed,
                          self._tilt_speed_manager.current_speed)
         except serial.serialutil.SerialException:
-            logger.error('failed to rotate')
+            logger.error('failed to control gimbal')
             self._rotate_speed_manager.current_speed = old_speed
             self._tilt_speed_manager.current_speed = old_tilt_speed
 
