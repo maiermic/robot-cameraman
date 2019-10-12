@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, List
 
 from typing_extensions import Protocol
 
@@ -24,7 +24,9 @@ class Box(Protocol):
     width: float
     height: float
     center: Point
-    coordinates: Iterable[float]
+
+    def coordinates(self) -> List[float]:
+        return [self.x, self.y, self.x + self.width, self.y + self.height]
 
     @staticmethod
     def from_coordinates(x1: float, y1: float, x2: float, y2: float):
@@ -58,7 +60,6 @@ class TwoPointsBox(Box):
         self.width = abs(x2 - x1)
         self.height = abs(y2 - y1)
         self.center = Point(abs(x1 + x2) / 2, abs(y1 + y2) / 2)
-        self.coordinates = [x1, y1, x2, y2]
 
 
 class CenterSizeBox(Box):
@@ -75,4 +76,3 @@ class CenterSizeBox(Box):
         self.width = width
         self.height = height
         self.center = center
-        self.coordinates = [x1, y1, x2, y2]

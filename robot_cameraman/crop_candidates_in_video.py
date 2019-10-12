@@ -36,7 +36,7 @@ def main(args):
                 b = candidate.bounding_box
                 size = max(b.width, b.height)
                 box = Box.from_center_and_size(b.center, size, size)
-                image.crop(box.coordinates).save(out_file)
+                image.crop(box.coordinates()).save(out_file)
             if args.showVideo:
                 cv2.imshow('NCS Improved live inference', frame)
                 if cv2.waitKey(5) & 0xFF == ord('q'):

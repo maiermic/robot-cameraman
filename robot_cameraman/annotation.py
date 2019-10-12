@@ -59,7 +59,7 @@ class ImageAnnotator:
             obj: DetectionCandidate,
             color: Tuple[int, int, int]) -> None:
         box = obj.bounding_box
-        draw.rectangle(box.coordinates, outline=color)
+        draw.rectangle(box.coordinates(), outline=color)
         draw_point(draw, box.center, color)
         # Annotate image with label and confidence score
         display_str = self.labels[obj.label_id] + ": " + str(
@@ -75,7 +75,7 @@ def draw_destination(
         color: Tuple[int, int, int] = (255, 0, 255)) -> None:
     draw = PIL.ImageDraw.Draw(image)
     draw_point(draw, destination.center, color)
-    draw.rectangle(destination.box.coordinates, outline=color)
+    draw.rectangle(destination.box.coordinates(), outline=color)
 
 
 def draw_point(
