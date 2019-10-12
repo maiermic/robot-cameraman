@@ -1,7 +1,7 @@
+import struct
 from collections import namedtuple
 
 import serial
-import struct
 
 from simplebgc.command_ids import *
 from simplebgc.command_names import get_incoming_command_name
@@ -112,6 +112,18 @@ def rotate_gimbal(yaw_speed: int = 0) -> None:
     # print('incoming command:', get_incoming_command_name(cmd.id))
     # print('incoming command payload length:', len(cmd.payload))
     # print(parse_cmd(cmd))
+
+
+def control_gimbal(yaw_speed: int = 0, pitch_speed: int = 0) -> None:
+    control_data = ControlOutCmd(roll_mode=1, roll_speed=0, roll_angle=0,
+                                 pitch_mode=1, pitch_speed=pitch_speed, pitch_angle=0,
+                                 yaw_mode=1, yaw_speed=yaw_speed, yaw_angle=0)
+    packed_control_data = pack_control_cmd(control_data)
+    message = create_message(CMD_CONTROL, packed_control_data)
+    packed_message = pack_message(message)
+    connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
+    connection.write(packed_message)
+    message = read_message(connection, 1)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ import serial
 from typing_extensions import Protocol
 
 from robot_cameraman.tracking import CameraSpeeds
-from simplebgc.serial_example import rotate_gimbal
+from simplebgc.serial_example import control_gimbal, rotate_gimbal
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -87,23 +87,31 @@ class SpeedManager:
 
 class SmoothCameraController(CameraController):
     _rotate_speed_manager: SpeedManager = SpeedManager()
+    _tilt_speed_manager: SpeedManager = SpeedManager()
 
     def start(self) -> None:
         self._rotate_speed_manager.reset()
+        self._tilt_speed_manager.reset()
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         self._rotate_speed_manager.target_speed = camera_speeds.pan_speed
+        self._tilt_speed_manager.target_speed = camera_speeds.tilt_speed
         old_speed = self._rotate_speed_manager.current_speed
+        old_tilt_speed = self._tilt_speed_manager.current_speed
         try:
-            rotate_gimbal(self._rotate_speed_manager.update())
-            logger.debug('current rotation speed is %d',
-                         self._rotate_speed_manager.current_speed)
+            control_gimbal(yaw_speed=self._rotate_speed_manager.update(),
+                           pitch_speed=-self._tilt_speed_manager.update())
+            logger.debug('current gimbal speeds are: pan %5d, tilt %5d',
+                         self._rotate_speed_manager.current_speed,
+                         self._tilt_speed_manager.current_speed)
         except serial.serialutil.SerialException:
             logger.error('failed to rotate')
             self._rotate_speed_manager.current_speed = old_speed
+            self._tilt_speed_manager.current_speed = old_tilt_speed
 
     def is_camera_moving(self) -> bool:
-        return self._rotate_speed_manager.current_speed != 0
+        return (self._rotate_speed_manager.current_speed != 0
+                or self._tilt_speed_manager.current_speed != 0)
 
     def stop(self, camera_speeds: CameraSpeeds) -> None:
         while self.is_camera_moving():
