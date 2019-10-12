@@ -39,11 +39,14 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
             while not self.to_exit.wait(0.05):
                 jpg = self.server_image.image
                 jpg_bytes = jpg.tobytes()
-                self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
-                self.send_header('Content-type', 'image/jpeg')
-                self.send_header('Content-length', len(jpg_bytes))
-                self.end_headers()
-                jpg.save(self.wfile, 'JPEG')
+                try:
+                    self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
+                    self.send_header('Content-type', 'image/jpeg')
+                    self.send_header('Content-length', len(jpg_bytes))
+                    self.end_headers()
+                    jpg.save(self.wfile, 'JPEG')
+                except ConnectionResetError:
+                    pass  # ignore
             return
         templates: Path = Path(__file__).parent / 'templates'
         if self.path.endswith('.html'):
