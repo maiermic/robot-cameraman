@@ -76,6 +76,10 @@ def draw_destination(
     draw = PIL.ImageDraw.Draw(image)
     draw_point(draw, destination.center, color)
     draw.rectangle(destination.box.coordinates(), outline=color)
+    draw.rectangle(destination.min_size_box.coordinates(),
+                   outline=(204, 0, 255))
+    draw.rectangle(destination.max_size_box.coordinates(),
+                   outline=(204, 0, 255))
 
 
 def draw_point(
