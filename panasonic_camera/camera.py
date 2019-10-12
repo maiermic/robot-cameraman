@@ -93,6 +93,21 @@ class PanasonicCamera:
     def video_recstart(self) -> None:
         self._camcmd('video_recstart')
 
+    def zoom_stop(self) -> None:
+        self._camcmd('zoomstop')
+
+    def zoom_in_slow(self) -> None:
+        self._camcmd('tele-normal')
+
+    def zoom_in_fast(self) -> None:
+        self._camcmd('tele-fast')
+
+    def zoom_out_slow(self) -> None:
+        self._camcmd('wide-normal')
+
+    def zoom_out_fast(self) -> None:
+        self._camcmd('wide-fast')
+
     def _get_info(self, info_type: str) -> ET.Element:
         return self._request(params={'mode': 'getinfo', 'type': info_type})
 
