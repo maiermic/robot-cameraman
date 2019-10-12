@@ -7,6 +7,7 @@ from pathlib import Path
 import PIL.ImageFont
 import cv2
 
+from panasonic_camera.camera_manager import PanasonicCameraManager
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController
@@ -90,6 +91,10 @@ def quit(sig=None, frame=None):
     if threading.current_thread() != cameraman_thread:
         print('wait for cameraman thread')
         cameraman_thread.join()
+    if threading.current_thread() != camera_manager:
+        print('wait for camera manager thread')
+        camera_manager.cancel()
+        camera_manager.join()
     exit(0)
 
 
@@ -103,8 +108,9 @@ args = parse_arguments()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=80)
+camera_manager = PanasonicCameraManager()
 cameraman_mode_manager = CameramanModeManager(
-    camera_controller=SmoothCameraController(),
+    camera_controller=SmoothCameraController(camera_manager),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
                                                         max_allowed_speed=200),
     tracking_strategy=StopIfLostTrackingStrategy(destination,
@@ -135,6 +141,7 @@ server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
 signal.signal(signal.SIGINT, quit)
 signal.signal(signal.SIGTERM, quit)
 
+camera_manager.start()
 cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
 cameraman_thread.start()
 print('Open http://localhost:9000/index.html in your browser')

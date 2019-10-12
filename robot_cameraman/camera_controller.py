@@ -7,6 +7,7 @@ import numpy
 import serial
 from typing_extensions import Protocol
 
+from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.serial_example import control_gimbal, rotate_gimbal
 
@@ -88,6 +89,10 @@ class SpeedManager:
 class SmoothCameraController(CameraController):
     _rotate_speed_manager: SpeedManager = SpeedManager()
     _tilt_speed_manager: SpeedManager = SpeedManager()
+    _old_zoom_speed: int = 0
+
+    def __init__(self, camera_manager: PanasonicCameraManager):
+        self._camera_manager = camera_manager
 
     def start(self) -> None:
         self._rotate_speed_manager.reset()
@@ -108,6 +113,23 @@ class SmoothCameraController(CameraController):
             logger.error('failed to control gimbal')
             self._rotate_speed_manager.current_speed = old_speed
             self._tilt_speed_manager.current_speed = old_tilt_speed
+        try:
+            camera = self._camera_manager.camera
+            if camera is not None:
+                logger.debug('zoom: new {: >5}, old {: >5}'.format(
+                    camera_speeds.zoom_speed, self._old_zoom_speed))
+                if camera_speeds.zoom_speed > 0 >= self._old_zoom_speed:
+                    logger.debug('zoom in')
+                    camera.zoom_in_fast()
+                elif camera_speeds.zoom_speed < 0 <= self._old_zoom_speed:
+                    logger.debug('zoom out')
+                    camera.zoom_out_fast()
+                elif camera_speeds.zoom_speed == 0 != self._old_zoom_speed:
+                    logger.debug('zoom stop')
+                    camera.zoom_stop()
+                self._old_zoom_speed = camera_speeds.zoom_speed
+        except Exception as e:
+            logger.error('failed to zoom camera: %s', e)
 
     def is_camera_moving(self) -> bool:
         return (self._rotate_speed_manager.current_speed != 0
