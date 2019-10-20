@@ -154,7 +154,10 @@ class CentroidTracker:
 
 
 class ObjectTracker:
-    _centroid_tracker: CentroidTracker = CentroidTracker()
+    _centroid_tracker: CentroidTracker
+
+    def __init__(self):
+        self._centroid_tracker = CentroidTracker()
 
     def update(self, inference_results: List[DetectionCandidate]) \
             -> Dict[int, DetectionCandidate]:

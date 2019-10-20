@@ -56,7 +56,10 @@ class SimpleCameraController(CameraController):
 
 
 class ElapsedTime:
-    _last_update_time: float = time()
+    _last_update_time: float
+
+    def __init__(self):
+        self._last_update_time: float = time()
 
     def reset(self):
         self._last_update_time = time()
@@ -72,7 +75,10 @@ class SpeedManager:
     acceleration_per_second: int = 1000
     target_speed: int = 0
     current_speed: int = 0
-    _elapsed_time: ElapsedTime = ElapsedTime()
+    _elapsed_time: ElapsedTime
+
+    def __init__(self):
+        self._elapsed_time: ElapsedTime = ElapsedTime()
 
     def reset(self):
         self._elapsed_time.reset()
@@ -87,12 +93,14 @@ class SpeedManager:
 
 
 class SmoothCameraController(CameraController):
-    _rotate_speed_manager: SpeedManager = SpeedManager()
-    _tilt_speed_manager: SpeedManager = SpeedManager()
+    _rotate_speed_manager: SpeedManager
+    _tilt_speed_manager: SpeedManager
     _old_zoom_speed: int = 0
 
     def __init__(self, camera_manager: PanasonicCameraManager):
         self._camera_manager = camera_manager
+        self._rotate_speed_manager = SpeedManager()
+        self._tilt_speed_manager = SpeedManager()
 
     def start(self) -> None:
         self._rotate_speed_manager.reset()
