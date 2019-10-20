@@ -107,6 +107,9 @@ class SmoothCameraController(CameraController):
         self._tilt_speed_manager.reset()
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
+        logger.debug('new speeds: pan %5d, tilt %5d',
+                     camera_speeds.pan_speed,
+                     camera_speeds.tilt_speed)
         self._rotate_speed_manager.target_speed = camera_speeds.pan_speed
         self._tilt_speed_manager.target_speed = camera_speeds.tilt_speed
         old_speed = self._rotate_speed_manager.current_speed
