@@ -68,6 +68,18 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
                 elif action == 'right':
                     logger.debug('manually rotate right')
                     self.cameraman_mode_manager.manual_rotate(100)
+                elif action == 'tilt_up':
+                    logger.debug('manually tilt up')
+                    self.cameraman_mode_manager.manual_tilt(-100)
+                elif action == 'tilt_down':
+                    logger.debug('manually tilt down')
+                    self.cameraman_mode_manager.manual_tilt(100)
+                elif action == 'zoom_out':
+                    logger.debug('manually zoom out')
+                    self.cameraman_mode_manager.manual_zoom(-200)
+                elif action == 'zoom_in':
+                    logger.debug('manually zoom in')
+                    self.cameraman_mode_manager.manual_zoom(200)
                 elif action == 'stop':
                     logger.debug('manually stop')
                     self.cameraman_mode_manager.stop()

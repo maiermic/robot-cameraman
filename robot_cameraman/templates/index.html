@@ -18,31 +18,64 @@
         }
 
         .buttons {
-            display: flex;
             flex-grow: 1;
-            flex-direction: column;
-            height: 100vh;
-        }
 
-        .button {
-            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-template-areas: ". . ." ". . ." ". . .";
+            height: 100vh;
         }
     </style>
 </head>
 <body>
     <img class="live-view" src="cam.mjpg" alt="Live View">
     <div class="buttons">
-        <input id="left" class="button" type="button" value="Left"
-               onpointerdown="fetch('api/left')"
+        <div class="grid-item"></div>
+        <input id="up"
+               class="button grid-item"
+               type="button"
+               value="Up"
+               onpointerdown="fetch('api/tilt_up')"
                onpointerup="fetch('api/stop')">
-        <input id="right" class="button" type="button" value="Right"
-               onpointerdown="fetch('api/right')"
+        <input id="zoom_in"
+               class="button grid-item"
+               type="button"
+               value="+"
+               onpointerdown="fetch('api/zoom_in')"
+               onpointerup="fetch('api/stop')">
+
+        <input id="left"
+               class="button grid-item"
+               type="button"
+               value="Left"
+               onpointerdown="fetch('api/left')"
                onpointerup="fetch('api/stop')">
         <input id="startTrackingButton"
                type="button"
                class="button"
                value="Track"
                onpointerup="fetch('api/start_tracking')">
+        <input id="right"
+               class="button grid-item"
+               type="button"
+               value="Right"
+               onpointerdown="fetch('api/right')"
+               onpointerup="fetch('api/stop')">
+
+        <div class="grid-item"></div>
+        <input id="down"
+               class="button grid-item"
+               type="button"
+               value="Down"
+               onpointerdown="fetch('api/tilt_down')"
+               onpointerup="fetch('api/stop')">
+        <input id="zoom_out"
+               class="button grid-item"
+               type="button"
+               value="-"
+               onpointerdown="fetch('api/zoom_out')"
+               onpointerup="fetch('api/stop')">
     </div>
 </body>
 </html>
