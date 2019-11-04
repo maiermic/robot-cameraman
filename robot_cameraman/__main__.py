@@ -1,4 +1,5 @@
 import argparse
+import logging
 import signal
 import threading
 from http.server import ThreadingHTTPServer
@@ -77,6 +78,9 @@ def parse_arguments():
                         type=int,
                         default=30,
                         help="Font size used in image annotations.")
+    parser.add_argument('--debug',
+                        action='store_true',
+                        help="Enable debug logging")
     return parser.parse_args()
 
 
@@ -105,6 +109,7 @@ def run_cameraman():
 
 
 args = parse_arguments()
+logging.basicConfig(level=logging.DEBUG if args.debug else logging.ERROR)
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=80)
