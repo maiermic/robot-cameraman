@@ -185,6 +185,8 @@ if __name__ == '__main__':
     input_file = Path(args.input)
     if input_file.exists():
         args.input = input_file
+        if args.output.is_dir():
+            args.output = args.output / (input_file.stem + '_annotated.avi')
         main(args)
     else:
         files = list(map(Path, glob.iglob(args.input)))
