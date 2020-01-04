@@ -66,7 +66,10 @@ class ImageAnnotator:
         display_str = self.labels[obj.label_id] + ": " + str(
             round(obj.score * 100, 2)) + "%"
         draw.text((box.x, box.y), display_str, font=self.font)
-        draw.text((box.center.x, box.center.y), str(candidate_id),
+        self.draw_candidate_id(draw, box, str(candidate_id))
+
+    def draw_candidate_id(self, draw: ImageDraw, center, candidate_id: str):
+        draw.text((center.center.x, center.center.y), candidate_id,
                   font=self.font)
 
 
