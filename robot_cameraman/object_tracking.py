@@ -162,15 +162,15 @@ class ObjectTracker:
     def update(self, inference_results: List[DetectionCandidate]) \
             -> Dict[int, DetectionCandidate]:
         centroid_to_inference_result = dict()
-        centroids = np.zeros((len(inference_results), 2), dtype="int")
+        centroids = np.zeros((len(inference_results), 4), dtype="int")
         for i, r in enumerate(inference_results):
-            c = (int(r.bounding_box.x), int(r.bounding_box.y))
+            c = (int(r.bounding_box.x), int(r.bounding_box.y), int(r.bounding_box.width), int(r.bounding_box.height))
             centroids[i] = c
             centroid_to_inference_result[c] = r
         objects = self._centroid_tracker.update(centroids)
-        return {object_id: centroid_to_inference_result[(x, y)]
-                for object_id, (x, y) in objects.items()
-                if (x, y) in centroid_to_inference_result}
+        return {object_id: centroid_to_inference_result[(x, y, w, h)]
+                for object_id, (x, y, w, h) in objects.items()
+                if (x, y, w, h) in centroid_to_inference_result}
 
     def is_registered(self, object_id: int) -> bool:
         return self._centroid_tracker.is_registered(object_id)
