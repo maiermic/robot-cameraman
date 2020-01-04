@@ -164,7 +164,8 @@ class ObjectTracker:
         centroid_to_inference_result = dict()
         centroids = np.zeros((len(inference_results), 4), dtype="int")
         for i, r in enumerate(inference_results):
-            c = (int(r.bounding_box.x), int(r.bounding_box.y), int(r.bounding_box.width), int(r.bounding_box.height))
+            c = (int(r.bounding_box.center.x), int(r.bounding_box.center.y),
+                 int(r.bounding_box.width), int(r.bounding_box.height))
             centroids[i] = c
             centroid_to_inference_result[c] = r
         objects = self._centroid_tracker.update(centroids)
