@@ -39,11 +39,19 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
             self,
             image: PIL.Image.Image,
             target_id: Optional[int],
-            candidates: Dict[int, DetectionCandidate]) -> None:
-        draw = PIL.ImageDraw.Draw(image)
+            candidates: Dict[int, DetectionCandidate],
+            previous_candidates: Optional[
+                Dict[int, DetectionCandidate]] = None) -> None:
+        draw = PIL.ImageDraw.Draw(image, 'RGBA')
+        if previous_candidates:
+            for candidate_id, candidate in previous_candidates.items():
+                color = get_color(candidate_id, (255, 255, 255))
+                draw.rectangle(candidate.bounding_box.coordinates(),
+                               width=8, outline=(*color, 60))
         for candidate_id, candidate in candidates.items():
             color = get_color(candidate_id, (255, 255, 255))
-            self.draw_detection_candidate(draw, candidate_id, candidate, color)
+            self.draw_detection_candidate(draw, candidate_id, candidate, color,
+                                          outline_width=8)
 
 
 def create_video_writer(vs, output_file: Path):
@@ -65,6 +73,7 @@ def main(args):
     object_tracker = ObjectTracker()
     annotator = ColoredCandidatesImageAnnotator(args.targetLabelId, labels,
                                                 font)
+    previous_candidates: Optional[Dict[int, DetectionCandidate]] = None
     vs = cv2.VideoCapture(str(args.input))
     out = create_video_writer(vs, args.output)
     while True:
@@ -78,7 +87,15 @@ def main(args):
                 obj for obj in inference_results
                 if obj.label_id == args.targetLabelId]
             candidates = object_tracker.update(target_inference_results)
-            annotator.annotate(image, None, candidates)
+            if previous_candidates:
+                previous_candidates = {
+                    id: candidate
+                    for (id, candidate) in previous_candidates.items()
+                    if object_tracker.is_registered(id)}
+            annotator.annotate(image, None, candidates, previous_candidates)
+            previous_candidates = {**previous_candidates,
+                                   **candidates} if previous_candidates else candidates
+
             annotated_image = numpy.asarray(image)
             out.write(annotated_image)
             if args.showVideo:
