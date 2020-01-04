@@ -57,9 +57,10 @@ class ImageAnnotator:
             draw: ImageDraw,
             candidate_id: int,
             obj: DetectionCandidate,
-            color: Tuple[int, int, int]) -> None:
+            color: Tuple[int, int, int],
+            outline_width: int = 1) -> None:
         box = obj.bounding_box
-        draw.rectangle(box.coordinates(), outline=color)
+        draw.rectangle(box.coordinates(), outline=color, width=outline_width)
         draw_point(draw, box.center, color)
         # Annotate image with label and confidence score
         display_str = self.labels[obj.label_id] + ": " + str(
