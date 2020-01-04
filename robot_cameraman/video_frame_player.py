@@ -21,7 +21,6 @@ def create_video_writer(vs, output_file: Path):
 def main(file, font):
     vs = cv2.VideoCapture(str(file))
     frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(frame_count)
     is_play = True
     is_playing_backwards = False
     while True:
@@ -30,7 +29,6 @@ def main(file, font):
                 frame_index = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
                 if is_playing_backwards:
                     frame_index -= 2
-                print(frame_index)
                 if frame_index >= 0:
                     vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
                     success, frame = vs.read()
@@ -40,10 +38,8 @@ def main(file, font):
                     draw = PIL.ImageDraw.Draw(image, 'RGBA')
                     frame_text = f'{{:0>{3}}}/{{}}'.format(frame_index + 1,
                                                            frame_count)
-                    print(frame_text)
                     offset_x, offset_y = font.getoffset(frame_text)
                     w, h = draw.textsize(frame_text, font)
-                    print(w, h)
                     draw.rectangle((4, 4, w + offset_x + 16, h + offset_y + 8),
                                    fill=(0, 0, 0, 150))
                     draw.text((12, 8), frame_text, font=font)
