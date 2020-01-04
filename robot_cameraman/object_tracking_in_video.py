@@ -9,6 +9,8 @@ import PIL.ImageDraw
 import PIL.ImageFont
 import cv2
 import numpy
+from PIL.ImageDraw import ImageDraw
+from PIL.ImageFont import FreeTypeFont
 
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
@@ -35,6 +37,12 @@ def get_color(index, default):
 
 
 class ColoredCandidatesImageAnnotator(ImageAnnotator):
+
+    def __init__(self, target_label_id: int, labels: Dict[int, str],
+                 font: FreeTypeFont) -> None:
+        super().__init__(target_label_id, labels, font)
+        self._global_candidate_id = 0
+
     def annotate(
             self,
             image: PIL.Image.Image,
@@ -52,6 +60,11 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
             color = get_color(candidate_id, (255, 255, 255))
             self.draw_detection_candidate(draw, candidate_id, candidate, color,
                                           outline_width=8)
+
+    def draw_candidate_id(self, draw: ImageDraw, center, candidate_id: str):
+        super().draw_candidate_id(draw, center,
+                                  f'{candidate_id}/{self._global_candidate_id}')
+        self._global_candidate_id += 1
 
 
 def create_video_writer(vs, output_file: Path):
