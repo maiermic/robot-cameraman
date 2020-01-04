@@ -66,7 +66,7 @@ class CentroidTracker:
             for i in range(0, len(input_centroids)):
                 self.register(input_centroids[i])
 
-        # otherwise, are are currently tracking objects so we need to
+        # otherwise, we are currently tracking objects so we need to
         # try to match the input centroids to existing object
         # centroids
         else:
@@ -83,7 +83,7 @@ class CentroidTracker:
             # in order to perform this matching we must (1) find the
             # smallest value in each row and then (2) sort the row
             # indexes based on their minimum values so that the row
-            # with the smallest value as at the *front* of the index
+            # with the smallest value is at the *front* of the index
             # list
             rows = d.min(axis=1).argsort()
 
