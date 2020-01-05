@@ -2,7 +2,7 @@ import argparse
 import glob
 import os
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any, Set
 
 import PIL.Image
 import PIL.ImageDraw
@@ -41,7 +41,7 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
     def __init__(self, target_label_id: int, labels: Dict[int, str],
                  font: FreeTypeFont) -> None:
         super().__init__(target_label_id, labels, font)
-        self._global_candidate_id = 0
+        self.global_candidate_id = 0
 
     def annotate(
             self,
@@ -63,8 +63,8 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
 
     def draw_candidate_id(self, draw: ImageDraw, center, candidate_id: str):
         super().draw_candidate_id(draw, center,
-                                  f'{candidate_id}/{self._global_candidate_id}')
-        self._global_candidate_id += 1
+                                  f'{candidate_id}/{self.global_candidate_id}')
+        self.global_candidate_id += 1
 
 
 def create_video_writer(vs, output_file: Path):
@@ -74,6 +74,35 @@ def create_video_writer(vs, output_file: Path):
                            cv2.VideoWriter_fourcc(*'MJPG'),
                            vs.get(cv2.CAP_PROP_FPS),
                            (width, height))
+
+
+def filter_intersections(candidates: List[DetectionCandidate]):
+    count = len(candidates)
+    if count == 0:
+        return []
+    # Indices of candidates that have a bounding box with a smaller area than
+    # the area of the intersected bounding box of another candidate
+    excluded: Set[int] = set()
+    result: List[DetectionCandidate] = []
+    for c in range(0, count - 1):
+        if c in excluded:
+            continue
+        current = candidates[c]
+        for o in range(c + 1, count):
+            other = candidates[o]
+            intersection = current.bounding_box.percental_intersection_area(
+                other.bounding_box)
+            if intersection > 0.7:
+                if current.bounding_box.area() < other.bounding_box.area():
+                    excluded.add(c)
+                    break
+                else:
+                    excluded.add(o)
+        else:
+            result.append(current)
+    if (count - 1) not in excluded:
+        result.append(candidates[count - 1])
+    return result
 
 
 def main(args):
@@ -96,10 +125,12 @@ def main(args):
                 break
             image = PIL.Image.fromarray(frame)
             inference_results = detection_engine.detect(image)
-            target_inference_results = [
-                obj for obj in inference_results
-                if obj.label_id == args.targetLabelId]
-            candidates = object_tracker.update(target_inference_results)
+            candidates = [obj for obj in inference_results if
+                          obj.label_id == args.targetLabelId]
+            filtered_candidates = filter_intersections(candidates)
+            annotator.global_candidate_id += (
+                        len(candidates) - len(filtered_candidates))
+            candidates = object_tracker.update(filtered_candidates)
             if previous_candidates:
                 previous_candidates = {
                     id: candidate

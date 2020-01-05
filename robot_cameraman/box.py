@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Iterable, List
 
@@ -50,6 +52,22 @@ class Box(Protocol):
         x, y = point
         return (self.x <= x <= self.x + self.width
                 and self.y <= y <= self.y + self.height)
+
+    def area(self):
+        return self.width * self.height
+
+    def intersect(self, other: Box) -> Box:
+        x1 = max(self.x, other.x)
+        y1 = max(self.y, other.y)
+        x2 = min(self.x + self.width, other.x + other.width)
+        y2 = min(self.y + self.height, other.y + other.height)
+        if x1 > x2 or y1 > y2:
+            # no intersection
+            return Box.from_coordinates(x1, y1, x1, y1)
+        return Box.from_coordinates(x1, y1, x2, y2)
+
+    def percental_intersection_area(self, other: Box):
+        return self.intersect(other).area() / min(self.area(), other.area())
 
 
 class TwoPointsBox(Box):
