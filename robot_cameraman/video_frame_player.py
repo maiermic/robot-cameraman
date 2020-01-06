@@ -65,7 +65,8 @@ def parse_arguments():
     resources: Path = Path(__file__).parent / 'resources'
     parser = argparse.ArgumentParser(
         description="Play video file frame by frame. Press n for next frame and p for previous frame")
-    parser.add_argument('file', type=str, help="Path to video file.")
+    parser.add_argument('file', type=Path, nargs='?',
+                        help="Path to video file.")
     parser.add_argument('--font',
                         type=Path,
                         default=resources / 'Roboto-Regular.ttf',
@@ -81,6 +82,14 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
+    if args.file is None:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        args.file = filedialog.askopenfilename(title='Select input file')
+        if not args.file:
+            exit(0)
     file = Path(args.file)
     assert file.exists()
     main(file, PIL.ImageFont.truetype(str(args.font), args.fontSize))
