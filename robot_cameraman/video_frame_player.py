@@ -29,22 +29,21 @@ def main(file, font):
                 frame_index = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
                 if is_playing_backwards:
                     frame_index -= 2
-                if frame_index >= 0:
+                if 0 <= frame_index < frame_count:
                     vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
                     success, frame = vs.read()
-                    if not success:
-                        break
-                    image = PIL.Image.fromarray(frame)
-                    draw = PIL.ImageDraw.Draw(image, 'RGBA')
-                    frame_text = f'{{:0>{3}}}/{{}}'.format(frame_index + 1,
-                                                           frame_count)
-                    offset_x, offset_y = font.getoffset(frame_text)
-                    w, h = draw.textsize(frame_text, font)
-                    draw.rectangle((4, 4, w + offset_x + 16, h + offset_y + 8),
-                                   fill=(0, 0, 0, 150))
-                    draw.text((12, 8), frame_text, font=font)
-                    frame = numpy.asarray(image)
-                    cv2.imshow('Video Player', frame)
+                    if success:
+                        image = PIL.Image.fromarray(frame)
+                        draw = PIL.ImageDraw.Draw(image, 'RGBA')
+                        frame_text = f'{{:0>{3}}}/{{}}'.format(frame_index + 1,
+                                                               frame_count)
+                        offset_x, offset_y = font.getoffset(frame_text)
+                        w, h = draw.textsize(frame_text, font)
+                        draw.rectangle((4, 4, w + offset_x + 16, h + offset_y + 8),
+                                       fill=(0, 0, 0, 150))
+                        draw.text((12, 8), frame_text, font=font)
+                        frame = numpy.asarray(image)
+                        cv2.imshow('Video Player', frame)
                 is_play = False
             key = cv2.waitKey(50) & 0xFF
             if key == ord('q'):
