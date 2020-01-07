@@ -22,22 +22,22 @@ class VideoFramePlayer:
     def __init__(self, file: Path, font):
         assert file.exists()
         self._file = file
+        self._vs = cv2.VideoCapture(str(self._file))
         self._font = font
 
     def run(self):
-        vs = cv2.VideoCapture(str(self._file))
-        frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_count = int(self._vs.get(cv2.CAP_PROP_FRAME_COUNT))
         is_play = True
         is_playing_backwards = False
         while True:
             try:
                 if is_play:
-                    frame_index = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
+                    frame_index = int(self._vs.get(cv2.CAP_PROP_POS_FRAMES))
                     if is_playing_backwards:
                         frame_index -= 2
                     if 0 <= frame_index < frame_count:
-                        vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-                        success, frame = vs.read()
+                        self._vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                        success, frame = self._vs.read()
                         if success:
                             image = PIL.Image.fromarray(frame)
                             draw = PIL.ImageDraw.Draw(image, 'RGBA')
@@ -58,7 +58,7 @@ class VideoFramePlayer:
                     is_playing_backwards = True
             except KeyboardInterrupt:
                 break
-        vs.release()
+        self._vs.release()
         cv2.destroyAllWindows()
 
 
