@@ -67,7 +67,7 @@ class VideoFramePlayer:
 def get_frame_text(frame_index, frame_count):
     return '{frame_num:0>{digits}}/{frame_count}'.format(
         frame_num=frame_index + 1,
-        digits=int(numpy.log10(frame_count)),
+        digits=int(numpy.log10(frame_count)) + 1,
         frame_count=frame_count)
 
 
