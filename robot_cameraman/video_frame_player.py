@@ -35,8 +35,10 @@ def main(file, font):
                     if success:
                         image = PIL.Image.fromarray(frame)
                         draw = PIL.ImageDraw.Draw(image, 'RGBA')
-                        frame_text = f'{{:0>{3}}}/{{}}'.format(frame_index + 1,
-                                                               frame_count)
+                        frame_text = '{frame_num:0>{digits}}/{frame_count}'.format(
+                            frame_num=frame_index + 1,
+                            digits=int(numpy.log10(frame_count)),
+                            frame_count=frame_count)
                         offset_x, offset_y = font.getoffset(frame_text)
                         w, h = draw.textsize(frame_text, font)
                         draw.rectangle((4, 4, w + offset_x + 16, h + offset_y + 8),
