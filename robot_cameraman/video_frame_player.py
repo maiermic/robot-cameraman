@@ -20,6 +20,7 @@ def create_video_writer(vs, output_file: Path):
 
 class VideoFramePlayer:
     def __init__(self, file: Path, font):
+        assert file.exists()
         self._file = file
         self._font = font
 
@@ -108,6 +109,5 @@ if __name__ == '__main__':
         if not args.file:
             exit(0)
     file = Path(args.file)
-    assert file.exists()
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
     VideoFramePlayer(file, font).run()
