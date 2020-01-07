@@ -39,12 +39,7 @@ class VideoFramePlayer:
                         self._vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
                         success, frame = self._vs.read()
                         if success:
-                            image = PIL.Image.fromarray(frame)
-                            draw = PIL.ImageDraw.Draw(image, 'RGBA')
-                            frame_text = get_frame_text(frame_index,
-                                                        self._frame_count)
-                            draw_text_box(draw, frame_text, self._font)
-                            frame = numpy.asarray(image)
+                            frame = self._draw_frame(frame, frame_index)
                             cv2.imshow('Video Player', frame)
                     is_play = False
                 key = cv2.waitKey(50) & 0xFF
@@ -60,6 +55,13 @@ class VideoFramePlayer:
                 break
         self._vs.release()
         cv2.destroyAllWindows()
+
+    def _draw_frame(self, frame, frame_index):
+        image = PIL.Image.fromarray(frame)
+        draw = PIL.ImageDraw.Draw(image, 'RGBA')
+        frame_text = get_frame_text(frame_index, self._frame_count)
+        draw_text_box(draw, frame_text, self._font)
+        return numpy.asarray(image)
 
 
 def get_frame_text(frame_index, frame_count):
