@@ -41,8 +41,9 @@ def main(file, font):
                             frame_count=frame_count)
                         offset_x, offset_y = font.getoffset(frame_text)
                         w, h = draw.textsize(frame_text, font)
-                        draw.rectangle((4, 4, w + offset_x + 16, h + offset_y + 8),
-                                       fill=(0, 0, 0, 150))
+                        draw.rectangle(
+                            (4, 4, w + offset_x + 16, h + offset_y + 8),
+                            fill=(0, 0, 0, 150))
                         draw.text((12, 8), frame_text, font=font)
                         frame = numpy.asarray(image)
                         cv2.imshow('Video Player', frame)
@@ -86,6 +87,7 @@ if __name__ == '__main__':
     if args.file is None:
         import tkinter as tk
         from tkinter import filedialog
+
         root = tk.Tk()
         root.withdraw()
         args.file = filedialog.askopenfilename(title='Select input file')
