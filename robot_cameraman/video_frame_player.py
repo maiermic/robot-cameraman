@@ -39,12 +39,7 @@ def main(file, font):
                             frame_num=frame_index + 1,
                             digits=int(numpy.log10(frame_count)),
                             frame_count=frame_count)
-                        offset_x, offset_y = font.getoffset(frame_text)
-                        w, h = draw.textsize(frame_text, font)
-                        draw.rectangle(
-                            (4, 4, w + offset_x + 16, h + offset_y + 8),
-                            fill=(0, 0, 0, 150))
-                        draw.text((12, 8), frame_text, font=font)
+                        draw_text_box(draw, frame_text, font)
                         frame = numpy.asarray(image)
                         cv2.imshow('Video Player', frame)
                 is_play = False
@@ -61,6 +56,15 @@ def main(file, font):
             break
     vs.release()
     cv2.destroyAllWindows()
+
+
+def draw_text_box(draw, text, font):
+    offset_x, offset_y = font.getoffset(text)
+    w, h = draw.textsize(text, font)
+    draw.rectangle(
+        (4, 4, w + offset_x + 16, h + offset_y + 8),
+        fill=(0, 0, 0, 150))
+    draw.text((12, 8), text, font=font)
 
 
 def parse_arguments():
