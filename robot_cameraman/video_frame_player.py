@@ -18,41 +18,47 @@ def create_video_writer(vs, output_file: Path):
                            (width, height))
 
 
-def main(file, font):
-    vs = cv2.VideoCapture(str(file))
-    frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
-    is_play = True
-    is_playing_backwards = False
-    while True:
-        try:
-            if is_play:
-                frame_index = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
-                if is_playing_backwards:
-                    frame_index -= 2
-                if 0 <= frame_index < frame_count:
-                    vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-                    success, frame = vs.read()
-                    if success:
-                        image = PIL.Image.fromarray(frame)
-                        draw = PIL.ImageDraw.Draw(image, 'RGBA')
-                        frame_text = get_frame_text(frame_index, frame_count)
-                        draw_text_box(draw, frame_text, font)
-                        frame = numpy.asarray(image)
-                        cv2.imshow('Video Player', frame)
-                is_play = False
-            key = cv2.waitKey(50) & 0xFF
-            if key == ord('q'):
+class VideoFramePlayer:
+    def __init__(self, file: Path, font):
+        self._file = file
+        self._font = font
+
+    def run(self):
+        vs = cv2.VideoCapture(str(self._file))
+        frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
+        is_play = True
+        is_playing_backwards = False
+        while True:
+            try:
+                if is_play:
+                    frame_index = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
+                    if is_playing_backwards:
+                        frame_index -= 2
+                    if 0 <= frame_index < frame_count:
+                        vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                        success, frame = vs.read()
+                        if success:
+                            image = PIL.Image.fromarray(frame)
+                            draw = PIL.ImageDraw.Draw(image, 'RGBA')
+                            frame_text = get_frame_text(frame_index,
+                                                        frame_count)
+                            draw_text_box(draw, frame_text, self._font)
+                            frame = numpy.asarray(image)
+                            cv2.imshow('Video Player', frame)
+                    is_play = False
+                key = cv2.waitKey(50) & 0xFF
+                if key == ord('q'):
+                    break
+                if key == ord('n'):
+                    is_play = True
+                    is_playing_backwards = False
+                elif key == ord('p'):
+                    is_play = True
+                    is_playing_backwards = True
+            except KeyboardInterrupt:
                 break
-            if key == ord('n'):
-                is_play = True
-                is_playing_backwards = False
-            elif key == ord('p'):
-                is_play = True
-                is_playing_backwards = True
-        except KeyboardInterrupt:
-            break
-    vs.release()
-    cv2.destroyAllWindows()
+        vs.release()
+        cv2.destroyAllWindows()
 
 
 def get_frame_text(frame_index, frame_count):
@@ -103,4 +109,5 @@ if __name__ == '__main__':
             exit(0)
     file = Path(args.file)
     assert file.exists()
-    main(file, PIL.ImageFont.truetype(str(args.font), args.fontSize))
+    font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
+    VideoFramePlayer(file, font).run()
