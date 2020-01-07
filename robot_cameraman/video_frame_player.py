@@ -83,7 +83,10 @@ def draw_text_box(draw, text, font):
 def parse_arguments():
     resources: Path = Path(__file__).parent / 'resources'
     parser = argparse.ArgumentParser(
-        description="Play video file frame by frame. Press n for next frame and p for previous frame")
+        description=' '.join((
+            'Play video file frame by frame.',
+            'Press n for next frame, p for previous frame and q to quit.',
+        )))
     parser.add_argument('file', type=Path, nargs='?',
                         help="Path to video file.")
     parser.add_argument('--font',
