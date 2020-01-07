@@ -23,10 +23,10 @@ class VideoFramePlayer:
         assert file.exists()
         self._file = file
         self._vs = cv2.VideoCapture(str(self._file))
+        self._frame_count = int(self._vs.get(cv2.CAP_PROP_FRAME_COUNT))
         self._font = font
 
     def run(self):
-        frame_count = int(self._vs.get(cv2.CAP_PROP_FRAME_COUNT))
         is_play = True
         is_playing_backwards = False
         while True:
@@ -35,14 +35,14 @@ class VideoFramePlayer:
                     frame_index = int(self._vs.get(cv2.CAP_PROP_POS_FRAMES))
                     if is_playing_backwards:
                         frame_index -= 2
-                    if 0 <= frame_index < frame_count:
+                    if 0 <= frame_index < self._frame_count:
                         self._vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
                         success, frame = self._vs.read()
                         if success:
                             image = PIL.Image.fromarray(frame)
                             draw = PIL.ImageDraw.Draw(image, 'RGBA')
                             frame_text = get_frame_text(frame_index,
-                                                        frame_count)
+                                                        self._frame_count)
                             draw_text_box(draw, frame_text, self._font)
                             frame = numpy.asarray(image)
                             cv2.imshow('Video Player', frame)
