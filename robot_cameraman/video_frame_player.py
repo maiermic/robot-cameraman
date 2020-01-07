@@ -99,7 +99,7 @@ def parse_arguments():
     return args
 
 
-if __name__ == '__main__':
+def main():
     args = parse_arguments()
     if args.file is None:
         import tkinter as tk
@@ -113,3 +113,7 @@ if __name__ == '__main__':
     file = Path(args.file)
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
     VideoFramePlayer(file, font).run()
+
+
+if __name__ == '__main__':
+    main()
