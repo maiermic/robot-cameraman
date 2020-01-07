@@ -35,10 +35,7 @@ def main(file, font):
                     if success:
                         image = PIL.Image.fromarray(frame)
                         draw = PIL.ImageDraw.Draw(image, 'RGBA')
-                        frame_text = '{frame_num:0>{digits}}/{frame_count}'.format(
-                            frame_num=frame_index + 1,
-                            digits=int(numpy.log10(frame_count)),
-                            frame_count=frame_count)
+                        frame_text = get_frame_text(frame_index, frame_count)
                         draw_text_box(draw, frame_text, font)
                         frame = numpy.asarray(image)
                         cv2.imshow('Video Player', frame)
@@ -56,6 +53,13 @@ def main(file, font):
             break
     vs.release()
     cv2.destroyAllWindows()
+
+
+def get_frame_text(frame_index, frame_count):
+    return '{frame_num:0>{digits}}/{frame_count}'.format(
+        frame_num=frame_index + 1,
+        digits=int(numpy.log10(frame_count)),
+        frame_count=frame_count)
 
 
 def draw_text_box(draw, text, font):
