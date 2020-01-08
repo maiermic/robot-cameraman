@@ -105,7 +105,7 @@ def filter_intersections(candidates: List[DetectionCandidate]):
             other = candidates[o]
             intersection = current.bounding_box.percental_intersection_area(
                 other.bounding_box)
-            if intersection > 0.7:
+            if intersection > 0.3:
                 if current.bounding_box.area() < other.bounding_box.area():
                     excluded.add(c)
                     break
