@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Tuple, NamedTuple
+from typing import Optional, Dict, NamedTuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -6,6 +6,7 @@ from PIL.ImageDraw import ImageDraw
 from PIL.ImageFont import FreeTypeFont
 
 from robot_cameraman.box import Point
+from robot_cameraman.color import Color
 from robot_cameraman.image_detection import DetectionCandidate
 from robot_cameraman.tracking import Destination
 
@@ -57,7 +58,7 @@ class ImageAnnotator:
             draw: ImageDraw,
             candidate_id: int,
             obj: DetectionCandidate,
-            color: Tuple[int, int, int],
+            color: Color,
             outline_width: int = 1,
             is_draw_label: bool = True,
             is_draw_candidate_id: bool = True) -> None:
@@ -80,7 +81,7 @@ class ImageAnnotator:
 def draw_destination(
         image: PIL.Image.Image,
         destination: Destination,
-        color: Tuple[int, int, int] = (255, 0, 255)) -> None:
+        color: Color = (255, 0, 255)) -> None:
     draw = PIL.ImageDraw.Draw(image)
     draw_point(draw, destination.center, color)
     draw.rectangle(destination.box.coordinates(), outline=color)
@@ -93,7 +94,7 @@ def draw_destination(
 def draw_point(
         draw: ImageDraw,
         point: Point,
-        color: Tuple[int, int, int],
+        color: Color,
         radius: int = 3) -> None:
     x, y = point
     draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)

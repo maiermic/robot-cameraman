@@ -13,11 +13,12 @@ from PIL.ImageDraw import ImageDraw
 from PIL.ImageFont import FreeTypeFont
 
 from robot_cameraman.annotation import ImageAnnotator
+from robot_cameraman.color import Color
 from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 
-colors: List[Tuple[int, int, int]] = [
+colors: List[Color] = [
     (255, 0, 0),  # red
     (0, 255, 0),  # green
     (0, 0, 255),  # blue
@@ -36,7 +37,7 @@ colors: List[Tuple[int, int, int]] = [
 ]
 
 
-def get_color(index, default):
+def get_color(index: int, default: Color) -> Color:
     if index is None:
         return default
     try:
