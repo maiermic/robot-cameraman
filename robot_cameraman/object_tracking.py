@@ -18,6 +18,7 @@ class CentroidTracker:
         # been marked as "disappeared", respectively
         self.next_object_id = 0
         self.objects = OrderedDict()
+        self.candidates: OrderedDict[int, DetectionCandidate] = OrderedDict()
         self.disappeared = OrderedDict()
 
         # store the number of maximum consecutive frames a given
@@ -25,10 +26,11 @@ class CentroidTracker:
         # need to deregister the object from tracking
         self.max_disappeared = max_disappeared
 
-    def register(self, centroid):
+    def register(self, centroid, candidate):
         # when registering an object we use the next available object
         # ID to store the centroid
         self.objects[self.next_object_id] = centroid
+        self.candidates[self.next_object_id] = candidate
         self.disappeared[self.next_object_id] = 0
         self.next_object_id += 1
 
@@ -36,12 +38,13 @@ class CentroidTracker:
         # to deregister an object ID we delete the object ID from
         # both of our respective dictionaries
         del self.objects[object_id]
+        del self.candidates[object_id]
         del self.disappeared[object_id]
 
     def is_registered(self, object_id: int) -> bool:
         return object_id in self.objects
 
-    def update(self, input_centroids: numpy.ndarray):
+    def update(self, input_centroids: numpy.ndarray, candidates):
         # check to see if the list of input bounding box rectangles
         # is empty
         if len(input_centroids) == 0:
@@ -64,7 +67,7 @@ class CentroidTracker:
         # centroids and register each of them
         if len(self.objects) == 0:
             for i in range(0, len(input_centroids)):
-                self.register(input_centroids[i])
+                self.register(input_centroids[i], candidates[i])
 
         # otherwise, we are currently tracking objects so we need to
         # try to match the input centroids to existing object
@@ -112,6 +115,7 @@ class CentroidTracker:
                 # counter
                 object_id = object_ids[row]
                 self.objects[object_id] = input_centroids[col]
+                self.candidates[object_id] = candidates[col]
                 self.disappeared[object_id] = 0
 
                 # indicate that we have examined each of the row and
@@ -147,7 +151,7 @@ class CentroidTracker:
             # register each new input centroid as a trackable object
             else:
                 for col in unused_cols:
-                    self.register(input_centroids[col])
+                    self.register(input_centroids[col], candidates[col])
 
         # return the set of trackable objects
         return self.objects
@@ -167,7 +171,7 @@ class ObjectTracker:
             c = (int(r.bounding_box.center.x), int(r.bounding_box.center.y))
             centroids[i] = c
             centroid_to_inference_result[c] = r
-        objects = self._centroid_tracker.update(centroids)
+        objects = self._centroid_tracker.update(centroids, inference_results)
         return {object_id: centroid_to_inference_result[(x, y)]
                 for object_id, (x, y) in objects.items()
                 if (x, y) in centroid_to_inference_result}
