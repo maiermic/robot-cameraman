@@ -101,6 +101,7 @@ class CentroidTracker:
             used_rows = set()
             used_cols = set()
 
+            print('  distances:')
             # loop over the combination of the (row, column) index
             # tuples
             for (row, col) in zip(rows, cols):
@@ -110,13 +111,29 @@ class CentroidTracker:
                 if row in used_rows or col in used_cols:
                     continue
 
-                # otherwise, grab the object ID for the current row,
-                # set its new centroid, and reset the disappeared
-                # counter
+                # otherwise, grab the object ID for the current row
                 object_id = object_ids[row]
-                self.objects[object_id] = input_centroids[col]
-                self.candidates[object_id] = candidates[col]
-                self.disappeared[object_id] = 0
+                distance = d[row, col]
+                # it is assumed that older objects may have moved further,
+                # but recently seen objects do not move suddenly in big steps
+                limit = min(500, 100 * (self.disappeared[object_id] + 1))
+                old = self.candidates[object_id].bounding_box
+                new = candidates[col].bounding_box
+                intersection = old.percental_intersection_area(new)
+                intersection_limit = 0.3
+                if distance > limit and intersection < intersection_limit:
+                    print(f'    {object_id}: {int(distance):3} > {limit:3}'
+                          f' and {intersection:.2} < {intersection_limit:.2}')
+                    # objects too far away from recently seen one are treated as
+                    # new ones if they do not overlap for the most part
+                    self.register(input_centroids[col], candidates[col])
+                else:
+                    print(f'    {object_id}: {int(distance):3} <= {limit:3}'
+                          f' or {intersection:.2} >= {intersection_limit:.2}')
+                    # set new centroid, and reset the disappeared counter
+                    self.objects[object_id] = input_centroids[col]
+                    self.candidates[object_id] = candidates[col]
+                    self.disappeared[object_id] = 0
 
                 # indicate that we have examined each of the row and
                 # column indexes, respectively
