@@ -213,6 +213,14 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
+    if args.input is None:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        args.input = filedialog.askopenfilename(title='Select input file')
+        if not args.input:
+            exit(0)
     input_file = Path(args.input)
     if input_file.exists():
         args.input = input_file
