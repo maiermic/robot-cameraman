@@ -58,15 +58,19 @@ class ImageAnnotator:
             candidate_id: int,
             obj: DetectionCandidate,
             color: Tuple[int, int, int],
-            outline_width: int = 1) -> None:
+            outline_width: int = 1,
+            is_draw_label: bool = True,
+            is_draw_candidate_id: bool = True) -> None:
         box = obj.bounding_box
         draw.rectangle(box.coordinates(), outline=color, width=outline_width)
         draw_point(draw, box.center, color)
-        # Annotate image with label and confidence score
-        display_str = self.labels[obj.label_id] + ": " + str(
-            round(obj.score * 100, 2)) + "%"
-        draw.text((box.x, box.y), display_str, font=self.font)
-        self.draw_candidate_id(draw, box, str(candidate_id))
+        if is_draw_label:
+            # Annotate image with label and confidence score
+            display_str = self.labels[obj.label_id] + ": " + str(
+                round(obj.score * 100, 2)) + "%"
+            draw.text((box.x, box.y), display_str, font=self.font)
+        if is_draw_candidate_id:
+            self.draw_candidate_id(draw, box, str(candidate_id))
 
     def draw_candidate_id(self, draw: ImageDraw, center, candidate_id: str):
         draw.text((center.center.x, center.center.y), candidate_id,
