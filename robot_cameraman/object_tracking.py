@@ -178,7 +178,8 @@ class ObjectTracker:
     _centroid_tracker: CentroidTracker
 
     def __init__(self, max_disappeared=20):
-        self._centroid_tracker = CentroidTracker(max_disappeared=max_disappeared)
+        self._centroid_tracker = CentroidTracker(
+            max_disappeared=max_disappeared)
 
     def update(self, inference_results: List[DetectionCandidate]) \
             -> Dict[int, DetectionCandidate]:
