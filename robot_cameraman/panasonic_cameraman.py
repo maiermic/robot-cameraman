@@ -18,6 +18,7 @@ from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
@@ -75,8 +76,10 @@ class PanasonicCameraman:
                     target_inference_results = [
                         obj for obj in inference_results
                         if obj.label_id == self._target_label_id]
-                    candidates = self._object_tracker.update(
+                    filtered_candidates = filter_intersections(
                         target_inference_results)
+                    candidates = self._object_tracker.update(
+                        filtered_candidates)
                     is_target_lost = False
                     if self._is_target_id_registered():
                         if self._target_id in candidates:
