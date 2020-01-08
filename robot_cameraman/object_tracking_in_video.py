@@ -109,6 +109,8 @@ def main(args):
             success, frame = vs.read()
             if not success:
                 break
+            frame_counter = int(vs.get(cv2.CAP_PROP_POS_FRAMES))
+            print(f'\nframe {frame_counter}')
             image = PIL.Image.fromarray(frame)
             inference_results = detection_engine.detect(image)
             candidates = [obj for obj in inference_results if
