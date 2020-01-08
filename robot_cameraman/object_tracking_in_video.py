@@ -18,12 +18,21 @@ from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 
 colors: List[Tuple[int, int, int]] = [
-    (255, 0, 0),
-    (0, 255, 0),
-    (0, 0, 255),
-    (255, 255, 0),
-    (255, 0, 255),
-    (0, 255, 255),
+    (255, 0, 0),  # red
+    (0, 255, 0),  # green
+    (0, 0, 255),  # blue
+    (255, 255, 0),  # yellow
+    (255, 0, 255),  # magenta
+    (0, 255, 255),  # cyan
+    (255, 255, 255),  # white
+
+    (127, 0, 0),  # dark red
+    (0, 127, 0),  # dark green
+    (0, 0, 127),  # dark blue
+    (255, 127, 0),  # orange
+    (127, 0, 127),  # dark magenta
+    (0, 127, 127),  # dark cyan
+    (127, 127, 127),  # gray
 ]
 
 
