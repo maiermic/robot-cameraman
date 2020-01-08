@@ -40,7 +40,7 @@ def get_color(index, default):
     if index is None:
         return default
     try:
-        return colors[index]
+        return colors[index % len(colors)]
     except IndexError:
         return default
 
