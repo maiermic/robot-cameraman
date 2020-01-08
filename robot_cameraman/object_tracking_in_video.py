@@ -64,8 +64,11 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
         if previous_candidates:
             for candidate_id, candidate in previous_candidates.items():
                 color = get_color(candidate_id, (255, 255, 255))
-                draw.rectangle(candidate.bounding_box.coordinates(),
-                               width=8, outline=(*color, 60))
+                self.draw_detection_candidate(draw, candidate_id, candidate,
+                                              (*color, 60),
+                                              outline_width=8,
+                                              is_draw_label=False,
+                                              is_draw_candidate_id=False)
         for candidate_id, candidate in candidates.items():
             color = get_color(candidate_id, (255, 255, 255))
             self.draw_detection_candidate(draw, candidate_id, candidate, color,
