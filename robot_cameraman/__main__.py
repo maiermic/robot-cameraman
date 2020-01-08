@@ -117,12 +117,12 @@ camera_manager = PanasonicCameraManager()
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(camera_manager),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
-                                                        max_allowed_speed=200),
+                                                        max_allowed_speed=100),
     tracking_strategy=StopIfLostTrackingStrategy(destination,
                                                  SimpleTrackingStrategy(
                                                      destination,
-                                                     max_allowed_speed=500),
-                                                 slow_down_time=1))
+                                                     max_allowed_speed=200),
+                                                 slow_down_time=0.5))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
@@ -132,7 +132,7 @@ cameraman = PanasonicCameraman(
         max_objects=args.maxObjects),
     destination=destination,
     mode_manager=cameraman_mode_manager,
-    object_tracker=ObjectTracker(),
+    object_tracker=ObjectTracker(max_disappeared=25),
     target_label_id=args.targetLabelId,
     output=create_video_writer(args.output))
 
