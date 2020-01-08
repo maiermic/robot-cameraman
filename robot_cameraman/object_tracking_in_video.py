@@ -125,11 +125,12 @@ def main(args):
         model=args.model,
         confidence=args.confidence,
         max_objects=args.maxObjects)
-    object_tracker = ObjectTracker()
     annotator = ColoredCandidatesImageAnnotator(args.targetLabelId, labels,
                                                 font)
     previous_candidates: Optional[Dict[int, DetectionCandidate]] = None
     vs = cv2.VideoCapture(str(args.input))
+    fps = vs.get(cv2.CAP_PROP_FPS)
+    object_tracker = ObjectTracker(max_disappeared=fps)
     out = create_video_writer(vs, args.output)
     while True:
         try:
