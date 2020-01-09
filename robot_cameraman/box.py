@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List
 
+from math import sqrt
 from typing_extensions import Protocol
 
 
@@ -14,6 +15,9 @@ class Point:
     def set(self, x: float, y: float):
         self.x = x
         self.y = y
+
+    def distance_to(self, other: Point):
+        return sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 
     def __iter__(self):
         yield self.x
