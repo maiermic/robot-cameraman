@@ -1,10 +1,10 @@
 import logging
 from abc import abstractmethod
 from logging import Logger
-from time import time
 
 import numpy
 import serial
+from time import time
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
@@ -72,13 +72,14 @@ class ElapsedTime:
 
 
 class SpeedManager:
-    acceleration_per_second: int = 1000
+    acceleration_per_second: int
     target_speed: int = 0
     current_speed: int = 0
     _elapsed_time: ElapsedTime
 
-    def __init__(self):
+    def __init__(self, acceleration_per_second: int = 400):
         self._elapsed_time: ElapsedTime = ElapsedTime()
+        self.acceleration_per_second = acceleration_per_second
 
     def reset(self):
         self._elapsed_time.reset()
@@ -97,10 +98,13 @@ class SmoothCameraController(CameraController):
     _tilt_speed_manager: SpeedManager
     _old_zoom_speed: int = 0
 
-    def __init__(self, camera_manager: PanasonicCameraManager):
+    def __init__(self,
+                 camera_manager: PanasonicCameraManager,
+                 rotate_speed_manager: SpeedManager,
+                 tilt_speed_manager: SpeedManager):
         self._camera_manager = camera_manager
-        self._rotate_speed_manager = SpeedManager()
-        self._tilt_speed_manager = SpeedManager()
+        self._rotate_speed_manager = rotate_speed_manager
+        self._tilt_speed_manager = tilt_speed_manager
 
     def start(self) -> None:
         self._rotate_speed_manager.reset()

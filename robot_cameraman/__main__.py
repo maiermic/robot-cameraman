@@ -11,7 +11,8 @@ import cv2
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
-from robot_cameraman.camera_controller import SmoothCameraController
+from robot_cameraman.camera_controller import SmoothCameraController, \
+    SpeedManager
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
@@ -86,6 +87,14 @@ def parse_arguments():
                         type=int, default=0,
                         help="If target is lost, search for new target by"
                              " rotating at the given speed")
+    parser.add_argument('--rotationalAccelerationPerSecond',
+                        type=int, default=400,
+                        help="Defines how fast the gimbal may accelerate"
+                             " rotational per second")
+    parser.add_argument('--tiltingAccelerationPerSecond',
+                        type=int, default=50,
+                        help="Defines how fast the gimbal may accelerate"
+                             " in tilting direction per second")
     return parser.parse_args()
 
 
@@ -124,7 +133,10 @@ tracking_strategy = StopIfLostTrackingStrategy(
     SimpleTrackingStrategy(destination, max_allowed_speed=500),
     slow_down_time=1)
 cameraman_mode_manager = CameramanModeManager(
-    camera_controller=SmoothCameraController(camera_manager),
+    camera_controller=SmoothCameraController(
+        camera_manager,
+        rotate_speed_manager=SpeedManager(args.rotationalAccelerationPerSecond),
+        tilt_speed_manager=SpeedManager(args.tiltingAccelerationPerSecond)),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
                                                         max_allowed_speed=200),
     tracking_strategy=tracking_strategy,
