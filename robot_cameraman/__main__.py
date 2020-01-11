@@ -33,7 +33,7 @@ def create_video_writer(output_file: Path):
     return cv2.VideoWriter(
         str(output_file),
         cv2.VideoWriter_fourcc(*'MJPG'),
-        30,
+        15,
         (width, height))
 
 
