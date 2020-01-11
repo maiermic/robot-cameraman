@@ -94,8 +94,10 @@ class PanasonicCameraman:
                         else:
                             is_target_lost = True
                             self._target_box = None
-                    draw_destination(image, self._destination)
+                    # The mode manager updates the destination as a side effect.
+                    # The destination has to be drawn afterwards.
                     self._mode_manager.update(self._target_box, is_target_lost)
+                    draw_destination(image, self._destination)
                     self.annotator.annotate(image, self._target_id, candidates,
                                             self._mode_manager.mode_name)
                 except OSError as e:
