@@ -121,12 +121,12 @@ destination = Destination((640, 480), variance=80)
 camera_manager = PanasonicCameraManager()
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
-    SimpleTrackingStrategy(destination, max_allowed_speed=200),
-    slow_down_time=0.5)
+    SimpleTrackingStrategy(destination, max_allowed_speed=500),
+    slow_down_time=1)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(camera_manager),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
-                                                        max_allowed_speed=100),
+                                                        max_allowed_speed=200),
     tracking_strategy=tracking_strategy,
     search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
 cameraman = PanasonicCameraman(
