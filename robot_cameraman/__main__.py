@@ -19,7 +19,8 @@ from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
-    StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy
+    StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
+    RotateSearchTargetStrategy
 
 to_exit: threading.Event
 server: ThreadingHTTPServer
@@ -81,6 +82,10 @@ def parse_arguments():
     parser.add_argument('--debug',
                         action='store_true',
                         help="Enable debug logging")
+    parser.add_argument('--rotatingSearchSpeed',
+                        type=int, default=0,
+                        help="If target is lost, search for new target by"
+                             " rotating at the given speed")
     return parser.parse_args()
 
 
@@ -122,7 +127,8 @@ cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(camera_manager),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
                                                         max_allowed_speed=100),
-    tracking_strategy=tracking_strategy)
+    tracking_strategy=tracking_strategy,
+    search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),

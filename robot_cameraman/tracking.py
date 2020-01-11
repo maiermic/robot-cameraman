@@ -1,10 +1,10 @@
 import logging
-import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from typing import Tuple, Optional
 
+import time
 from typing_extensions import Protocol
 
 from robot_cameraman.box import Box, TwoPointsBox, Point
@@ -153,3 +153,17 @@ class SimpleAlignTrackingStrategy(SimpleTrackingStrategy,
                                   AlignTrackingStrategy):
     def is_aligned(self, target: Box) -> bool:
         return self._destination.box.contains_point(target.center)
+
+
+class SearchTargetStrategy(Protocol):
+    @abstractmethod
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        raise NotImplementedError
+
+
+class RotateSearchTargetStrategy(SearchTargetStrategy):
+    def __init__(self, speed=200):
+        self.speed = speed
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        camera_speeds.pan_speed = self.speed
