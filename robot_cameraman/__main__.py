@@ -95,6 +95,10 @@ def parse_arguments():
                         type=int, default=50,
                         help="Defines how fast the gimbal may accelerate"
                              " in tilting direction per second")
+    parser.add_argument('--variance',
+                        type=int, default=80,
+                        help="Defines the variance up to which no movement"
+                             " (pan, tilt, zoom) occurs.")
     return parser.parse_args()
 
 
@@ -126,7 +130,7 @@ args = parse_arguments()
 logging.basicConfig(level=logging.DEBUG if args.debug else logging.ERROR)
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-destination = Destination((640, 480), variance=80)
+destination = Destination((640, 480), variance=args.variance)
 camera_manager = PanasonicCameraManager()
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
