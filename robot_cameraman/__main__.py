@@ -114,15 +114,15 @@ labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=80)
 camera_manager = PanasonicCameraManager()
+tracking_strategy = StopIfLostTrackingStrategy(
+    destination,
+    SimpleTrackingStrategy(destination, max_allowed_speed=200),
+    slow_down_time=0.5)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(camera_manager),
     align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
                                                         max_allowed_speed=100),
-    tracking_strategy=StopIfLostTrackingStrategy(destination,
-                                                 SimpleTrackingStrategy(
-                                                     destination,
-                                                     max_allowed_speed=200),
-                                                 slow_down_time=0.5))
+    tracking_strategy=tracking_strategy)
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
