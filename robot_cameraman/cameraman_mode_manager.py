@@ -29,7 +29,8 @@ class CameramanModeManager:
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         if not self._is_manual_mode:
             if target is None and is_target_lost:
-                # search target
+                if self.mode_name == 'aligning':
+                    self._camera_speeds.reset()
                 self.mode_name = 'searching'
                 self._search_target_strategy.update(self._camera_speeds)
             elif (self.mode_name in ['searching', 'aligning']
