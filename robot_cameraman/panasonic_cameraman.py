@@ -3,7 +3,6 @@ import logging
 import os
 import socket
 import threading
-import time
 from logging import Logger
 from typing import Optional
 
@@ -12,6 +11,7 @@ import PIL.ImageDraw
 import PIL.ImageFont
 import cv2
 import numpy
+import time
 from imutils.video import FPS
 
 from panasonic_camera.live_view import LiveView
