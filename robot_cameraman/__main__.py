@@ -126,8 +126,26 @@ def run_cameraman():
     quit()
 
 
+def configure_logging():
+    # TODO filename or output directory as program argument
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.ERROR,
+        filename=f'{args.output}.log' if args.output else None,
+        filemode='w',
+        format='%(asctime)s %(name)-50s %(levelname)-8s %(message)s')
+    console = logging.StreamHandler()
+    # TODO level as program argument
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(levelname)-8s %(name)-12s: %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+
+
 args = parse_arguments()
-logging.basicConfig(level=logging.DEBUG if args.debug else logging.ERROR)
+configure_logging()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 destination = Destination((640, 480), variance=args.variance)
