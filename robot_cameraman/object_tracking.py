@@ -119,6 +119,9 @@ class CentroidTracker:
                 limit = min(500, 100 * (self.disappeared[object_id] + 1))
                 old = self.candidates[object_id].bounding_box
                 new = candidates[col].bounding_box
+                old_a = old.area()
+                new_a = new.area()
+                size_change_factor = max(old_a, new_a) / min(old_a, new_a)
                 intersection = old.percental_intersection_area(new)
                 intersection_limit = 0.3
                 if distance > limit and intersection < intersection_limit:
@@ -126,6 +129,9 @@ class CentroidTracker:
                           f' and {intersection:.2} < {intersection_limit:.2}')
                     # objects too far away from recently seen one are treated as
                     # new ones if they do not overlap for the most part
+                    self.register(input_centroids[col], candidates[col])
+                elif size_change_factor > 4:
+                    # TODO log distance, intersection and areas
                     self.register(input_centroids[col], candidates[col])
                 else:
                     print(f'    {object_id}: {int(distance):3} <= {limit:3}'

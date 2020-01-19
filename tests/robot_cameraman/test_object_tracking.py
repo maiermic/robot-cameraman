@@ -159,3 +159,24 @@ def test_update_associates_closer_object_with_candidate(
     assert object_tracker.is_registered(first_object_id)
     assert second_object_id not in candidates
     assert object_tracker.is_registered(second_object_id)
+
+
+def test_non_overlapping_candidate_differs_too_much_in_size_to_be_same_object(
+        object_tracker, first_object_id, second_object_id):
+    c0 = make_candidate_from_coordinates(0, 0, 5, 5)
+    c1 = make_candidate_from_coordinates(6, 0, 16, 10.1)
+    # assert precondition: size changed by a factor greater than 4,
+    # i.e. c1 differs too much in size to be the same object as c0
+    assert c0.bounding_box.area() == 25
+    assert c1.bounding_box.area() == 101
+
+    candidates = object_tracker.update([c0])
+    assert first_object_id in candidates
+    assert candidates[first_object_id] == c0
+    assert object_tracker.is_registered(first_object_id)
+    candidates = object_tracker.update([c1])
+    assert second_object_id in candidates
+    assert first_object_id not in candidates
+    assert candidates[second_object_id] == c1
+    assert object_tracker.is_registered(first_object_id)
+    assert object_tracker.is_registered(second_object_id)
