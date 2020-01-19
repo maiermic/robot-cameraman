@@ -94,13 +94,16 @@ def test_candidate_further_apart_is_seen_as_another_object(
 
 def test_mostly_overlapping_candidates_are_seen_as_the_same_object(
         object_tracker, first_object_id, second_object_id):
-    c0 = make_candidate_from_center_and_size(Point(10, 10), 10, 10)
-    c1 = make_candidate_from_center_and_size(Point(111, 10), 200, 10)
+    c0 = make_candidate_from_center_and_size(Point(0, 0), 100, 200)
+    c1 = make_candidate_from_center_and_size(Point(101, 0), 182, 200)
     # Candidates would be to far apart to be seen as the same
     assert 101 == c0.bounding_box.center.distance_to(c1.bounding_box.center)
-    # but not if they overlap for the most part. The following assertion shows
-    # that the bounding boxes overlap by 40%
+    # but not if they overlap for the most part (here 40%)
     assert 0.4 == c0.bounding_box.percental_intersection_area(c1.bounding_box)
+    # and the size didn't change by a factor greater than 4
+    assert c0.bounding_box.area() == 20_000
+    assert c1.bounding_box.area() == 36_400
+
     candidates = object_tracker.update([c0])
     assert first_object_id in candidates
     assert candidates[first_object_id] == c0
