@@ -88,16 +88,8 @@ def test_candidate_further_apart_is_seen_as_another_object(
         object_tracker, first_object_id, second_object_id):
     c0 = make_candidate_from_center_and_size(Point(10, 10), 10, 10)
     c1 = make_candidate_from_center_and_size(Point(111, 10), 10, 10)
-    candidates = object_tracker.update([c0])
-    assert first_object_id in candidates
-    assert candidates[first_object_id] == c0
-    assert object_tracker.is_registered(first_object_id)
-    candidates = object_tracker.update([c1])
-    assert second_object_id in candidates
-    assert first_object_id not in candidates
-    assert candidates[second_object_id] == c1
-    assert object_tracker.is_registered(first_object_id)
-    assert object_tracker.is_registered(second_object_id)
+    assert_candidates_are_different_objects(object_tracker, c0, c1,
+                                            first_object_id, second_object_id)
 
 
 def test_mostly_overlapping_candidates_are_seen_as_the_same_object(
@@ -170,6 +162,16 @@ def test_non_overlapping_candidate_differs_too_much_in_size_to_be_same_object(
     assert c0.bounding_box.area() == 25
     assert c1.bounding_box.area() == 101
 
+    assert_candidates_are_different_objects(object_tracker, c0, c1,
+                                            first_object_id, second_object_id)
+
+
+def assert_candidates_are_different_objects(
+        object_tracker: ObjectTracker,
+        c0: DetectionCandidate,
+        c1: DetectionCandidate,
+        first_object_id: int,
+        second_object_id: int):
     candidates = object_tracker.update([c0])
     assert first_object_id in candidates
     assert candidates[first_object_id] == c0
