@@ -8,6 +8,7 @@ from typing import Optional
 
 import PIL.Image
 import PIL.ImageDraw
+import PIL.ImageFile
 import PIL.ImageFont
 import cv2
 import numpy
@@ -57,6 +58,12 @@ class PanasonicCameraman:
     def run(self,
             server_image: ImageContainer,
             to_exit: threading.Event) -> None:
+        # Parts at the end of the live view image are sometimes not received.
+        # These truncated images cause an exception in the detection engine,
+        # if the following option is not enabled. In the cases observed so far,
+        # only a small part of the image is missing. Hence, we still try to
+        # detect the target in the transferred image.
+        PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
         self._mode_manager.start()
         fps: FPS = FPS().start()
         while not to_exit.is_set():
