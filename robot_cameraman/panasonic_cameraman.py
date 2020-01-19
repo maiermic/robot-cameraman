@@ -4,7 +4,7 @@ import os
 import socket
 import threading
 from logging import Logger
-from typing import Optional
+from typing import Optional, Iterable
 
 import PIL.Image
 import PIL.ImageDraw
@@ -20,7 +20,7 @@ from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
-from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination
@@ -66,6 +66,7 @@ class PanasonicCameraman:
         PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
         self._mode_manager.start()
         fps: FPS = FPS().start()
+        frame_counter = 0
         while not to_exit.is_set():
             try:
                 try:
@@ -75,6 +76,8 @@ class PanasonicCameraman:
                     self._mode_manager.update(self._target_box,
                                               is_target_lost=True)
                     continue
+                frame_counter += 1
+                logger.debug(f'\nframe {frame_counter}')
                 assert image.size == (640, 480), image.size
                 # Perform inference and note time taken
                 start_ms = time.time()
@@ -83,8 +86,11 @@ class PanasonicCameraman:
                     target_inference_results = [
                         obj for obj in inference_results
                         if obj.label_id == self._target_label_id]
+                    self.log_candidates('candidates', target_inference_results)
                     filtered_candidates = filter_intersections(
                         target_inference_results)
+                    self.log_candidates('filtered_candidates',
+                                        filtered_candidates)
                     candidates = self._object_tracker.update(
                         filtered_candidates)
                     is_target_lost = False
@@ -136,3 +142,13 @@ class PanasonicCameraman:
         logger.debug("Approx FPS: :" + str(fps.fps()))
 
         cv2.destroyAllWindows()
+
+    @staticmethod
+    def log_candidates(
+            candidates_name: str,
+            candidates: Iterable[DetectionCandidate]):
+        logger.debug(f'  {candidates_name}:')
+        for c in candidates:
+            bb = c.bounding_box
+            logger.debug(f'    ({bb.x:3.0f}, {bb.y:3.0f},'
+                         f' {bb.width:3.0f}, {bb.height:3.0f})')
