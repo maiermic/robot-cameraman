@@ -108,8 +108,7 @@ class PanasonicCameraman:
                     self.annotator.annotate(image, self._target_id, candidates,
                                             self._mode_manager.mode_name)
                 except OSError as e:
-                    logger.error(str(e))
-                    pass
+                    logger.error(e)
 
                 server_image.image = image
                 cv2_image = cv2.cvtColor(numpy.asarray(image),
