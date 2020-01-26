@@ -82,7 +82,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
                     self.cameraman_mode_manager.manual_zoom(200)
                 elif action == 'stop':
                     logger.debug('manually stop')
-                    self.cameraman_mode_manager.stop()
+                    self.cameraman_mode_manager.stop_camera()
                 else:
                     self.send_response(404)
                     self.end_headers()

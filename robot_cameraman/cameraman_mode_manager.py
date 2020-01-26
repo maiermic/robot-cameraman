@@ -48,9 +48,25 @@ class CameramanModeManager:
         self._camera_controller.start()
 
     def stop(self) -> None:
-        logger.debug('Stop camera')
+        """
+        Slow down camera till it stops. Call this method only if the update
+        method is not called in the meantime by another thread. Otherwise, it
+        might interfere with stopping the camera.
+        :return:
+        """
+        logger.debug('Stop camera mode manager')
         self._camera_speeds.reset()
         self._camera_controller.stop(self._camera_speeds)
+
+    def stop_camera(self) -> None:
+        """
+        Stop camera movement by resetting the camera speeds. Call this method if
+        you are not the thread that is controlling the camera. Only one thread
+        should call the update method to avoid conflicts.
+        :return:
+        """
+        logger.debug('Stop camera')
+        self._camera_speeds.reset()
 
     def tracking_mode(self) -> None:
         self._is_manual_mode = False
