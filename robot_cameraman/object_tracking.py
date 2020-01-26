@@ -1,7 +1,7 @@
 # import the necessary packages
 from collections import OrderedDict
 from logging import Logger, getLogger
-from typing import List, Dict
+from typing import List, Dict, Set
 
 import numpy
 import numpy as np
@@ -101,8 +101,8 @@ class CentroidTracker:
             # in order to determine if we need to update, register,
             # or deregister an object we need to keep track of which
             # of the rows and column indexes we have already examined
-            used_rows = set()
-            used_cols = set()
+            used_rows: Set[int] = set()
+            used_cols: Set[int] = set()
 
             logger.debug('  distances:')
             # loop over the combination of the (row, column) index
