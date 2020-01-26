@@ -129,8 +129,8 @@ class PanasonicCameraman:
                 # is pressed.
                 key = cv2.waitKey(5) & 0xFF
                 if key == ord('q'):
-                    break
-                if key == ord('i'):
+                    to_exit.set()
+                elif key == ord('i'):
                     logger.debug('manually tilt up')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_tilt(-100)
