@@ -146,6 +146,14 @@ class PanasonicCameraman:
                     logger.debug('manually rotate right')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_rotate(100)
+                elif key == ord('-'):
+                    logger.debug('manually zoom out')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_zoom(-200)
+                elif key == ord('+'):
+                    logger.debug('manually zoom in')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_zoom(200)
                 elif self._mode_manager._is_manual_mode and key == ord('o'):
                     logger.debug('manually stop')
                     self._mode_manager.stop_camera()
