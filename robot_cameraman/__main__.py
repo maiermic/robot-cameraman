@@ -92,7 +92,7 @@ def parse_arguments():
                         help="Defines how fast the gimbal may accelerate"
                              " rotational per second")
     parser.add_argument('--tiltingAccelerationPerSecond',
-                        type=int, default=50,
+                        type=int, default=400,
                         help="Defines how fast the gimbal may accelerate"
                              " in tilting direction per second")
     parser.add_argument('--variance',
