@@ -1,5 +1,6 @@
 # import the necessary packages
 from collections import OrderedDict
+from logging import Logger, getLogger
 from typing import List, Dict
 
 import numpy
@@ -7,6 +8,8 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 from robot_cameraman.image_detection import DetectionCandidate
+
+logger: Logger = getLogger(__name__)
 
 
 # https://www.pyimagesearch.com/2018/07/23/simple-object-tracking-with-opencv/
@@ -101,7 +104,7 @@ class CentroidTracker:
             used_rows = set()
             used_cols = set()
 
-            print('  distances:')
+            logger.debug('  distances:')
             # loop over the combination of the (row, column) index
             # tuples
             for (row, col) in zip(rows, cols):
@@ -125,8 +128,9 @@ class CentroidTracker:
                 intersection = old.percental_intersection_area(new)
                 intersection_limit = 0.3
                 if distance > limit and intersection < intersection_limit:
-                    print(f'    {object_id}: {int(distance):3} > {limit:3}'
-                          f' and {intersection:.2} < {intersection_limit:.2}')
+                    logger.debug(
+                        f'    {object_id}: {int(distance):3} > {limit:3}'
+                        f' and {intersection:.2} < {intersection_limit:.2}')
                     # objects too far away from recently seen one are treated as
                     # new ones if they do not overlap for the most part
                     self.register(input_centroids[col], candidates[col])
@@ -134,8 +138,9 @@ class CentroidTracker:
                     # TODO log distance, intersection and areas
                     self.register(input_centroids[col], candidates[col])
                 else:
-                    print(f'    {object_id}: {int(distance):3} <= {limit:3}'
-                          f' or {intersection:.2} >= {intersection_limit:.2}')
+                    logger.debug(
+                        f'    {object_id}: {int(distance):3} <= {limit:3}'
+                        f' or {intersection:.2} >= {intersection_limit:.2}')
                     # set new centroid, and reset the disappeared counter
                     self.objects[object_id] = input_centroids[col]
                     self.candidates[object_id] = candidates[col]
