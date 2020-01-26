@@ -27,6 +27,8 @@ class CameramanModeManager:
         self.mode_name = ''
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
+        # check calling convention: target can not be lost if it exists
+        assert target is not None or is_target_lost
         if not self._is_manual_mode:
             if target is None and is_target_lost:
                 if self.mode_name == 'aligning':
