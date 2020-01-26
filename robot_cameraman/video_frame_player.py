@@ -39,6 +39,7 @@ class VideoFramePlayer:
         self._vs = cv2.VideoCapture(str(self._file))
         self._frame_count = get_frame_count(cv2.VideoCapture(str(self._file)))
         self._font = font
+        self._window_name = f'Frame Player: {file}'
 
     def run(self):
         is_play = True
@@ -50,7 +51,7 @@ class VideoFramePlayer:
                     success, frame = self._vs.read()
                     if success:
                         frame = self._draw_frame(frame, frame_index)
-                        cv2.imshow('Video Player', frame)
+                        cv2.imshow(self._window_name, frame)
                     is_play = False
                 key = cv2.waitKey(50) & 0xFF
                 if key == ord('q'):
