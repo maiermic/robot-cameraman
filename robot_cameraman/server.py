@@ -59,6 +59,7 @@ class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
         if api_match:
             action = api_match.group(1)
             if action == 'start_tracking':
+                logger.debug('start tracking')
                 self.cameraman_mode_manager.tracking_mode()
             else:
                 self.cameraman_mode_manager.manual_mode()
