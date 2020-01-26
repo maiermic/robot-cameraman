@@ -77,7 +77,7 @@ class PanasonicCameraman:
                                               is_target_lost=True)
                     continue
                 frame_counter += 1
-                logger.debug(f'\nframe {frame_counter}')
+                logger.debug(f'frame {frame_counter}')
                 assert image.size == (640, 480), image.size
                 # Perform inference and note time taken
                 start_ms = time.time()
