@@ -127,8 +127,20 @@ class PanasonicCameraman:
                 # Display the frame for 5ms, and close the window so that the
                 # next frame can be displayed. Close the window if 'q' or 'Q'
                 # is pressed.
-                if cv2.waitKey(5) & 0xFF == ord('q'):
+                key = cv2.waitKey(5) & 0xFF
+                if key == ord('q'):
                     break
+                if key == ord('i'):
+                    print('up')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_tilt(-100)
+                elif key == ord('k'):
+                    print('down')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_tilt(100)
+                elif self._mode_manager._is_manual_mode and key == ord('o'):
+                    print('stop')
+                    self._mode_manager.stop_camera()
 
                 fps.update()
 
