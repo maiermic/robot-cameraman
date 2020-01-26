@@ -90,7 +90,11 @@ class CentroidTracker:
             # smallest value in each row and then (2) sort the row
             # indexes based on their minimum values so that the row
             # with the smallest value is at the *front* of the index
-            # list
+            # list.
+            # Ignore warning "Parameter 'initial' unfilled" of the following
+            # statement in Intellij. It is a bug in the stubs. The parameter is
+            # actually optional.
+            # noinspection PyArgumentList
             rows = d.min(axis=1).argsort()
 
             # next, we perform a similar process on the columns by
