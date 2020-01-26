@@ -124,39 +124,7 @@ class PanasonicCameraman:
                 if 'DISPLAY' in os.environ:
                     cv2.imshow('Robot Cameraman', cv2_image)
 
-                # Display the frame for 5ms, and close the window so that the
-                # next frame can be displayed. Close the window if 'q' or 'Q'
-                # is pressed.
-                key = cv2.waitKey(5) & 0xFF
-                if key == ord('q'):
-                    to_exit.set()
-                elif key == ord('i'):
-                    logger.debug('manually tilt up')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_tilt(-100)
-                elif key == ord('k'):
-                    logger.debug('manually tilt down')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_tilt(100)
-                elif key == ord('j'):
-                    logger.debug('manually rotate left')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_rotate(-100)
-                elif key == ord('l'):
-                    logger.debug('manually rotate right')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_rotate(100)
-                elif key == ord('-'):
-                    logger.debug('manually zoom out')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_zoom(-200)
-                elif key == ord('+'):
-                    logger.debug('manually zoom in')
-                    self._mode_manager.manual_mode()
-                    self._mode_manager.manual_zoom(200)
-                elif self._mode_manager._is_manual_mode and key == ord('o'):
-                    logger.debug('manually stop')
-                    self._mode_manager.stop_camera()
+                self.handle_keyboard_input(to_exit)
 
                 fps.update()
 
@@ -170,6 +138,41 @@ class PanasonicCameraman:
         logger.debug("Approx FPS: :" + str(fps.fps()))
 
         cv2.destroyAllWindows()
+
+    def handle_keyboard_input(self, to_exit):
+        # Display the frame for 5ms, and close the window so that the
+        # next frame can be displayed. Close the window if 'q' or 'Q'
+        # is pressed.
+        key = cv2.waitKey(5) & 0xFF
+        if key == ord('q'):
+            to_exit.set()
+        elif key == ord('i'):
+            logger.debug('manually tilt up')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_tilt(-100)
+        elif key == ord('k'):
+            logger.debug('manually tilt down')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_tilt(100)
+        elif key == ord('j'):
+            logger.debug('manually rotate left')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_rotate(-100)
+        elif key == ord('l'):
+            logger.debug('manually rotate right')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_rotate(100)
+        elif key == ord('-'):
+            logger.debug('manually zoom out')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_zoom(-200)
+        elif key == ord('+'):
+            logger.debug('manually zoom in')
+            self._mode_manager.manual_mode()
+            self._mode_manager.manual_zoom(200)
+        elif self._mode_manager._is_manual_mode and key == ord('o'):
+            logger.debug('manually stop')
+            self._mode_manager.stop_camera()
 
     @staticmethod
     def log_candidates(
