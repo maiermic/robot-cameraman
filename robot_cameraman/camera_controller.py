@@ -124,8 +124,8 @@ class SmoothCameraController(CameraController):
             logger.debug('current gimbal speeds are: pan %5d, tilt %5d',
                          self._rotate_speed_manager.current_speed,
                          self._tilt_speed_manager.current_speed)
-        except serial.serialutil.SerialException:
-            logger.error('failed to control gimbal')
+        except serial.serialutil.SerialException as e:
+            logger.error(f'failed to control gimbal: {e}')
             self._rotate_speed_manager.current_speed = old_speed
             self._tilt_speed_manager.current_speed = old_tilt_speed
         try:
