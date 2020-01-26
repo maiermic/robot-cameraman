@@ -147,6 +147,9 @@ class PanasonicCameraman:
         if key == ord('q'):
             logger.debug('key pressed to quit')
             to_exit.set()
+        elif key == ord('t'):
+            logger.debug('start tracking')
+            self._mode_manager.tracking_mode()
         elif key == ord('i'):
             logger.debug('manually tilt up')
             self._mode_manager.manual_mode()
