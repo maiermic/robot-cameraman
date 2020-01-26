@@ -138,6 +138,14 @@ class PanasonicCameraman:
                     print('down')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_tilt(100)
+                elif key == ord('j'):
+                    print('left')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_rotate(-100)
+                elif key == ord('l'):
+                    print('right')
+                    self._mode_manager.manual_mode()
+                    self._mode_manager.manual_rotate(100)
                 elif self._mode_manager._is_manual_mode and key == ord('o'):
                     print('stop')
                     self._mode_manager.stop_camera()
