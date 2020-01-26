@@ -145,6 +145,7 @@ class PanasonicCameraman:
         # is pressed.
         key = cv2.waitKey(5) & 0xFF
         if key == ord('q'):
+            logger.debug('key pressed to quit')
             to_exit.set()
         elif key == ord('i'):
             logger.debug('manually tilt up')
