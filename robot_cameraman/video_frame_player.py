@@ -42,29 +42,33 @@ class VideoFramePlayer:
 
     def run(self):
         is_play = True
-        is_playing_backwards = False
+        frame_index = 0
         while True:
             try:
                 if is_play:
-                    frame_index = int(self._vs.get(cv2.CAP_PROP_POS_FRAMES))
-                    if is_playing_backwards:
-                        frame_index -= 2
-                    if 0 <= frame_index < self._frame_count:
-                        self._vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-                        success, frame = self._vs.read()
-                        if success:
-                            frame = self._draw_frame(frame, frame_index)
-                            cv2.imshow('Video Player', frame)
+                    self._vs.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+                    success, frame = self._vs.read()
+                    if success:
+                        frame = self._draw_frame(frame, frame_index)
+                        cv2.imshow('Video Player', frame)
                     is_play = False
                 key = cv2.waitKey(50) & 0xFF
                 if key == ord('q'):
                     break
                 if key == ord('n'):
                     is_play = True
-                    is_playing_backwards = False
+                    if (frame_index + 1) < self._frame_count:
+                        frame_index += 1
                 elif key == ord('p'):
                     is_play = True
-                    is_playing_backwards = True
+                    if 0 <= (frame_index - 1):
+                        frame_index -= 1
+                elif key == ord('s'):
+                    is_play = True
+                    frame_index = 0
+                elif key == ord('e'):
+                    is_play = True
+                    frame_index = self._frame_count - 1
             except KeyboardInterrupt:
                 break
         self._vs.release()
