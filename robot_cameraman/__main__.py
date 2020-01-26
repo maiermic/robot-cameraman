@@ -2,6 +2,7 @@ import argparse
 import logging
 import signal
 import threading
+# noinspection Mypy
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
