@@ -36,6 +36,7 @@ class CameramanModeManager:
                 self.mode_name = 'searching'
                 self._search_target_strategy.update(self._camera_speeds)
             elif (self.mode_name in ['searching', 'aligning']
+                  and target is not None
                   and not self._align_tracking_strategy.is_aligned(target)):
                 self.mode_name = 'aligning'
                 self._align_tracking_strategy.update(
