@@ -131,23 +131,23 @@ class PanasonicCameraman:
                 if key == ord('q'):
                     break
                 if key == ord('i'):
-                    print('up')
+                    logger.debug('manually tilt up')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_tilt(-100)
                 elif key == ord('k'):
-                    print('down')
+                    logger.debug('manually tilt down')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_tilt(100)
                 elif key == ord('j'):
-                    print('left')
+                    logger.debug('manually rotate left')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_rotate(-100)
                 elif key == ord('l'):
-                    print('right')
+                    logger.debug('manually rotate right')
                     self._mode_manager.manual_mode()
                     self._mode_manager.manual_rotate(100)
                 elif self._mode_manager._is_manual_mode and key == ord('o'):
-                    print('stop')
+                    logger.debug('manually stop')
                     self._mode_manager.stop_camera()
 
                 fps.update()
