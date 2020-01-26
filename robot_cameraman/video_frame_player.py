@@ -18,12 +18,26 @@ def create_video_writer(vs, output_file: Path):
                            (width, height))
 
 
+def get_frame_count(vs):
+    frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
+    if (frame_count != 0):
+        return frame_count
+    print('CAP_PROP_FRAME_COUNT not available => counting frames...')
+    while True:
+        success, frame = vs.read()
+        if success:
+            frame_count += 1
+        else:
+            break
+    return frame_count
+
+
 class VideoFramePlayer:
     def __init__(self, file: Path, font):
         assert file.exists()
         self._file = file
         self._vs = cv2.VideoCapture(str(self._file))
-        self._frame_count = int(self._vs.get(cv2.CAP_PROP_FRAME_COUNT))
+        self._frame_count = get_frame_count(cv2.VideoCapture(str(self._file)))
         self._font = font
 
     def run(self):
