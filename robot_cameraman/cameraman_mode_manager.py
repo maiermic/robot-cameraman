@@ -83,3 +83,6 @@ class CameramanModeManager:
 
     def manual_zoom(self, zoom_speed: int) -> None:
         self._camera_speeds.zoom_speed = zoom_speed
+
+    def is_manual_mode(self):
+        return self._is_manual_mode
