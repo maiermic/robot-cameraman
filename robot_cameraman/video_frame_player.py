@@ -53,6 +53,9 @@ class VideoFramePlayer:
                         frame = self._draw_frame(frame, frame_index)
                         cv2.imshow(self._window_name, frame)
                     is_play = False
+                if not cv2.getWindowProperty(self._window_name,
+                                             cv2.WND_PROP_VISIBLE):
+                    break
                 key = cv2.waitKey(50) & 0xFF
                 if key == ord('q'):
                     break
