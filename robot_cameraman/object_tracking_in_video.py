@@ -90,6 +90,16 @@ def create_video_writer(vs, output_file: Path):
                            (width, height))
 
 
+def log_candidates(
+        candidates_name: str,
+        candidates: Iterable[DetectionCandidate]):
+    print(f'  {candidates_name}:')
+    for c in candidates:
+        bb = c.bounding_box
+        print(f'    ({bb.x:3.0f}, {bb.y:3.0f},'
+              f' {bb.width:3.0f}, {bb.height:3.0f})')
+
+
 def main(args):
     labels = read_label_file(args.labels)
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
@@ -115,12 +125,9 @@ def main(args):
             inference_results = detection_engine.detect(image)
             candidates = [obj for obj in inference_results if
                           obj.label_id == args.targetLabelId]
-            print('  candidates:')
-            for c in candidates:
-                bb = c.bounding_box
-                print(f'    ({bb.x:3.0f}, {bb.y:3.0f},'
-                      f' {bb.width:3.0f}, {bb.height:3.0f})')
+            log_candidates('candidates', candidates)
             filtered_candidates = filter_intersections(candidates)
+            log_candidates('filtered_candidates', filtered_candidates)
             annotator.global_candidate_id += (
                         len(candidates) - len(filtered_candidates))
             candidates = object_tracker.update(filtered_candidates)
