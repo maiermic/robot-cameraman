@@ -75,6 +75,7 @@ class PanasonicCameraman:
                     logger.error('timeout reading live view image')
                     self._mode_manager.update(self._target_box,
                                               is_target_lost=True)
+                    self.handle_keyboard_input(to_exit)
                     continue
                 frame_counter += 1
                 logger.debug(f'frame {frame_counter}')
