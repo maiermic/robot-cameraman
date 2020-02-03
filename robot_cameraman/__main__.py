@@ -99,6 +99,16 @@ def parse_arguments():
                         type=int, default=80,
                         help="Defines the variance up to which no movement"
                              " (pan, tilt, zoom) occurs.")
+    parser.add_argument(
+        '--ssl-key',
+        type=Path,
+        default=resources / 'server.key',
+        help="Path to server SSL-key file.")
+    parser.add_argument(
+        '--ssl-certificate',
+        type=Path,
+        default=resources / 'server.pem',
+        help="Path to server SSL-certificate file.")
     return parser.parse_args()
 
 
@@ -183,7 +193,9 @@ signal.signal(signal.SIGTERM, quit)
 camera_manager.start()
 cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
 cameraman_thread.start()
-print('Open http://localhost:9000/index.html in your browser')
+print('Open https://localhost:9000/index.html in your browser')
 run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
-           _server_image=server_image)
+           _server_image=server_image,
+           ssl_certificate=args.ssl_certificate,
+           ssl_key=args.ssl_key)

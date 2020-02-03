@@ -2,6 +2,7 @@ import threading
 from dataclasses import dataclass
 from io import BytesIO
 from logging import Logger, getLogger
+from pathlib import Path
 from typing import Optional
 
 import PIL.Image
@@ -113,10 +114,13 @@ def live_view():
 
 def run_server(_to_exit: threading.Event,
                _cameraman_mode_manager: CameramanModeManager,
-               _server_image: ImageContainer):
+               _server_image: ImageContainer,
+               ssl_certificate: Path,
+               ssl_key: Path):
     # TODO use dependency injection instead of global variables
     global to_exit, cameraman_mode_manager, server_image
     to_exit = _to_exit
     cameraman_mode_manager = _cameraman_mode_manager
     server_image = _server_image
-    app.run(host='0.0.0.0', port=9000, threaded=True)
+    app.run(host='0.0.0.0', port=9000, threaded=True,
+            ssl_context=(ssl_certificate, ssl_key))
