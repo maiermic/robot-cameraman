@@ -1,17 +1,15 @@
-import logging
-import re
 import threading
 from dataclasses import dataclass
-from http.server import BaseHTTPRequestHandler
-from logging import Logger
-from pathlib import Path
+from io import BytesIO
+from logging import Logger, getLogger
 from typing import Optional
 
 import PIL.Image
+from flask import Flask, render_template, Response
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 
-logger: Logger = logging.getLogger(__name__)
+logger: Logger = getLogger(__name__)
 
 
 @dataclass
@@ -19,75 +17,106 @@ class ImageContainer:
     image: Optional[PIL.Image.Image]
 
 
-class RobotCameramanHttpHandler(BaseHTTPRequestHandler):
-    # static members
-    to_exit: threading.Event
-    server_image: ImageContainer
-    cameraman_mode_manager: CameramanModeManager
+to_exit: threading.Event
+server_image: ImageContainer
+cameraman_mode_manager: CameramanModeManager
 
-    # type hints
-    path: str
+app = Flask(__name__)
 
-    api_regex = re.compile(r'/api/(\w+)')
 
-    def do_GET(self):
-        if self.path.endswith('.mjpg'):
-            self.send_response(200)
-            self.send_header('Content-type',
-                             'multipart/x-mixed-replace; boundary=jpgboundary')
-            self.end_headers()
-            while not self.to_exit.wait(0.05):
-                jpg = self.server_image.image
-                jpg_bytes = jpg.tobytes()
-                try:
-                    self.wfile.write(str.encode("\r\n--jpgboundary\r\n"))
-                    self.send_header('Content-type', 'image/jpeg')
-                    self.send_header('Content-length', len(jpg_bytes))
-                    self.end_headers()
-                    jpg.save(self.wfile, 'JPEG')
-                except ConnectionResetError:
-                    pass  # ignore
-            return
-        templates: Path = Path(__file__).parent / 'templates'
-        if self.path.endswith('.html'):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write((templates / 'index.html').read_text().encode())
-            return
-        api_match = self.api_regex.fullmatch(self.path)
-        if api_match:
-            action = api_match.group(1)
-            if action == 'start_tracking':
-                logger.debug('start tracking')
-                self.cameraman_mode_manager.tracking_mode()
-            else:
-                self.cameraman_mode_manager.manual_mode()
-                if action == 'left':
-                    logger.debug('manually rotate left')
-                    self.cameraman_mode_manager.manual_rotate(-100)
-                elif action == 'right':
-                    logger.debug('manually rotate right')
-                    self.cameraman_mode_manager.manual_rotate(100)
-                elif action == 'tilt_up':
-                    logger.debug('manually tilt up')
-                    self.cameraman_mode_manager.manual_tilt(-100)
-                elif action == 'tilt_down':
-                    logger.debug('manually tilt down')
-                    self.cameraman_mode_manager.manual_tilt(100)
-                elif action == 'zoom_out':
-                    logger.debug('manually zoom out')
-                    self.cameraman_mode_manager.manual_zoom(-200)
-                elif action == 'zoom_in':
-                    logger.debug('manually zoom in')
-                    self.cameraman_mode_manager.manual_zoom(200)
-                elif action == 'stop':
-                    logger.debug('manually stop')
-                    self.cameraman_mode_manager.stop_camera()
-                else:
-                    self.send_response(404)
-                    self.end_headers()
-                    return
-            self.send_response(200)
-            self.end_headers()
-            return
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/api/start_tracking')
+def start_tracking():
+    logger.debug('start tracking')
+    cameraman_mode_manager.tracking_mode()
+    return '', 204
+
+
+@app.route('/api/left')
+def manually_rotate_left():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually rotate left')
+    cameraman_mode_manager.manual_rotate(-100)
+    return '', 204
+
+
+@app.route('/api/right')
+def manually_rotate_right():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually rotate right')
+    cameraman_mode_manager.manual_rotate(100)
+    return '', 204
+
+
+@app.route('/api/tilt_up')
+def manually_tilt_up():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually tilt up')
+    cameraman_mode_manager.manual_tilt(-100)
+    return '', 204
+
+
+@app.route('/api/tilt_down')
+def manually_tilt_down():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually tilt down')
+    cameraman_mode_manager.manual_tilt(100)
+    return '', 204
+
+
+@app.route('/api/zoom_out')
+def manually_zoom_out():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually zoom out')
+    cameraman_mode_manager.manual_zoom(-200)
+    return '', 204
+
+
+@app.route('/api/zoom_in')
+def manually_zoom_in():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually zoom in')
+    cameraman_mode_manager.manual_zoom(200)
+    return '', 204
+
+
+@app.route('/api/stop')
+def manually_stop():
+    cameraman_mode_manager.manual_mode()
+    logger.debug('manually stop')
+    cameraman_mode_manager.stop_camera()
+    return '', 204
+
+
+def stream_frames():
+    """Read live view frames regularly."""
+    # TODO synchronize with source (do not send the same image twice)
+    while not to_exit.wait(0.05):
+        jpg = server_image.image
+        buffered = BytesIO()
+        jpg.save(buffered, format="JPEG")
+        frame = buffered.getvalue()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+
+@app.route('/cam.mjpg')
+def live_view():
+    """Stream live view image of camera."""
+    return Response(stream_frames(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+def run_server(_to_exit: threading.Event,
+               _cameraman_mode_manager: CameramanModeManager,
+               _server_image: ImageContainer):
+    # TODO use dependency injection instead of global variables
+    global to_exit, cameraman_mode_manager, server_image
+    to_exit = _to_exit
+    cameraman_mode_manager = _cameraman_mode_manager
+    server_image = _server_image
+    app.run(host='0.0.0.0', port=9000, threaded=True)

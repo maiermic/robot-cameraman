@@ -3,7 +3,6 @@ import logging
 import signal
 import threading
 # noinspection Mypy
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import PIL.ImageFont
@@ -19,13 +18,12 @@ from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
-from robot_cameraman.server import RobotCameramanHttpHandler, ImageContainer
+from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
     StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
     RotateSearchTargetStrategy
 
 to_exit: threading.Event
-server: ThreadingHTTPServer
 server_image: ImageContainer
 
 
@@ -104,13 +102,10 @@ def parse_arguments():
 
 
 def quit(sig=None, frame=None):
-    global cameraman_thread, server, to_exit
+    global cameraman_thread, to_exit
     print("Exiting...")
     to_exit.set()
-    # Regular server.shutdown() waits forever if server.serve_forever() is
-    # not running anymore. Hence, this work around that only sets the flag
-    # to shutdown, but does not wait.
-    server._BaseServer__shutdown_request = True
+    # TODO terminate server
     if threading.current_thread() != cameraman_thread:
         print('wait for cameraman thread')
         cameraman_thread.join()
@@ -179,10 +174,6 @@ cameraman = PanasonicCameraman(
 
 to_exit = threading.Event()
 server_image = ImageContainer(image=None)
-RobotCameramanHttpHandler.to_exit = to_exit
-RobotCameramanHttpHandler.server_image = server_image
-RobotCameramanHttpHandler.cameraman_mode_manager = cameraman_mode_manager
-server = ThreadingHTTPServer(('', 9000), RobotCameramanHttpHandler)
 
 signal.signal(signal.SIGINT, quit)
 signal.signal(signal.SIGTERM, quit)
@@ -191,4 +182,6 @@ camera_manager.start()
 cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
 cameraman_thread.start()
 print('Open http://localhost:9000/index.html in your browser')
-server.serve_forever()
+run_server(_to_exit=to_exit,
+           _cameraman_mode_manager=cameraman_mode_manager,
+           _server_image=server_image)
