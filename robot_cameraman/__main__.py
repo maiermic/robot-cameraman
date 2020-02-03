@@ -5,6 +5,7 @@ import threading
 # noinspection Mypy
 from pathlib import Path
 
+import PIL.Image
 import PIL.ImageFont
 import cv2
 
@@ -173,7 +174,8 @@ cameraman = PanasonicCameraman(
     output=create_video_writer(args.output))
 
 to_exit = threading.Event()
-server_image = ImageContainer(image=None)
+server_image = ImageContainer(
+    image=PIL.Image.new('RGB', (640, 480), color=(73, 109, 137)))
 
 signal.signal(signal.SIGINT, quit)
 signal.signal(signal.SIGTERM, quit)
