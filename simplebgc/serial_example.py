@@ -4,8 +4,6 @@ from collections import namedtuple
 import serial
 
 from simplebgc.command_ids import *
-from simplebgc.command_names import get_incoming_command_name
-from simplebgc.command_parser import parse_cmd
 from simplebgc.commands import ControlOutCmd, BoardInfoInCmd, RawCmd
 
 MessageHeader = namedtuple(
@@ -114,10 +112,23 @@ def rotate_gimbal(yaw_speed: int = 0) -> None:
     # print(parse_cmd(cmd))
 
 
-def control_gimbal(yaw_speed: int = 0, pitch_speed: int = 0) -> None:
-    control_data = ControlOutCmd(roll_mode=1, roll_speed=0, roll_angle=0,
-                                 pitch_mode=1, pitch_speed=pitch_speed, pitch_angle=0,
-                                 yaw_mode=1, yaw_speed=yaw_speed, yaw_angle=0)
+def control_gimbal(
+        yaw_mode: int = 1,
+        yaw_speed: int = 0,
+        yaw_angle: int = 0,
+        pitch_mode: int = 1,
+        pitch_speed: int = 0,
+        pitch_angle: int = 0) -> None:
+    # The following factor is used to convert degrees to the units used by the
+    # SimpleBGC 2.6 serial protocol (see page 34 of the SimpleBGC 2.6 Serial
+    # Protocol Specification).
+    degree_factor = 0.02197265625
+    yaw_angle = int(yaw_angle / degree_factor)
+    pitch_angle = int(pitch_angle / degree_factor)
+    control_data = ControlOutCmd(
+        roll_mode=2, roll_speed=0, roll_angle=0,
+        pitch_mode=pitch_mode, pitch_speed=pitch_speed, pitch_angle=pitch_angle,
+        yaw_mode=yaw_mode, yaw_speed=yaw_speed, yaw_angle=yaw_angle)
     packed_control_data = pack_control_cmd(control_data)
     message = create_message(CMD_CONTROL, packed_control_data)
     packed_message = pack_message(message)
@@ -127,9 +138,22 @@ def control_gimbal(yaw_speed: int = 0, pitch_speed: int = 0) -> None:
 
 
 if __name__ == '__main__':
+    from time import sleep
     # rotate_gimbal(yaw_speed=-100)
     # rotate_gimbal(yaw_speed=100)
-    rotate_gimbal(yaw_speed=0)
+    # sleep(3)
+    # rotate_gimbal(yaw_speed=0)
+    control_gimbal(
+        pitch_mode=2, pitch_speed=300, pitch_angle=0,
+        yaw_mode=2, yaw_speed=300, yaw_angle=0)
+    sleep(3)
+    control_gimbal(
+        pitch_mode=2, pitch_speed=300, pitch_angle=-60,
+        yaw_mode=2, yaw_speed=300, yaw_angle=360)
+    sleep(3)
+    control_gimbal(
+        pitch_mode=2, pitch_speed=300, pitch_angle=0,
+        yaw_mode=2, yaw_speed=300, yaw_angle=0)
 
 # 1u – 1 byte unsigned
 # 1s – 1 byte signed

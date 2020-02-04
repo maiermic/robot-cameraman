@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import PIL.Image
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 
@@ -90,6 +90,25 @@ def manually_stop():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually stop')
     cameraman_mode_manager.stop_camera()
+    return '', 204
+
+
+@app.route('/api/angle')
+def angle():
+    if 'pan' not in request.args:
+        return "Missing query parameter 'pan'", 400
+    if 'tilt' not in request.args:
+        return "Missing query parameter 'tilt'", 400
+    try:
+        pan_angle = int(request.args.get('pan'))
+    except ValueError:
+        return "Query parameter 'pan' should be a number", 400
+    try:
+        tilt_angle = int(request.args.get('tilt'))
+    except ValueError:
+        return "Query parameter 'tilt' should be a number", 400
+    logger.debug(f'angle pan={pan_angle} tilt={tilt_angle}')
+    cameraman_mode_manager.angle(pan_angle=pan_angle, tilt_angle=tilt_angle)
     return '', 204
 
 

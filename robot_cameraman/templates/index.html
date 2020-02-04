@@ -7,8 +7,21 @@
     <style>
         html, body {
             margin: 0;
-            display: flex;
             width: 100%;
+        }
+
+        body {
+            display: grid;
+            grid-template-columns: auto 1fr;
+        }
+
+        #debugLog {
+            grid-column-start: 1;
+            grid-column-end: end;
+        }
+
+        #angles {
+            margin-left: 32px;
         }
 
         .live-view {
@@ -18,8 +31,6 @@
         }
 
         .buttons {
-            flex-grow: 1;
-
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
@@ -36,46 +47,101 @@
                class="button grid-item"
                type="button"
                value="Up"
-               onpointerdown="fetch('api/tilt_up')"
+               onpointerdown="disableOrientation(); fetch('api/tilt_up')"
                onpointerup="fetch('api/stop')">
         <input id="zoom_in"
                class="button grid-item"
                type="button"
                value="+"
-               onpointerdown="fetch('api/zoom_in')"
+               onpointerdown="disableOrientation(); fetch('api/zoom_in')"
                onpointerup="fetch('api/stop')">
 
         <input id="left"
                class="button grid-item"
                type="button"
                value="Left"
-               onpointerdown="fetch('api/left')"
+               onpointerdown="disableOrientation(); fetch('api/left')"
                onpointerup="fetch('api/stop')">
         <input id="startTrackingButton"
                type="button"
                class="button"
                value="Track"
-               onpointerup="fetch('api/start_tracking')">
+               onpointerup="disableOrientation(); fetch('api/start_tracking')">
         <input id="right"
                class="button grid-item"
                type="button"
                value="Right"
-               onpointerdown="fetch('api/right')"
+               onpointerdown="disableOrientation(); fetch('api/right')"
                onpointerup="fetch('api/stop')">
 
-        <div class="grid-item"></div>
+        <input id="down"
+               class="button grid-item"
+               type="button"
+               value="Orientate"
+               onpointerdown="toggleOrientation()">
         <input id="down"
                class="button grid-item"
                type="button"
                value="Down"
-               onpointerdown="fetch('api/tilt_down')"
+               onpointerdown="disableOrientation(); fetch('api/tilt_down')"
                onpointerup="fetch('api/stop')">
         <input id="zoom_out"
                class="button grid-item"
                type="button"
                value="-"
-               onpointerdown="fetch('api/zoom_out')"
+               onpointerdown="disableOrientation(); fetch('api/zoom_out')"
                onpointerup="fetch('api/stop')">
     </div>
+    <div id="debugLog">
+        <p id="angles"></p>
+    </div>
+    <script>
+      let isOrientationEnabled = false;
+      let panAngle = null;
+      let oldPanAngle = panAngle;
+      let tiltAngle = null;
+      let oldTiltAngle = tiltAngle;
+      let updateInterval = null;
+
+      function onDeviceOrientation(event) {
+        tiltAngle = Math.round(Math.sign(event.gamma) * (90 - Math.abs(event.gamma)));
+        const rawPanAngle = tiltAngle >= 0 ? event.alpha : event.alpha + 180;
+        panAngle = -Math.round(rawPanAngle % 360);
+      }
+
+      function registerUpdateInterval() {
+        updateInterval = setInterval(() => {
+          if (!isOrientationEnabled) {
+            return; // has been disabled in the meantime
+          }
+          if (panAngle !== oldPanAngle || tiltAngle !== oldTiltAngle ) {
+            oldPanAngle = panAngle;
+            oldTiltAngle = tiltAngle;
+            document.getElementById('angles').innerText =
+              `pan: ${panAngle}, tilt: ${tiltAngle}`;
+            fetch(`api/angle?pan=${panAngle}&tilt=${tiltAngle}`);
+          }
+        }, 1000);
+      }
+
+      function disableOrientation() {
+        if (isOrientationEnabled) {
+          toggleOrientation();
+        }
+      }
+
+      function toggleOrientation() {
+        isOrientationEnabled = !isOrientationEnabled;
+        if (isOrientationEnabled) {
+          addEventListener('deviceorientationabsolute', onDeviceOrientation);
+          registerUpdateInterval();
+        } else {
+          fetch('api/stop');
+          removeEventListener('deviceorientationabsolute', onDeviceOrientation);
+          clearInterval(updateInterval);
+          document.getElementById('angles').innerText = '';
+        }
+      }
+    </script>
 </body>
 </html>

@@ -23,13 +23,12 @@ class CameramanModeManager:
         self._tracking_strategy = tracking_strategy
         self._search_target_strategy = search_target_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
-        self._is_manual_mode = False
         self.mode_name = ''
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists
         assert target is not None or is_target_lost
-        if not self._is_manual_mode:
+        if self.mode_name not in ['manual', 'angle']:
             if target is None and is_target_lost:
                 if self.mode_name == 'aligning':
                     self._camera_speeds.reset()
@@ -45,7 +44,8 @@ class CameramanModeManager:
                 self.mode_name = 'tracking'
                 self._tracking_strategy.update(self._camera_speeds, target,
                                                is_target_lost)
-        self._camera_controller.update(self._camera_speeds)
+        if self.mode_name != 'angle':
+            self._camera_controller.update(self._camera_speeds)
 
     def start(self):
         self._camera_controller.start()
@@ -72,10 +72,10 @@ class CameramanModeManager:
         self._camera_speeds.reset()
 
     def tracking_mode(self) -> None:
-        self._is_manual_mode = False
+        # search target to track
+        self.mode_name = 'searching'
 
     def manual_mode(self) -> None:
-        self._is_manual_mode = True
         self.mode_name = 'manual'
 
     def manual_rotate(self, pan_speed: int) -> None:
@@ -88,4 +88,10 @@ class CameramanModeManager:
         self._camera_speeds.zoom_speed = zoom_speed
 
     def is_manual_mode(self):
-        return self._is_manual_mode
+        return self.mode_name == 'manual'
+
+    def angle(self, pan_angle: int, tilt_angle: int) -> None:
+        self.mode_name = 'angle'
+        from simplebgc.serial_example import control_gimbal
+        control_gimbal(yaw_mode=2, yaw_speed=100, yaw_angle=pan_angle,
+                       pitch_mode=2, pitch_speed=100, pitch_angle=tilt_angle)
