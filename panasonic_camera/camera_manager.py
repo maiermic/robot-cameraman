@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 import requests
 import urllib3
 
-from panasonic_camera.camera import PanasonicCamera
+from panasonic_camera.camera import PanasonicCamera, BusyError, CriticalError
 from panasonic_camera.discover import discover_panasonic_camera_devices
 from panasonic_camera.interval import signal_handler, IntervalThread, \
     ProgramKilled
@@ -54,7 +54,8 @@ class PanasonicCameraManager(IntervalThread):
             self.camera.recmode()
             self.camera.start_stream()
         except (requests.exceptions.RequestException,
-                urllib3.exceptions.HTTPError) as e:
+                urllib3.exceptions.HTTPError,
+                BusyError) as e:
             logger.error('Could not start camera stream: %s', e)
 
     def run(self):
@@ -64,7 +65,10 @@ class PanasonicCameraManager(IntervalThread):
     def cancel(self):
         if self.camera:
             logger.debug('stop camera stream')
-            self.camera.stop_stream()
+            try:
+                self.camera.stop_stream()
+            except CriticalError as e:
+                logger.warning('Could not stop camera stream: %s', e)
         super().cancel()
 
 
