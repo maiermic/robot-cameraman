@@ -195,7 +195,8 @@ if __name__ == '__main__':
     from pprint import pprint
 
     devices = discover_panasonic_camera_devices()
-    device = devices[0]
-    camera = PanasonicCamera(urlparse(device.location).hostname)
-    pprint(camera.get_state())
-    pprint(camera.get_info_capability().__dict__)
+    for device in devices:
+        print(device)
+        camera = PanasonicCamera(urlparse(device.location).hostname)
+        pprint(camera.get_state())
+        pprint(camera.get_info_capability().__dict__)
