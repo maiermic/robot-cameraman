@@ -16,6 +16,10 @@ class BusyError(Exception):
     pass
 
 
+class CriticalError(Exception):
+    pass
+
+
 @dataclass
 class State:
     batt: str
@@ -82,6 +86,8 @@ class PanasonicCamera:
             raise RejectError
         elif result == 'err_busy':
             raise BusyError
+        elif result == 'err_critical':
+            raise CriticalError
         assert result == 'ok', 'unknown result "{}"'.format(result)
 
     def _request(self, *args, **kwargs) -> ET.Element:
