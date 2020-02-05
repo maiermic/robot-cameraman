@@ -154,9 +154,9 @@ def generate_class(name, xml_element: ET.Element):
             parameter.append(parameter_name)
         constructor_body.append('self.{0} = {0}'.format(parameter_name))
     if len(parameter) == 1:
-        constructor_body = 'pass'
+        constructor_body_str = 'pass'
     else:
-        constructor_body = '\n        '.join(constructor_body)
+        constructor_body_str = '\n        '.join(constructor_body)
     return """\
 class {name}:
     def __init__(
@@ -165,7 +165,7 @@ class {name}:
 """.format(
         name=name,
         constructor_parameter_list=',\n            '.join(parameter),
-        constructor_body=constructor_body)
+        constructor_body=constructor_body_str)
 
 
 if __name__ == '__main__':
