@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Iterator, Optional
 from urllib.parse import urlparse
 
 import requests
@@ -48,6 +48,27 @@ class Capability:
     specifications: List[str]
 
 
+def find_text(element: Optional[ET.Element],
+              path: str,
+              default: str = '') -> str:
+    if element is None:
+        return default
+    e = element.find(path)
+    return default if e is None else str(e.text)
+
+
+def find_all_text(element: ET.Element, path: str) -> List[str]:
+    return [str(e.text) for e in element.findall(path)]
+
+
+def find_elements(element: ET.Element, path: str) -> Iterator[ET.Element]:
+    elements = element.find(path)
+    if elements is not None:
+        for e in list(elements):
+            if e is not None:
+                yield e
+
+
 class PanasonicCamera:
 
     def __init__(self, hostname: str) -> None:
@@ -56,7 +77,7 @@ class PanasonicCamera:
     @staticmethod
     def _validate_camrply(camrply: ET.Element) -> None:
         assert camrply.tag == 'camrply'
-        result = camrply.find('result').text
+        result = find_text(camrply, 'result')
         if result == 'err_reject':
             raise RejectError
         elif result == 'err_busy':
@@ -74,12 +95,12 @@ class PanasonicCamera:
         camrply: ET.Element = self._request(params={'mode': 'getstate'})
         state = camrply.find('state')
         return State(
-            batt=state.find('batt').text,
-            cammode=state.find('cammode').text,
-            sdcardstatus=state.find('sdcardstatus').text,
-            sd_memory=state.find('sd_memory').text,
-            sd_access=state.find('sd_access').text,
-            version=state.find('version').text)
+            batt=find_text(state, 'batt'),
+            cammode=find_text(state, 'cammode'),
+            sdcardstatus=find_text(state, 'sdcardstatus'),
+            sd_memory=find_text(state, 'sd_memory'),
+            sd_access=find_text(state, 'sd_access'),
+            version=find_text(state, 'version'))
 
     def _camcmd(self, value: str) -> None:
         self._request(params={'mode': 'camcmd', 'value': value})
@@ -115,18 +136,20 @@ class PanasonicCamera:
         camrply: ET.Element = self._get_info('capability')
         # print(ET.tostring(camrply, encoding='utf8', method='xml').decode())
         # print(generate_class('Capability', camrply))
+        settings: Dict[str, Setting] = {
+            e.tag: Setting(current_value=find_text(e, 'curvalue'),
+                           values=find_text(e, 'valuelist').split(','))
+            for e in find_elements(camrply, 'settinglist')
+        }
         return Capability(
-            comm_proto_ver=camrply.find('comm_proto_ver').text,
+            comm_proto_ver=find_text(camrply, 'comm_proto_ver'),
             product_info=ProductInfo(
-                camrply.find('productinfo/modelname').text),
-            commands=[e.text for e in camrply.findall('camcmdlist/camcmd')],
-            controls=[e.text for e in camrply.findall('camctrllist/camctrl')],
-            settings={e.tag: Setting(current_value=e.find('curvalue').text,
-                                     values=e.find('valuelist').text.split(','))
-                      for e in list(camrply.find('settinglist'))},
-            states=[e.text for e in camrply.findall('getstatelist/getstate')],
-            specifications=[e.text for e in
-                            camrply.findall('camspeclist/camspec')])
+                model_name=find_text(camrply, 'productinfo/modelname')),
+            commands=find_all_text(camrply, 'camcmdlist/camcmd'),
+            controls=find_all_text(camrply, 'camctrllist/camctrl'),
+            settings=settings,
+            states=find_all_text(camrply, 'getstatelist/getstate'),
+            specifications=find_all_text(camrply, 'camspeclist/camspec'))
 
     def start_stream(self, port=49199):
         return self._request(
