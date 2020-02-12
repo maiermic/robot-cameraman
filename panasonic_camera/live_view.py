@@ -94,3 +94,69 @@ class LiveView:
         else:
             logger.debug(f'image data length: {len(image_data)}')
         return image_data
+
+
+def _main():
+    from panasonic_camera.camera_manager import PanasonicCameraManager
+    import argparse
+    import threading
+    import signal
+    import PIL.Image
+    import io
+    import os
+    import cv2
+    import numpy
+    import logging
+    import time
+    logging.basicConfig(level=logging.DEBUG)
+    parser = argparse.ArgumentParser(
+        description="Detect objects in a video file using Google Coral USB.")
+    parser.add_argument('--ip', type=str,
+                        default='0.0.0.0',
+                        help="UDP Socket IP address.")
+    parser.add_argument('--port', type=int,
+                        default=49199,
+                        help="UDP Socket port.")
+    args = parser.parse_args()
+
+    to_exit = threading.Event()
+
+    def quit(sig=None, frame=None):
+        print("Exiting...")
+        to_exit.set()
+        if threading.current_thread() != camera_manager:
+            print('wait for camera manager thread')
+            camera_manager.cancel()
+            camera_manager.join()
+        exit(0)
+
+    signal.signal(signal.SIGINT, quit)
+    signal.signal(signal.SIGTERM, quit)
+
+    camera_manager = PanasonicCameraManager()
+    camera_manager.start()
+    live_view = LiveView(args.ip, args.port)
+    while not to_exit.is_set():
+        try:
+            if not camera_manager.is_stream_started:
+                logger.debug('camera stream has not been started yet')
+                time.sleep(0.2)
+                continue
+            image = PIL.Image.open(io.BytesIO(live_view.image()))
+            if 'DISPLAY' in os.environ:
+                cv2_image = cv2.cvtColor(numpy.asarray(image),
+                                         cv2.COLOR_RGB2BGR)
+                cv2.imshow('Live View', cv2_image)
+                key = cv2.waitKey(5) & 0xFF
+                if key == ord('q'):
+                    logger.debug('key pressed to quit')
+                    to_exit.set()
+        except (socket.timeout, OSError) as e:
+            logger.error(f'error reading live view image: {e}')
+        except KeyboardInterrupt:
+            break
+    quit()
+
+
+if __name__ == '__main__':
+    _main()
