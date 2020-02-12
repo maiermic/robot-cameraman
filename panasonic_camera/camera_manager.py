@@ -43,10 +43,10 @@ class PanasonicCameraManager(IntervalThread):
             logger.debug(
                 'Connect to {}: {}'.format(device.friendly_name, hostname))
             self.camera = PanasonicCamera(hostname)
-            self._ensure_connection()
             # Some cameras like the Panasonic HC-V380 require to get info
             # capability before starting the camera stream
             self.camera.get_info_capability()
+            self._ensure_connection()
             self._start_camera_stream()
         else:
             self.camera = None
