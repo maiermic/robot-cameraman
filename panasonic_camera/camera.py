@@ -83,11 +83,11 @@ class PanasonicCamera:
         assert camrply.tag == 'camrply'
         result = find_text(camrply, 'result')
         if result == 'err_reject':
-            raise RejectError
+            raise RejectError(result)
         elif result == 'err_busy':
-            raise BusyError
+            raise BusyError(result)
         elif result == 'err_critical':
-            raise CriticalError
+            raise CriticalError(result)
         assert result == 'ok', 'unknown result "{}"'.format(result)
 
     def _request(self, *args, **kwargs) -> ET.Element:
