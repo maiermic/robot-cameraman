@@ -1,11 +1,11 @@
 import logging
 import signal
-import time
 from logging import Logger
 from typing import Optional
 from urllib.parse import urlparse
 
 import requests
+import time
 import urllib3
 
 from panasonic_camera.camera import PanasonicCamera, BusyError, CriticalError
@@ -22,14 +22,18 @@ class PanasonicCameraManager(IntervalThread):
     def __init__(self, interval=10, *_args, **_kwargs) -> None:
         super().__init__(interval, self._ensure_connection, *_args, **_kwargs)
         self.camera = None
+        self.is_stream_started = False
 
     def _ensure_connection(self):
         if self.camera:
             try:
                 logger.debug(self.camera.get_state().__dict__)
+                if not self.is_stream_started:
+                    self._start_camera_stream()
             except (requests.exceptions.RequestException,
                     urllib3.exceptions.HTTPError):
                 logger.debug('Lost connection to camera')
+                self.is_stream_started = False
                 self._connect()
         else:
             self._connect()
@@ -47,7 +51,6 @@ class PanasonicCameraManager(IntervalThread):
             # capability before starting the camera stream
             self.camera.get_info_capability()
             self._ensure_connection()
-            self._start_camera_stream()
         else:
             self.camera = None
             logger.debug('No camera found')
@@ -56,6 +59,8 @@ class PanasonicCameraManager(IntervalThread):
         try:
             self.camera.recmode()
             self.camera.start_stream()
+            self.is_stream_started = True
+            logger.debug('camera stream is started')
         except (requests.exceptions.RequestException,
                 urllib3.exceptions.HTTPError,
                 BusyError) as e:
