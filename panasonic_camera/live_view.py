@@ -97,6 +97,23 @@ class ExHeader1(ExHeader):
 
 
 @dataclass()
+class ExHeader2(ExHeader):
+    zoomRatio: int
+    b: int
+    c: int
+    zoomRatioPos: int
+    e: int
+    f: int
+    g: int
+    h: int
+    i: int
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader) -> Iterator[Any]:
+        yield from ex_header_data.unpack('>H8B')
+
+
+@dataclass()
 class ExHeader3(ExHeader):
     formatTag: int
     channels: int
@@ -176,21 +193,19 @@ class ExHeader8(ExHeader6):
         yield from ex_header_data.unpack('>H2B')
 
 
-class ExHeader11(NamedTuple):
-    zoomRatio: int
-    b: int
-    c: int
-    zoomRatioPos: int
-    e: int
-    f: int
-    g: int
-    h: int
-    # i: int
+@dataclass()
+class ExHeader11(ExHeader2):
     k: int
     l: int
     m: int
     n: int
     o: int
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader) -> Iterator[Any]:
+        yield from ex_header_data.unpack('>H7B')
+        yield 0  # inherited field i is not read from header data
+        yield from ex_header_data.unpack('>5B')
 
 
 class LiveView:
@@ -226,8 +241,7 @@ class LiveView:
             elif ex_header_type == 8:
                 ex_header = ExHeader8.unpack(BytesReader(ex_header_data))
             elif ex_header_type == 11:
-                ex_header = ExHeader11._make(
-                    struct.unpack('>H12B', ex_header_data[:14]))
+                ex_header = ExHeader11.unpack(BytesReader(ex_header_data))
             else:
                 logger.warning('unhandled ex header type %d', ex_header_type)
             logger.debug(f'ex header: {ex_header}')
