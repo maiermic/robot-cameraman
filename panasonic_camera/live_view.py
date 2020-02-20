@@ -3,9 +3,10 @@ from __future__ import annotations
 import logging
 import socket
 import struct
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from typing import NamedTuple, Union, List, Tuple
+from typing import NamedTuple, Union, List, Tuple, Iterator, Any
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -60,8 +61,22 @@ class C1488o:
     c: int
 
 
+# noinspection Mypy
 @dataclass()
-class ExHeader1:
+class ExHeader(ABC):
+    @classmethod
+    @abstractmethod
+    def unpack_params(cls, ex_header_data: BytesReader) -> Iterator[Any]:
+        pass
+
+    @classmethod
+    def unpack(cls, ex_header_data: BytesReader):
+        # noinspection Mypy,PyArgumentList
+        return cls(*cls.unpack_params(ex_header_data))
+
+
+@dataclass()
+class ExHeader1(ExHeader):
     zoomRatio: int
     b: int
     c: int
@@ -90,10 +105,6 @@ class ExHeader1:
                             c=c))
         yield from head
         yield n
-
-    @classmethod
-    def unpack(cls, ex_header_data: BytesReader):
-        return cls(*cls.unpack_params(ex_header_data))
 
 
 @dataclass()
