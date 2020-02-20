@@ -6,7 +6,7 @@ import struct
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from typing import NamedTuple, Union, List, Tuple, Iterator, Any
+from typing import Union, List, Tuple, Iterator, Any, Optional
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -29,7 +29,8 @@ class BytesReader:
         return s.unpack(self.read(s.size))
 
 
-class BasicHeader(NamedTuple):
+@dataclass()
+class BasicHeader:
     totalSize: int
     version: int
     seqNo: int
@@ -41,6 +42,10 @@ class BasicHeader(NamedTuple):
     pts: int
     reserve2: int
     exHeaderSize: int
+
+    @classmethod
+    def unpack(cls, reader: BytesReader):
+        return cls(*reader.unpack('>HHib6sbbbi8sH'))
 
 
 @dataclass
@@ -225,27 +230,27 @@ class LiveView:
         """
         bufsize = 65536
         data, addr = self.sock.recvfrom(bufsize)
+        reader = BytesReader(data)
         bhs = 32  # basic header size
         # TODO check pts is parsed correctly
-        basic_header = BasicHeader._make(
-            struct.unpack('>HHib6sbbbi8sH', data[:bhs]))
+        basic_header = BasicHeader.unpack(reader)
         ehs = basic_header.exHeaderSize
         if ehs > 0:
-            ehts = 2  # ex header type size (short => 2 bytes)
-            ex_header_type_data = data[bhs:bhs + ehts]
-            ex_header_type, = struct.unpack('>H', ex_header_type_data)
-            ex_header_data = data[(bhs + ehts):(bhs + ehs)]
-            ex_header: Union[ExHeader3, ExHeader8, ExHeader11, None] = None
+            ex_header_type, = reader.unpack('>H')
+            ex_header: Optional[ExHeader] = None
             if ex_header_type == 3:
-                ex_header = ExHeader3.unpack(BytesReader(ex_header_data))
+                ex_header = ExHeader3.unpack(reader)
             elif ex_header_type == 8:
-                ex_header = ExHeader8.unpack(BytesReader(ex_header_data))
+                ex_header = ExHeader8.unpack(reader)
             elif ex_header_type == 11:
-                ex_header = ExHeader11.unpack(BytesReader(ex_header_data))
+                ex_header = ExHeader11.unpack(reader)
+                reader.read(8)  # probably reserved data
             else:
                 logger.warning('unhandled ex header type %d', ex_header_type)
             logger.debug(f'ex header: {ex_header}')
         offset = bhs + ehs
+        if offset != reader.i:
+            logger.warning('offsets differ: %d != %d', offset, reader.i)
         length = basic_header.totalSize - offset
         image_data = data[offset:]
         if len(image_data) != length:
