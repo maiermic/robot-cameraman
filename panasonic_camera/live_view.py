@@ -1,10 +1,31 @@
+from __future__ import annotations
+
 import logging
 import socket
 import struct
+from dataclasses import dataclass
 from logging import Logger
-from typing import NamedTuple, Union
+from typing import NamedTuple, Union, List, Tuple
 
 logger: Logger = logging.getLogger(__name__)
+
+
+@dataclass()
+class BytesReader:
+    data: bytes
+    i: int = 0
+
+    def read(self, length):
+        start = self.i
+        end = self.i + length
+        assert end <= len(self.data), \
+            f'not enough bytes to read {length}: read {self.i} of {len(self.data)} bytes from {self}'
+        self.i = end
+        return self.data[start:end]
+
+    def unpack(self, format: Union[bytes, str]):
+        s = struct.Struct(format)
+        return s.unpack(self.read(s.size))
 
 
 class BasicHeader(NamedTuple):
@@ -30,6 +51,113 @@ class ExHeader3(NamedTuple):
     bitsPerSample: int
     channelMask: int
     exReserve1: int
+
+
+@dataclass
+class C1488o:
+    rectangle: Tuple[int, int, int, int]
+    color: Tuple[int, int, int]
+    c: int
+
+
+@dataclass()
+class ExHeader1:
+    zoomRatio: int
+    b: int
+    c: int
+    zoomRatioPos: int
+    e: int
+    f: int
+    g: int
+    h: int
+    i: int
+    j: int
+    k: int
+    l: int
+    m: int
+    n: List[C1488o]
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader):
+        head = ex_header_data.unpack('>H12B')
+        m = head[-1]
+        n: List[C1488o] = []
+        for _ in range(m):
+            left, top, right, bottom, r, g, b, c = \
+                ex_header_data.unpack('>4H4B')
+            n.append(C1488o(rectangle=(left, top, right, bottom),
+                            color=(r & 255, g & 255, b & 255),
+                            c=c))
+        yield from head
+        yield n
+
+    @classmethod
+    def unpack(cls, ex_header_data: BytesReader):
+        return cls(*cls.unpack_params(ex_header_data))
+
+
+@dataclass()
+class ExHeader5(ExHeader1):
+    p: int
+    q: int
+    r: int
+    s: int
+    t: int
+    u: int
+    v: int
+    w: int
+    x: int
+    y: int
+    z: int
+    A: int
+    B: int
+    C: int
+    D: int
+    E: int
+    F: int
+    G: int
+    H: int
+    I: int
+    J: int
+    K: int
+    L: int
+    M: List[int]
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader):
+        yield from super().unpack_params(ex_header_data)
+        head = ex_header_data.unpack('>18HB3HB')
+        L = head[-1]
+        M: List[int] = []
+        for _ in range(L):
+            M.append(ex_header_data.unpack('>B')[0])
+        # noinspection Mypy
+        yield from head
+        yield M
+
+
+@dataclass
+class ExHeader6(ExHeader5):
+    O: int
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader):
+        yield from super().unpack_params(ex_header_data)
+        O = ex_header_data.unpack('>B')
+        # noinspection Mypy
+        yield O
+
+
+@dataclass
+class ExHeader8(ExHeader6):
+    Q: int
+    R: int
+    S: int
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader):
+        yield from super().unpack_params(ex_header_data)
+        yield from ex_header_data.unpack('>H2B')
 
 
 class ExHeader11(NamedTuple):
@@ -76,10 +204,12 @@ class LiveView:
             ex_header_type_data = data[bhs:bhs + ehts]
             ex_header_type, = struct.unpack('>H', ex_header_type_data)
             ex_header_data = data[(bhs + ehts):(bhs + ehs)]
-            ex_header: Union[ExHeader3, ExHeader11, None] = None
+            ex_header: Union[ExHeader3, ExHeader8, ExHeader11, None] = None
             if ex_header_type == 3:
                 ex_header = ExHeader3._make(
                     struct.unpack('>HHiiHHiH', ex_header_data))
+            elif ex_header_type == 8:
+                ex_header = ExHeader8.unpack(BytesReader(ex_header_data))
             elif ex_header_type == 11:
                 ex_header = ExHeader11._make(
                     struct.unpack('>H12B', ex_header_data[:14]))
