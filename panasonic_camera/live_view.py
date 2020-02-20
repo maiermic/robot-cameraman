@@ -96,7 +96,8 @@ class ExHeader1(ExHeader):
         yield n
 
 
-class ExHeader3(NamedTuple):
+@dataclass()
+class ExHeader3(ExHeader):
     formatTag: int
     channels: int
     samplesPerSec: int
@@ -105,6 +106,10 @@ class ExHeader3(NamedTuple):
     bitsPerSample: int
     channelMask: int
     exReserve1: int
+
+    @classmethod
+    def unpack_params(cls, ex_header_data: BytesReader) -> Iterator[Any]:
+        yield from ex_header_data.unpack('>HHiiHHiH')
 
 
 @dataclass()
@@ -217,8 +222,7 @@ class LiveView:
             ex_header_data = data[(bhs + ehts):(bhs + ehs)]
             ex_header: Union[ExHeader3, ExHeader8, ExHeader11, None] = None
             if ex_header_type == 3:
-                ex_header = ExHeader3._make(
-                    struct.unpack('>HHiiHHiH', ex_header_data))
+                ex_header = ExHeader3.unpack(BytesReader(ex_header_data))
             elif ex_header_type == 8:
                 ex_header = ExHeader8.unpack(BytesReader(ex_header_data))
             elif ex_header_type == 11:
