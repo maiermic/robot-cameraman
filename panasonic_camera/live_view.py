@@ -43,17 +43,6 @@ class BasicHeader(NamedTuple):
     exHeaderSize: int
 
 
-class ExHeader3(NamedTuple):
-    formatTag: int
-    channels: int
-    samplesPerSec: int
-    avgBytePerSec: int
-    blockAlign: int
-    bitsPerSample: int
-    channelMask: int
-    exReserve1: int
-
-
 @dataclass
 class C1488o:
     rectangle: Tuple[int, int, int, int]
@@ -105,6 +94,17 @@ class ExHeader1(ExHeader):
                             c=c))
         yield from head
         yield n
+
+
+class ExHeader3(NamedTuple):
+    formatTag: int
+    channels: int
+    samplesPerSec: int
+    avgBytePerSec: int
+    blockAlign: int
+    bitsPerSample: int
+    channelMask: int
+    exReserve1: int
 
 
 @dataclass()
