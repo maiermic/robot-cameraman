@@ -71,8 +71,8 @@ class PanasonicCameraman:
             try:
                 try:
                     image = PIL.Image.open(io.BytesIO(self._live_view.image()))
-                except socket.timeout:
-                    logger.error('timeout reading live view image')
+                except (socket.timeout, OSError) as e:
+                    logger.error(f'error reading live view image: {e}')
                     self._mode_manager.update(self._target_box,
                                               is_target_lost=True)
                     self.handle_keyboard_input(to_exit)
