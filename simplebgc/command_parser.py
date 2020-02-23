@@ -224,4 +224,5 @@ COMMAND_PARSER = {
 def parse_cmd(cmd: RawCmd):
     assert cmd.id in COMMAND_PARSER, 'unknown incoming command: {}'.format(cmd)
     unpack = COMMAND_PARSER.get(cmd.id)
+    assert unpack is not None, 'unknown incoming command: {}'.format(cmd)
     return unpack(cmd.payload)
