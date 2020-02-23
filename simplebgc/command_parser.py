@@ -96,7 +96,7 @@ def parse_error_cmd(payload: bytes) -> ErrorInCmd:
 
 def parse_get_angles_cmd(payload: bytes) -> GetAnglesInCmd:
     # noinspection PyProtectedMember
-    return GetAnglesInCmd._make(struct.unpack('<', payload))
+    return GetAnglesInCmd._make(struct.unpack('<9h', payload))
 
 
 def parse_get_angles_ext_cmd(payload: bytes) -> GetAnglesExtInCmd:
