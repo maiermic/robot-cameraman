@@ -347,7 +347,15 @@ ErrorInCmd = NamedTuple('ErrorInCmd', [
 ])
 
 GetAnglesInCmd = NamedTuple('GetAnglesInCmd', [
-
+    ('imu_angle_1', int),
+    ('target_angle_1', int),
+    ('target_speed_1', int),
+    ('imu_angle_2', int),
+    ('target_angle_2', int),
+    ('target_speed_2', int),
+    ('imu_angle_3', int),
+    ('target_angle_3', int),
+    ('target_speed_3', int),
 ])
 
 GetAnglesExtInCmd = NamedTuple('GetAnglesExtInCmd', [
