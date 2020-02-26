@@ -13,8 +13,9 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
-from simplebgc.serial_example import control_gimbal, rotate_gimbal, \
-    degree_factor, degree_per_sec_factor, get_angles
+from simplebgc.gimbal import Gimbal
+from simplebgc.serial_example import control_gimbal, degree_factor, \
+    degree_per_sec_factor, get_angles
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -40,6 +41,10 @@ class CameraController(Protocol):
 class SimpleCameraController(CameraController):
     yaw_speed: int = 0
 
+    def __init__(self, gimbal: Gimbal) -> None:
+        self.yaw_speed = 0
+        self._gimbal = gimbal
+
     def start(self) -> None:
         return
 
@@ -54,7 +59,7 @@ class SimpleCameraController(CameraController):
         if self.yaw_speed != yaw_speed:
             try:
                 logger.debug('rotate gimbal with speed {}'.format(yaw_speed))
-                rotate_gimbal(yaw_speed)
+                self._gimbal.control(yaw_speed=yaw_speed)
                 self.yaw_speed = yaw_speed
             except serial.serialutil.SerialException:
                 logger.error('caught SerialException')
