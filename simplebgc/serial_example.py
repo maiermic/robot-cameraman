@@ -84,35 +84,6 @@ def read_cmd(connection: serial.Serial) -> RawCmd:
     return RawCmd(header.command_id, payload.payload)
 
 
-def rotate_gimbal(yaw_speed: int = 0) -> None:
-    control_data = ControlOutCmd(roll_mode=1, roll_speed=0, roll_angle=0,
-                                 pitch_mode=1, pitch_speed=0, pitch_angle=0,
-                                 yaw_mode=1, yaw_speed=yaw_speed, yaw_angle=0)
-    # print('command to send:', control_data)
-    # print('packed command as payload:', packed_control_data)
-    message = create_message(CMD_CONTROL, control_data.pack())
-    # message = create_message(CMD_BOARD_INFO)
-    # message = create_message(CMD_BOARD_INFO_3)
-    # message = create_message(CMD_READ_PARAMS_3)
-    # message = create_message(CMD_READ_PARAMS_EXT)
-    # message = create_message(CMD_READ_PARAMS_EXT2)
-    # message = create_message(CMD_REALTIME_DATA_4)
-    # print('created message:', message)
-    packed_message = pack_message(message)
-    # print('packed message:', packed_message)
-
-    connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
-    # print('send packed message:', packed_message)
-    connection.write(packed_message)
-    message = read_message(connection, 1)
-    # print('received confirmation:', message)
-    # print('confirmed command with ID:', ord(message.payload))
-    # cmd = read_cmd(connection)
-    # print('incoming command:', get_incoming_command_name(cmd.id))
-    # print('incoming command payload length:', len(cmd.payload))
-    # print(parse_cmd(cmd))
-
-
 def control_gimbal(
         yaw_mode: int = 1,
         yaw_speed: int = 0,
