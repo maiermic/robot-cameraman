@@ -1,5 +1,6 @@
 import struct
 from collections import namedtuple
+from logging import getLogger
 
 import serial
 
@@ -7,6 +8,8 @@ from simplebgc.command_ids import *
 from simplebgc.command_parser import parse_cmd
 from simplebgc.commands import ControlOutCmd, BoardInfoInCmd, RawCmd, \
     GetAnglesInCmd
+
+logger = getLogger(__name__)
 
 MessageHeader = namedtuple(
     'MessageHeader',
@@ -64,7 +67,7 @@ def read_message(connection: serial.Serial, payload_size: int) -> Message:
 
 def read_message_header(connection: serial.Serial) -> MessageHeader:
     header_data = connection.read(4)
-    print('received message header data', header_data)
+    logger.debug('received message header data', header_data)
     return MessageHeader._make(struct.unpack('<BBBB', header_data))
 
 
@@ -72,19 +75,19 @@ def read_message_payload(connection: serial.Serial,
                          payload_size: int) -> MessagePayload:
     # +1 because of payload checksum
     payload_data = connection.read(payload_size + 1)
-    print('received message payload data', payload_data)
+    logger.debug('received message payload data', payload_data)
     payload_format = '<{}sB'.format(payload_size)
     return MessagePayload._make(struct.unpack(payload_format, payload_data))
 
 
 def read_cmd(connection: serial.Serial) -> RawCmd:
     header = read_message_header(connection)
-    print('parsed message header', header)
+    logger.debug('parsed message header', header)
     assert header.start_character == 62
     assert (
                    header.command_id + header.payload_size) % 256 == header.header_checksum
     payload = read_message_payload(connection, header.payload_size)
-    print('parsed message payload', payload)
+    logger.debug('parsed message payload', payload)
     assert sum(payload.payload) % 256 == payload.payload_checksum
     return RawCmd(header.command_id, payload.payload)
 
@@ -126,6 +129,14 @@ def control_gimbal(
         pitch_mode: int = 1,
         pitch_speed: int = 0,
         pitch_angle: int = 0) -> None:
+    logger.debug(' '.join((
+        f'control_gimbal:',
+        f'yaw_mode={yaw_mode}',
+        f'yaw_speed={yaw_speed}',
+        f'yaw_angle={yaw_angle}',
+        f'pitch_mode={pitch_mode}',
+        f'pitch_speed={pitch_speed}',
+        f'pitch_angle={pitch_angle}')))
     yaw_angle = int(yaw_angle / degree_factor)
     pitch_angle = int(pitch_angle / degree_factor)
     control_data = ControlOutCmd(
