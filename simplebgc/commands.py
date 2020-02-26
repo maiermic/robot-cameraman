@@ -1,3 +1,4 @@
+import struct
 from typing import NamedTuple
 
 RawCmd = NamedTuple('RawCmd', [
@@ -449,3 +450,6 @@ class ControlOutCmd(NamedTuple):
     pitch_angle: int
     yaw_speed: int
     yaw_angle: int
+
+    def pack(self) -> bytes:
+        return struct.pack('<BBBhhhhhh', *self)

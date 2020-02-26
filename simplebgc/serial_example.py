@@ -29,10 +29,6 @@ degree_factor = 0.02197265625
 degree_per_sec_factor = 0.1220740379
 
 
-def pack_control_cmd(cmd: ControlOutCmd) -> bytes:
-    return struct.pack('<BBBhhhhhh', *cmd)
-
-
 def pack_board_info_cmd(cmd: BoardInfoInCmd) -> bytes:
     return struct.pack('<BHBHBI7s', *cmd)
 
@@ -97,9 +93,8 @@ def rotate_gimbal(yaw_speed: int = 0) -> None:
                                  pitch_mode=1, pitch_speed=0, pitch_angle=0,
                                  yaw_mode=1, yaw_speed=yaw_speed, yaw_angle=0)
     # print('command to send:', control_data)
-    packed_control_data = pack_control_cmd(control_data)
     # print('packed command as payload:', packed_control_data)
-    message = create_message(CMD_CONTROL, packed_control_data)
+    message = create_message(CMD_CONTROL, control_data.pack())
     # message = create_message(CMD_BOARD_INFO)
     # message = create_message(CMD_BOARD_INFO_3)
     # message = create_message(CMD_READ_PARAMS_3)
@@ -143,8 +138,7 @@ def control_gimbal(
         roll_mode=2, roll_speed=0, roll_angle=0,
         pitch_mode=pitch_mode, pitch_speed=pitch_speed, pitch_angle=pitch_angle,
         yaw_mode=yaw_mode, yaw_speed=yaw_speed, yaw_angle=yaw_angle)
-    packed_control_data = pack_control_cmd(control_data)
-    message = create_message(CMD_CONTROL, packed_control_data)
+    message = create_message(CMD_CONTROL, control_data.pack())
     packed_message = pack_message(message)
     connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
     connection.write(packed_message)
