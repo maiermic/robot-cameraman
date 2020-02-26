@@ -18,6 +18,10 @@ Message = namedtuple(
     'Message',
     'start_character command_id payload_size header_checksum payload payload_checksum')
 
+# The following factor is used to convert degrees to the units used by the
+# SimpleBGC 2.6 serial protocol.
+degree_factor = 0.02197265625
+
 
 def pack_control_cmd(cmd: ControlOutCmd) -> bytes:
     return struct.pack('<BBBhhhhhh', *cmd)
@@ -119,10 +123,6 @@ def control_gimbal(
         pitch_mode: int = 1,
         pitch_speed: int = 0,
         pitch_angle: int = 0) -> None:
-    # The following factor is used to convert degrees to the units used by the
-    # SimpleBGC 2.6 serial protocol (see page 34 of the SimpleBGC 2.6 Serial
-    # Protocol Specification).
-    degree_factor = 0.02197265625
     yaw_angle = int(yaw_angle / degree_factor)
     pitch_angle = int(pitch_angle / degree_factor)
     control_data = ControlOutCmd(
