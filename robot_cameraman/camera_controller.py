@@ -86,6 +86,9 @@ class SpeedManager:
     def reset(self):
         self._elapsed_time.reset()
 
+    def is_target_speed_reached(self):
+        return self.current_speed == self.target_speed
+
     def update(self) -> int:
         elapsed_time = self._elapsed_time.update()
         delta_speed = self.target_speed - self.current_speed
@@ -200,19 +203,40 @@ class PathOfMotionCameraController(ABC):
 
 class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
-    def __init__(self, connection: serial.Serial):
+    def __init__(self,
+                 connection: serial.Serial,
+                 rotate_speed_manager: SpeedManager,
+                 tilt_speed_manager: SpeedManager):
         super().__init__()
         self._connection = connection
         self._is_end_of_path_reached = False
+        self._rotate_speed_manager = rotate_speed_manager
+        self._tilt_speed_manager = tilt_speed_manager
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
-        # TODO use SpeedManager to start movement gradually
         if self._is_current_point_reached():
             self.next_point()
+            pan_speed = int(60 / degree_per_sec_factor)
+            tilt_speed = int(12 / degree_per_sec_factor)
+            self._rotate_speed_manager.target_speed = pan_speed
+            self._tilt_speed_manager.target_speed = tilt_speed
+            self._move_gimbal_to_current_point()
+        elif not self._is_target_speed_reached():
+            self._rotate_speed_manager.update()
+            self._tilt_speed_manager.update()
             self._move_gimbal_to_current_point()
 
     def start(self):
+        self._reset_speed_managers()
         self._move_gimbal_to_current_point()
+
+    def _reset_speed_managers(self):
+        self._rotate_speed_manager.reset()
+        self._tilt_speed_manager.reset()
+
+    def _is_target_speed_reached(self):
+        return (self._rotate_speed_manager.is_target_speed_reached()
+                and self._tilt_speed_manager.is_target_speed_reached())
 
     def _is_current_point_reached(self):
         angles = get_angles(self._connection)
@@ -225,11 +249,17 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         return (pan_speed == 0 == tilt_speed
                 or (p.pan_angle == pan_angle and p.tilt_angle == tilt_angle))
 
+    @classmethod
+    def _current_speed(cls, speed_manager: SpeedManager):
+        # Never return 0, since then the value is omitted (see page 34 of
+        # SimpleBGC 2.6 serial protocol specification)
+        return max(1, speed_manager.current_speed)
+
     def _move_gimbal_to_current_point(self):
         if not self.is_end_of_path_reached():
             p = self.current_point()
-            yaw_speed = int(60 / degree_per_sec_factor)
-            pitch_speed = int(12 / degree_per_sec_factor)
+            yaw_speed = self._current_speed(self._rotate_speed_manager)
+            pitch_speed = self._current_speed(self._tilt_speed_manager)
             control_gimbal(
                 yaw_mode=2, yaw_speed=yaw_speed, yaw_angle=p.pan_angle,
                 pitch_mode=2, pitch_speed=pitch_speed, pitch_angle=p.tilt_angle)
@@ -250,7 +280,10 @@ def _print_angles(angles: GetAnglesInCmd):
 def _main():
     from time import sleep
     connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
-    controller = BaseCamPathOfMotionCameraController(connection)
+    controller = BaseCamPathOfMotionCameraController(
+        connection,
+        rotate_speed_manager=SpeedManager(int(60 / degree_per_sec_factor)),
+        tilt_speed_manager=SpeedManager(int(12 / degree_per_sec_factor)))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
     controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
