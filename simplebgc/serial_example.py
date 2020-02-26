@@ -6,7 +6,7 @@ import serial
 
 from simplebgc.command_ids import *
 from simplebgc.command_parser import parse_cmd
-from simplebgc.commands import ControlOutCmd, BoardInfoInCmd, RawCmd, \
+from simplebgc.commands import ControlOutCmd, RawCmd, \
     GetAnglesInCmd
 
 logger = getLogger(__name__)
@@ -27,10 +27,6 @@ Message = namedtuple(
 # SimpleBGC 2.6 serial protocol.
 degree_factor = 0.02197265625
 degree_per_sec_factor = 0.1220740379
-
-
-def pack_board_info_cmd(cmd: BoardInfoInCmd) -> bytes:
-    return struct.pack('<BHBHBI7s', *cmd)
 
 
 def create_message(command_id: int, payload: bytes = b'') -> Message:
