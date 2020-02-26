@@ -1,4 +1,3 @@
-from collections import namedtuple
 from typing import NamedTuple
 
 RawCmd = NamedTuple('RawCmd', [
@@ -440,6 +439,13 @@ ExtImuDebugInfoInCmd = NamedTuple('ExtImuDebugInfoInCmd', [
 
 
 # outgoing CMD_CONTROL - control gimbal movement
-ControlOutCmd = namedtuple(
-    'ControlOutCmd',
-    'roll_mode pitch_mode yaw_mode roll_speed roll_angle pitch_speed pitch_angle yaw_speed yaw_angle')
+class ControlOutCmd(NamedTuple):
+    roll_mode: int
+    pitch_mode: int
+    yaw_mode: int
+    roll_speed: int
+    roll_angle: int
+    pitch_speed: int
+    pitch_angle: int
+    yaw_speed: int
+    yaw_angle: int
