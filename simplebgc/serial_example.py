@@ -149,6 +149,7 @@ def get_angles(connection: serial.Serial) -> GetAnglesInCmd:
 
 if __name__ == '__main__':
     from time import sleep
+
     # rotate_gimbal(yaw_speed=-100)
     # rotate_gimbal(yaw_speed=100)
     # sleep(3)
