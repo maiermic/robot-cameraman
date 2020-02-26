@@ -76,8 +76,8 @@ def read_cmd(connection: serial.Serial) -> RawCmd:
     header = read_message_header(connection)
     logger.debug('parsed message header', header)
     assert header.start_character == 62
-    assert (
-                   header.command_id + header.payload_size) % 256 == header.header_checksum
+    checksum = (header.command_id + header.payload_size) % 256
+    assert checksum == header.header_checksum
     payload = read_message_payload(connection, header.payload_size)
     logger.debug('parsed message payload', payload)
     assert sum(payload.payload) % 256 == payload.payload_checksum
