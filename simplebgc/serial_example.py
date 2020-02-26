@@ -21,6 +21,7 @@ Message = namedtuple(
 # The following factor is used to convert degrees to the units used by the
 # SimpleBGC 2.6 serial protocol.
 degree_factor = 0.02197265625
+degree_per_sec_factor = 0.1220740379
 
 
 def pack_control_cmd(cmd: ControlOutCmd) -> bytes:
