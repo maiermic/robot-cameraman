@@ -5,9 +5,7 @@ from logging import getLogger
 import serial
 
 from simplebgc.command_ids import *
-from simplebgc.command_parser import parse_cmd
-from simplebgc.commands import ControlOutCmd, RawCmd, \
-    GetAnglesInCmd
+from simplebgc.commands import ControlOutCmd, RawCmd
 
 logger = getLogger(__name__)
 
@@ -110,13 +108,6 @@ def control_gimbal(
     connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
     connection.write(packed_message)
     message = read_message(connection, 1)
-
-
-def get_angles(connection: serial.Serial) -> GetAnglesInCmd:
-    connection.write(pack_message(create_message(CMD_GET_ANGLES)))
-    cmd = read_cmd(connection)
-    assert cmd.id == CMD_GET_ANGLES
-    return parse_cmd(cmd)
 
 
 if __name__ == '__main__':
