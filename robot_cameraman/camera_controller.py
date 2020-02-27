@@ -14,7 +14,6 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal
-from simplebgc.serial_example import control_gimbal
 from simplebgc.units import from_degree_per_sec, to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
@@ -109,9 +108,11 @@ class SmoothCameraController(CameraController):
     _old_zoom_speed: int = 0
 
     def __init__(self,
+                 gimbal: Gimbal,
                  camera_manager: PanasonicCameraManager,
                  rotate_speed_manager: SpeedManager,
                  tilt_speed_manager: SpeedManager):
+        self._gimbal = gimbal
         self._camera_manager = camera_manager
         self._rotate_speed_manager = rotate_speed_manager
         self._tilt_speed_manager = tilt_speed_manager
@@ -129,8 +130,8 @@ class SmoothCameraController(CameraController):
         old_speed = self._rotate_speed_manager.current_speed
         old_tilt_speed = self._tilt_speed_manager.current_speed
         try:
-            control_gimbal(yaw_speed=self._rotate_speed_manager.update(),
-                           pitch_speed=-self._tilt_speed_manager.update())
+            self._gimbal.control(yaw_speed=self._rotate_speed_manager.update(),
+                                 pitch_speed=-self._tilt_speed_manager.update())
             logger.debug('current gimbal speeds are: pan %5d, tilt %5d',
                          self._rotate_speed_manager.current_speed,
                          self._tilt_speed_manager.current_speed)

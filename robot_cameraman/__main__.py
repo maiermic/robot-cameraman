@@ -23,6 +23,7 @@ from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
     StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
     RotateSearchTargetStrategy
+from simplebgc.gimbal import Gimbal
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -163,6 +164,7 @@ tracking_strategy = StopIfLostTrackingStrategy(
     slow_down_time=1)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
+        Gimbal(),
         camera_manager,
         rotate_speed_manager=SpeedManager(args.rotationalAccelerationPerSecond),
         tilt_speed_manager=SpeedManager(args.tiltingAccelerationPerSecond)),
