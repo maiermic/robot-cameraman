@@ -13,7 +13,7 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
-from simplebgc.gimbal import Gimbal
+from simplebgc.gimbal import Gimbal, ControlMode
 from simplebgc.units import from_degree_per_sec, to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
@@ -267,8 +267,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             yaw_speed = self._current_speed(self._rotate_speed_manager)
             pitch_speed = self._current_speed(self._tilt_speed_manager)
             self._gimbal.control(
-                yaw_mode=2, yaw_speed=yaw_speed, yaw_angle=p.pan_angle,
-                pitch_mode=2, pitch_speed=pitch_speed, pitch_angle=p.tilt_angle)
+                yaw_mode=ControlMode.angle, yaw_speed=yaw_speed, yaw_angle=p.pan_angle,
+                pitch_mode=ControlMode.angle, pitch_speed=pitch_speed, pitch_angle=p.tilt_angle)
 
 
 def _print_angles(angles: GetAnglesInCmd):
