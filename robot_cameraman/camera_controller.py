@@ -15,7 +15,7 @@ from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal
 from simplebgc.serial_example import control_gimbal, degree_factor, \
-    degree_per_sec_factor, get_angles
+    degree_per_sec_factor
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -209,11 +209,11 @@ class PathOfMotionCameraController(ABC):
 class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
     def __init__(self,
-                 connection: serial.Serial,
+                 gimbal: Gimbal,
                  rotate_speed_manager: SpeedManager,
                  tilt_speed_manager: SpeedManager):
         super().__init__()
-        self._connection = connection
+        self._gimbal = gimbal
         self._is_end_of_path_reached = False
         self._rotate_speed_manager = rotate_speed_manager
         self._tilt_speed_manager = tilt_speed_manager
@@ -244,7 +244,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
                 and self._tilt_speed_manager.is_target_speed_reached())
 
     def _is_current_point_reached(self):
-        angles = get_angles(self._connection)
+        angles = self._gimbal.get_angles()
         _print_angles(angles)
         pan_angle = angles.target_angle_3 * degree_factor
         pan_speed = angles.target_speed_3 * degree_per_sec_factor
@@ -284,9 +284,8 @@ def _print_angles(angles: GetAnglesInCmd):
 
 def _main():
     from time import sleep
-    connection = serial.Serial('/dev/ttyUSB0', baudrate=115200, timeout=10)
     controller = BaseCamPathOfMotionCameraController(
-        connection,
+        Gimbal(),
         rotate_speed_manager=SpeedManager(int(60 / degree_per_sec_factor)),
         tilt_speed_manager=SpeedManager(int(12 / degree_per_sec_factor)))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
