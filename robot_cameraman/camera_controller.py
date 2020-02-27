@@ -265,7 +265,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             p = self.current_point()
             yaw_speed = self._current_speed(self._rotate_speed_manager)
             pitch_speed = self._current_speed(self._tilt_speed_manager)
-            control_gimbal(
+            self._gimbal.control(
                 yaw_mode=2, yaw_speed=yaw_speed, yaw_angle=p.pan_angle,
                 pitch_mode=2, pitch_speed=pitch_speed, pitch_angle=p.tilt_angle)
 
