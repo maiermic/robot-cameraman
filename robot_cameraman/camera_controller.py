@@ -14,8 +14,8 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal
-from simplebgc.serial_example import control_gimbal, degree_factor, \
-    degree_per_sec_factor
+from simplebgc.serial_example import control_gimbal
+from simplebgc.units import from_degree_per_sec, to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -221,8 +221,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
     def update(self, camera_speeds: CameraSpeeds) -> None:
         if self._is_current_point_reached():
             self.next_point()
-            pan_speed = int(60 / degree_per_sec_factor)
-            tilt_speed = int(12 / degree_per_sec_factor)
+            pan_speed = from_degree_per_sec(60)
+            tilt_speed = from_degree_per_sec(12)
             self._rotate_speed_manager.target_speed = pan_speed
             self._tilt_speed_manager.target_speed = tilt_speed
             self._move_gimbal_to_current_point()
@@ -246,10 +246,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
     def _is_current_point_reached(self):
         angles = self._gimbal.get_angles()
         _print_angles(angles)
-        pan_angle = angles.target_angle_3 * degree_factor
-        pan_speed = angles.target_speed_3 * degree_per_sec_factor
-        tilt_angle = angles.target_angle_2 * degree_factor
-        tilt_speed = angles.target_speed_2 * degree_per_sec_factor
+        pan_angle = to_degree(angles.target_angle_3)
+        pan_speed = to_degree_per_sec(angles.target_speed_3)
+        tilt_angle = to_degree(angles.target_angle_2)
+        tilt_speed = to_degree_per_sec(angles.target_speed_2)
         p = self.current_point()
         return (pan_speed == 0 == tilt_speed
                 or (p.pan_angle == pan_angle and p.tilt_angle == tilt_angle))
@@ -276,9 +276,9 @@ def _print_angles(angles: GetAnglesInCmd):
     # noinspection Mypy
     for imu_angle, target_angle, target_speed in grouper(angles, 3):
         print('\t'.join((
-            f'{imu_angle * degree_factor:{len(column_names[0]) - 1}.2f}°',
-            f'{target_angle * degree_factor:{len(column_names[1]) - 1}.2f}°',
-            f'{target_speed * degree_per_sec_factor:{len(column_names[2]) - 3}.2f}°/s'
+            f'{to_degree(imu_angle):{len(column_names[0]) - 1}.2f}°',
+            f'{to_degree(target_angle):{len(column_names[1]) - 1}.2f}°',
+            f'{to_degree_per_sec(target_speed):{len(column_names[2]) - 3}.2f}°/s'
         )))
 
 
@@ -286,8 +286,8 @@ def _main():
     from time import sleep
     controller = BaseCamPathOfMotionCameraController(
         Gimbal(),
-        rotate_speed_manager=SpeedManager(int(60 / degree_per_sec_factor)),
-        tilt_speed_manager=SpeedManager(int(12 / degree_per_sec_factor)))
+        rotate_speed_manager=SpeedManager(from_degree_per_sec(60)),
+        tilt_speed_manager=SpeedManager(from_degree_per_sec(12)))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
     controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
