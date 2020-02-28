@@ -221,14 +221,18 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         if self._is_current_point_reached():
+            logger.debug('move to next point')
             self.next_point()
             self._rotate_speed_manager.target_speed = 60
             self._tilt_speed_manager.target_speed = 12
             self._move_gimbal_to_current_point()
         elif not self._is_target_speed_reached():
+            logger.debug('increase speed')
             self._rotate_speed_manager.update()
             self._tilt_speed_manager.update()
             self._move_gimbal_to_current_point()
+        else:
+            logger.debug('reached target speed')
 
     def start(self):
         self._reset_speed_managers()
