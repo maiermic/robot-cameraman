@@ -2,6 +2,7 @@ import logging
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from logging import Logger
+from math import isclose
 from typing import List
 
 import numpy
@@ -250,12 +251,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         angles = self._gimbal.get_angles()
         _print_angles(angles)
         pan_angle = to_degree(angles.target_angle_3)
-        pan_speed = to_degree_per_sec(angles.target_speed_3)
         tilt_angle = to_degree(angles.target_angle_2)
-        tilt_speed = to_degree_per_sec(angles.target_speed_2)
         p = self.current_point()
-        return (pan_speed == 0 == tilt_speed
-                or (p.pan_angle == pan_angle and p.tilt_angle == tilt_angle))
+        return (isclose(p.pan_angle, pan_angle, abs_tol=0.05)
+                and isclose(p.tilt_angle, tilt_angle, abs_tol=0.05))
 
     @classmethod
     def _current_speed(cls, speed_manager: SpeedManager):
