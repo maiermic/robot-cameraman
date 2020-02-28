@@ -14,7 +14,7 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
-from simplebgc.units import from_degree_per_sec, to_degree, to_degree_per_sec
+from simplebgc.units import to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -222,10 +222,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
     def update(self, camera_speeds: CameraSpeeds) -> None:
         if self._is_current_point_reached():
             self.next_point()
-            pan_speed = from_degree_per_sec(60)
-            tilt_speed = from_degree_per_sec(12)
-            self._rotate_speed_manager.target_speed = pan_speed
-            self._tilt_speed_manager.target_speed = tilt_speed
+            self._rotate_speed_manager.target_speed = 60
+            self._tilt_speed_manager.target_speed = 12
             self._move_gimbal_to_current_point()
         elif not self._is_target_speed_reached():
             self._rotate_speed_manager.update()
@@ -267,8 +265,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             yaw_speed = self._current_speed(self._rotate_speed_manager)
             pitch_speed = self._current_speed(self._tilt_speed_manager)
             self._gimbal.control(
-                yaw_mode=ControlMode.angle, yaw_speed=yaw_speed, yaw_angle=p.pan_angle,
-                pitch_mode=ControlMode.angle, pitch_speed=pitch_speed, pitch_angle=p.tilt_angle)
+                yaw_mode=ControlMode.angle, yaw_speed=yaw_speed,
+                yaw_angle=p.pan_angle,
+                pitch_mode=ControlMode.angle, pitch_speed=pitch_speed,
+                pitch_angle=p.tilt_angle)
 
 
 def _print_angles(angles: GetAnglesInCmd):
@@ -287,8 +287,8 @@ def _main():
     from time import sleep
     controller = BaseCamPathOfMotionCameraController(
         Gimbal(),
-        rotate_speed_manager=SpeedManager(from_degree_per_sec(60)),
-        tilt_speed_manager=SpeedManager(from_degree_per_sec(12)))
+        rotate_speed_manager=SpeedManager(60),
+        tilt_speed_manager=SpeedManager(12))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
     controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30))
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
