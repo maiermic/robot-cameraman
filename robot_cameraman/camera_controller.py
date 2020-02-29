@@ -237,7 +237,6 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
     def start(self):
         self._reset_speed_managers()
-        self._move_gimbal_to_current_point()
 
     def _reset_speed_managers(self):
         self._rotate_speed_manager.reset()
