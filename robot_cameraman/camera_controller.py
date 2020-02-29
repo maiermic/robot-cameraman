@@ -190,6 +190,9 @@ class PathOfMotionCameraController(ABC):
         self._path: List[PointOfMotion] = []
         self._next_point_index = 0
 
+    def has_points(self):
+        return bool(self._path)
+
     def add_point(self, point: PointOfMotion) -> None:
         self._path.append(point)
 
@@ -223,6 +226,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         self._tilt_speed_manager.target_speed = 12
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
+        if not self.has_points():
+            return
         if self._is_current_point_reached():
             logger.debug('move to next point')
             self.next_point()
