@@ -232,7 +232,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             logger.debug('move to next point')
             self.next_point()
             self._move_gimbal_to_current_point()
-        elif not self._is_target_speed_reached():
+        elif not self.is_target_speed_reached():
             logger.debug('increase speed')
             self._rotate_speed_manager.update()
             self._tilt_speed_manager.update()
@@ -247,7 +247,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         self._rotate_speed_manager.reset()
         self._tilt_speed_manager.reset()
 
-    def _is_target_speed_reached(self):
+    def is_target_speed_reached(self):
         return (self._rotate_speed_manager.is_target_speed_reached()
                 and self._tilt_speed_manager.is_target_speed_reached())
 
