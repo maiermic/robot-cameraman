@@ -4,6 +4,7 @@ import signal
 import threading
 # noinspection Mypy
 from pathlib import Path
+from typing import Tuple
 
 import PIL.Image
 import PIL.ImageFont
@@ -29,14 +30,12 @@ to_exit: threading.Event
 server_image: ImageContainer
 
 
-def create_video_writer(output_file: Path):
-    width = 640
-    height = 480
+def create_video_writer(output_file: Path, image_size: Tuple[int, int]):
     return cv2.VideoWriter(
         str(output_file),
         cv2.VideoWriter_fourcc(*'MJPG'),
         15,
-        (width, height))
+        image_size)
 
 
 def parse_arguments():
@@ -100,6 +99,12 @@ def parse_arguments():
                         type=int, default=80,
                         help="Defines the variance up to which no movement"
                              " (pan, tilt, zoom) occurs.")
+    parser.add_argument('--liveViewWith',
+                        type=int, default=640,
+                        help="Width of live view of used camera")
+    parser.add_argument('--liveViewHeight',
+                        type=int, default=480,
+                        help="Height of live view of used camera")
     parser.add_argument(
         '--ssl-key',
         type=Path,
@@ -129,8 +134,8 @@ def quit(sig=None, frame=None):
 
 
 def run_cameraman():
-    global server_image, to_exit
-    cameraman.run(server_image, to_exit)
+    global server_image, to_exit, live_view_image_size
+    cameraman.run(server_image, to_exit, live_view_image_size)
     quit()
 
 
@@ -156,7 +161,8 @@ args = parse_arguments()
 configure_logging()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-destination = Destination((640, 480), variance=args.variance)
+live_view_image_size = (args.liveViewWith, args.liveViewHeight)
+destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager()
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
@@ -183,11 +189,11 @@ cameraman = PanasonicCameraman(
     mode_manager=cameraman_mode_manager,
     object_tracker=ObjectTracker(max_disappeared=25),
     target_label_id=args.targetLabelId,
-    output=create_video_writer(args.output))
+    output=create_video_writer(args.output, live_view_image_size))
 
 to_exit = threading.Event()
 server_image = ImageContainer(
-    image=PIL.Image.new('RGB', (640, 480), color=(73, 109, 137)))
+    image=PIL.Image.new('RGB', live_view_image_size, color=(73, 109, 137)))
 
 signal.signal(signal.SIGINT, quit)
 signal.signal(signal.SIGTERM, quit)

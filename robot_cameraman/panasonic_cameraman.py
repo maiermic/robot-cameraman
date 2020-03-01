@@ -4,7 +4,7 @@ import os
 import socket
 import threading
 from logging import Logger
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Tuple
 
 import PIL.Image
 import PIL.ImageDraw
@@ -57,7 +57,8 @@ class PanasonicCameraman:
 
     def run(self,
             server_image: ImageContainer,
-            to_exit: threading.Event) -> None:
+            to_exit: threading.Event,
+            expected_image_size: Tuple[int, int]) -> None:
         # Parts at the end of the live view image are sometimes not received.
         # These truncated images cause an exception in the detection engine,
         # if the following option is not enabled. In the cases observed so far,
@@ -79,7 +80,7 @@ class PanasonicCameraman:
                     continue
                 frame_counter += 1
                 logger.debug(f'frame {frame_counter}')
-                assert image.size == (640, 480), image.size
+                assert image.size == expected_image_size, image.size
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
