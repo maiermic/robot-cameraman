@@ -202,6 +202,9 @@ class PathOfMotionCameraController(ABC):
     def current_point(self):
         return self._path[self._next_point_index]
 
+    def has_next_point(self):
+        return (self._next_point_index + 1) < len(self._path)
+
     def next_point(self):
         self._next_point_index = min(self._next_point_index + 1,
                                      len(self._path))
@@ -233,15 +236,26 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             return
         if self._is_current_point_reached():
             logger.debug('move to next point')
-            self.next_point()
-            self._move_gimbal_to_current_point()
+            if self.has_next_point():
+                self.next_point()
+                # Gimbal stopped by itself, when it reached the last point.
+                # The speed managers don't know that. Hence, the current speed
+                # has to be set to zero and then updated.
+                self._rotate_speed_manager.current_speed = 0
+                self._tilt_speed_manager.current_speed = 0
+                self._update_speed_managers()
+                self._move_gimbal_to_current_point()
+            else:
+                # indicates that end of path is reached
+                self.next_point()
         elif not self.is_target_speed_reached():
             logger.debug('increase speed')
-            self._rotate_speed_manager.update()
-            self._tilt_speed_manager.update()
+            self._update_speed_managers()
             self._move_gimbal_to_current_point()
         else:
             logger.debug('reached target speed')
+            # update elapsed time of speed managers
+            self._update_speed_managers()
 
     def start(self):
         self._reset_speed_managers()
@@ -249,6 +263,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
     def _reset_speed_managers(self):
         self._rotate_speed_manager.reset()
         self._tilt_speed_manager.reset()
+
+    def _update_speed_managers(self):
+        self._rotate_speed_manager.update()
+        self._tilt_speed_manager.update()
 
     def is_target_speed_reached(self):
         return (self._rotate_speed_manager.is_target_speed_reached()
