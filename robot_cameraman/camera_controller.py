@@ -256,7 +256,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
     def _is_current_point_reached(self):
         angles = self._gimbal.get_angles()
-        _print_angles(angles)
+        _log_angles(angles)
         pan_angle = to_degree(angles.target_angle_3)
         tilt_angle = to_degree(angles.target_angle_2)
         p = self.current_point()
@@ -281,16 +281,15 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
                 pitch_angle=p.tilt_angle)
 
 
-def _print_angles(angles: GetAnglesInCmd):
+def _log_angles(angles: GetAnglesInCmd):
     column_names = ('imu_angle', 'target_angle', 'target_speed')
-    print('\t'.join(column_names))
+    logger.debug('\t'.join(column_names))
     # noinspection Mypy
     for imu_angle, target_angle, target_speed in grouper(angles, 3):
-        print('\t'.join((
+        logger.debug('\t'.join((
             f'{to_degree(imu_angle):{len(column_names[0]) - 1}.2f}°',
             f'{to_degree(target_angle):{len(column_names[1]) - 1}.2f}°',
-            f'{to_degree_per_sec(target_speed):{len(column_names[2]) - 3}.2f}°/s'
-        )))
+            f'{to_degree_per_sec(target_speed):{len(column_names[2]) - 3}.2f}°/s')))
 
 
 def _main():
