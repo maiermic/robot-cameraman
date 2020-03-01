@@ -82,8 +82,11 @@ class ElapsedTime:
 
 
 class SpeedManager:
-    def __init__(self, acceleration_per_second: int = 400):
-        self._elapsed_time: ElapsedTime = ElapsedTime()
+    def __init__(self, acceleration_per_second: int = 400,
+                 elapsed_time: ElapsedTime = None):
+        if elapsed_time is None:
+            elapsed_time = ElapsedTime()
+        self._elapsed_time = elapsed_time
         self.acceleration_per_second: int = acceleration_per_second
         self.target_speed: int = 0
         self.current_speed: int = 0
