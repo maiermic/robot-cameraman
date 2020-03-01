@@ -2,11 +2,11 @@ import logging
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from logging import Logger
-from math import isclose
 from typing import List
 
 import numpy
 import serial
+from math import isclose
 from more_itertools import grouper
 from time import time
 from typing_extensions import Protocol
