@@ -57,7 +57,7 @@ def read_message(connection: serial.Serial, payload_size: int) -> Message:
 
 def read_message_header(connection: serial.Serial) -> MessageHeader:
     header_data = connection.read(4)
-    logger.debug('received message header data', header_data)
+    logger.debug(f'received message header data: {header_data}')
     return MessageHeader._make(struct.unpack('<BBBB', header_data))
 
 
@@ -65,19 +65,19 @@ def read_message_payload(connection: serial.Serial,
                          payload_size: int) -> MessagePayload:
     # +1 because of payload checksum
     payload_data = connection.read(payload_size + 1)
-    logger.debug('received message payload data', payload_data)
+    logger.debug(f'received message payload data: {payload_data}')
     payload_format = '<{}sB'.format(payload_size)
     return MessagePayload._make(struct.unpack(payload_format, payload_data))
 
 
 def read_cmd(connection: serial.Serial) -> RawCmd:
     header = read_message_header(connection)
-    logger.debug('parsed message header', header)
+    logger.debug(f'parsed message header: {header}')
     assert header.start_character == 62
     checksum = (header.command_id + header.payload_size) % 256
     assert checksum == header.header_checksum
     payload = read_message_payload(connection, header.payload_size)
-    logger.debug('parsed message payload', payload)
+    logger.debug(f'parsed message payload: {payload}')
     assert sum(payload.payload) % 256 == payload.payload_checksum
     return RawCmd(header.command_id, payload.payload)
 
