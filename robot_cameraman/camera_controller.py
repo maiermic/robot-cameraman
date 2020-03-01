@@ -191,7 +191,7 @@ class CameraState:
 class PathOfMotionCameraController(ABC):
     def __init__(self):
         self._path: List[PointOfMotion] = []
-        self._next_point_index = 0
+        self._current_point_index = 0
 
     def has_points(self):
         return bool(self._path)
@@ -200,17 +200,17 @@ class PathOfMotionCameraController(ABC):
         self._path.append(point)
 
     def current_point(self):
-        return self._path[self._next_point_index]
+        return self._path[self._current_point_index]
 
     def has_next_point(self):
-        return (self._next_point_index + 1) < len(self._path)
+        return (self._current_point_index + 1) < len(self._path)
 
     def next_point(self):
-        self._next_point_index = min(self._next_point_index + 1,
-                                     len(self._path))
+        self._current_point_index = min(self._current_point_index + 1,
+                                        len(self._path))
 
     def is_end_of_path_reached(self):
-        return self._next_point_index >= len(self._path)
+        return self._current_point_index >= len(self._path)
 
     @abstractmethod
     def update(self, camera_speeds: CameraSpeeds) -> None:
