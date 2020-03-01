@@ -294,6 +294,9 @@ def _log_angles(angles: GetAnglesInCmd):
 
 def _main():
     from time import sleep
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s %(name)-50s %(levelname)-8s %(message)s')
     controller = BaseCamPathOfMotionCameraController(
         Gimbal(),
         rotate_speed_manager=SpeedManager(60),
