@@ -605,6 +605,14 @@ class TestPointOfMotionTargetSpeedCalculator:
         # gimbal has to move 2°/s to get in 3s from 0° to 6°
         assert 2 == calculator.get_degree_per_second(0, 6, 3)
 
+    def test_calculate_returns_max_speeds_when_time_is_zero(
+            self, calculator, max_pan_speed, max_tilt_speed):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=0, tilt_angle=0),
+            target=PointOfMotion(pan_angle=180, tilt_angle=90, time=0))
+        assert max_pan_speed == target_speeds.pan_speed
+        assert max_tilt_speed == target_speeds.tilt_speed
+
     def test_calculate(self, calculator):
         target_speeds = calculator.calculate(
             state=CameraState(speeds=Mock(), pan_angle=0, tilt_angle=0),
