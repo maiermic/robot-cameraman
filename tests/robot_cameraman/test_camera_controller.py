@@ -4,7 +4,7 @@ import pytest
 
 from robot_cameraman.camera_controller import \
     BaseCamPathOfMotionCameraController, PointOfMotion, SpeedManager, \
-    ElapsedTime
+    ElapsedTime, CameraState, PointOfMotionTargetSpeedCalculator
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
@@ -132,6 +132,22 @@ class TestBaseCamPathOfMotionCameraController:
         return Mock(spec=Gimbal(Mock()))
 
     @pytest.fixture()
+    def max_pan_speed(self):
+        return 60
+
+    @pytest.fixture()
+    def max_tilt_speed(self):
+        return 12
+
+    @pytest.fixture()
+    def max_speeds(self, max_pan_speed, max_tilt_speed):
+        return CameraSpeeds(pan_speed=max_pan_speed, tilt_speed=max_tilt_speed)
+
+    @pytest.fixture()
+    def target_speed_calculator(self):
+        return Mock(spec=PointOfMotionTargetSpeedCalculator())
+
+    @pytest.fixture()
     def rotate_speed_manager(self):
         return create_speed_manager_mock()
 
@@ -140,9 +156,11 @@ class TestBaseCamPathOfMotionCameraController:
         return create_speed_manager_mock()
 
     @pytest.fixture()
-    def controller(self, gimbal, rotate_speed_manager, tilt_speed_manager):
+    def controller(self, gimbal, rotate_speed_manager, tilt_speed_manager,
+                   target_speed_calculator):
         return BaseCamPathOfMotionCameraController(
-            gimbal, rotate_speed_manager, tilt_speed_manager)
+            gimbal, rotate_speed_manager, tilt_speed_manager,
+            target_speed_calculator)
 
     @pytest.fixture()
     def camera_speeds(self):
@@ -168,10 +186,6 @@ class TestBaseCamPathOfMotionCameraController:
     def test_fixture_points(self, zero_point, non_zero_point):
         assert zero_point != non_zero_point
 
-    def test_target_speeds_are_set_in_constructor(self, controller):
-        assert controller._rotate_speed_manager.target_speed == 60
-        assert controller._tilt_speed_manager.target_speed == 12
-
     def test_empty_path_has_no_points(self, controller):
         assert not controller.has_points()
 
@@ -183,9 +197,11 @@ class TestBaseCamPathOfMotionCameraController:
 
     def test_end_of_single_point_path_is_not_reached(
             self, controller, gimbal, get_zero_angles, non_zero_point,
-            camera_speeds):
+            camera_speeds, target_speed_calculator, max_speeds):
         gimbal.get_angles = should_not_be_called_mock('gimbal.get_angles')
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
         controller.add_point(non_zero_point)
+        controller.start()
         assert not controller.is_end_of_path_reached()
         gimbal.get_angles = get_zero_angles
         controller.update(camera_speeds)
@@ -193,9 +209,11 @@ class TestBaseCamPathOfMotionCameraController:
 
     def test_end_of_single_point_path_is_reached(
             self, controller, gimbal, get_zero_angles, zero_point,
-            camera_speeds):
+            camera_speeds, target_speed_calculator, max_speeds):
         gimbal.get_angles = should_not_be_called_mock('gimbal.get_angles')
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
         controller.add_point(zero_point)
+        controller.start()
         assert not controller.is_end_of_path_reached()
         gimbal.get_angles = get_zero_angles
         controller.update(camera_speeds)
@@ -203,13 +221,15 @@ class TestBaseCamPathOfMotionCameraController:
 
     def test_end_of_multi_point_path_is_reached(
             self, controller, gimbal, get_zero_angles, zero_point,
-            non_zero_point,
-            camera_speeds):
+            non_zero_point, camera_speeds, max_speeds, target_speed_calculator):
         gimbal.get_angles = should_not_be_called_mock('gimbal.get_angles')
         controller.add_point(zero_point)
         controller.add_point(non_zero_point)
+        controller.start()
         assert not controller.is_end_of_path_reached()
         gimbal.get_angles = get_zero_angles
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
+
         controller.update(camera_speeds)
         assert not controller.is_end_of_path_reached()
         assert controller.current_point() == non_zero_point
@@ -284,9 +304,11 @@ class TestBaseCamPathOfMotionCameraController:
     # which has the last point as target.
     def test_do_not_move_if_point_is_already_reached(
             self, controller, camera_speeds, gimbal, zero_point,
-            get_zero_angles, rotate_speed_manager, tilt_speed_manager):
+            get_zero_angles, rotate_speed_manager, tilt_speed_manager,
+            target_speed_calculator, max_speeds):
         gimbal.get_angles = get_zero_angles
         gimbal.control = Mock()
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
         controller.add_point(zero_point)
         controller.start()
         assert gimbal.get_angles.call_count == 0
@@ -303,19 +325,27 @@ class TestBaseCamPathOfMotionCameraController:
 
     def test_move_to_point_with_minimum_speed(
             self, controller, camera_speeds, gimbal, get_zero_angles,
-            non_zero_point):
+            non_zero_point, rotate_speed_manager, tilt_speed_manager,
+            target_speed_calculator, max_speeds):
         gimbal.get_angles = get_zero_angles
         gimbal.control = Mock()
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
         controller.add_point(non_zero_point)
 
         controller.start()
         assert gimbal.get_angles.call_count == 0
         assert gimbal.control.call_count == 0
 
-        # should move with minimum speed (target speed is zero) to first point
+        assert rotate_speed_manager.current_speed == 0
+        assert tilt_speed_manager.current_speed == 0
+        assert rotate_speed_manager.acceleration_per_second == 0
+        assert tilt_speed_manager.acceleration_per_second == 0
+        rotate_speed_manager.target_speed = 60
+        tilt_speed_manager.target_speed = 12
+        # should move with minimum speed to first point,
+        # since current speed and acceleration are zero
         controller.update(camera_speeds)
         assert gimbal.get_angles.call_count == 1
-        assert gimbal.control.call_count == 1
         min_speed = 1
         gimbal.control.assert_called_once_with(
             yaw_mode=ControlMode.angle, yaw_speed=min_speed,
@@ -325,14 +355,15 @@ class TestBaseCamPathOfMotionCameraController:
         assert camera_speeds == CameraSpeeds()
 
     def test_move_with_increasing_speed_to_point(
-            self, controller, camera_speeds, gimbal, get_zero_angles,
-            rotate_speed_manager, tilt_speed_manager):
+            self, controller, camera_speeds, gimbal,
+            get_zero_angles, zero_point,
+            rotate_speed_manager, tilt_speed_manager, target_speed_calculator):
         gimbal.get_angles = get_zero_angles
         gimbal.control = Mock()
-        rotate_speed_manager.acceleration_per_second = 30
-        tilt_speed_manager.acceleration_per_second = 6
-        current_point = PointOfMotion(pan_angle=21, tilt_angle=6)
-        next_point = PointOfMotion(pan_angle=0, tilt_angle=0)
+        rotate_speed_manager.acceleration_per_second = 4
+        tilt_speed_manager.acceleration_per_second = 1
+        current_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
+        next_point = PointOfMotion(pan_angle=0, tilt_angle=0, time=3)
 
         controller.add_point(current_point)
         controller.add_point(next_point)
@@ -341,12 +372,34 @@ class TestBaseCamPathOfMotionCameraController:
         assert gimbal.get_angles.call_count == 0
         assert gimbal.control.call_count == 0
 
+        # Gimbal is not moving
+        assert rotate_speed_manager.current_speed == 0
+        assert tilt_speed_manager.current_speed == 0
+        # assert rotate_speed_manager.target_speed == 0
+        # assert tilt_speed_manager.target_speed == 0
+        # First point is not reached yet
+        gimbal.get_angles = get_zero_angles
+        camera_state = CameraState(speeds=camera_speeds,
+                                   pan_angle=zero_point.pan_angle,
+                                   tilt_angle=zero_point.tilt_angle)
+        # New target speeds are calculated based on next point of motion.
+        # Gimbal has to pan 7°/s to get in 3s from 21° to 0°.
+        # Gimbal has to tilt 2°/s to get in 3s from 6° to 0°.
+        target_speeds = CameraSpeeds(pan_speed=7, tilt_speed=2)
+        target_speed_calculator.calculate = Mock(return_value=target_speeds)
+        # TODO assert target speeds have been set before calculate is called
+
         # should move with speeds of speed managers to first point
         controller.update(camera_speeds)
+        # calculator has been used to calculate target speeds
+        target_speed_calculator.calculate.assert_called_once_with(
+            camera_state, current_point)
+        # and target speeds have been set on speed managers
+        assert rotate_speed_manager.target_speed == target_speeds.pan_speed
+        assert tilt_speed_manager.target_speed == target_speeds.tilt_speed
+        assert rotate_speed_manager.current_speed == 4
+        assert tilt_speed_manager.current_speed == 1
         assert gimbal.get_angles.call_count == 1
-        assert gimbal.control.call_count == 1
-        assert rotate_speed_manager.current_speed == 30
-        assert tilt_speed_manager.current_speed == 6
         gimbal.control.assert_called_once_with(
             yaw_mode=ControlMode.angle,
             yaw_speed=rotate_speed_manager.current_speed,
@@ -357,14 +410,17 @@ class TestBaseCamPathOfMotionCameraController:
         assert not controller.is_target_speed_reached()
 
         gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=7, pan_speed=30,
-                                           tilt_angle=2, tilt_speed=6))
+            return_value=get_angles_in_cmd(pan_angle=7, pan_speed=4,
+                                           tilt_angle=2, tilt_speed=1))
         gimbal.control.reset_mock()
         # should increase speeds till target speeds are reached
         controller.update(camera_speeds)
         assert gimbal.get_angles.call_count == 1
-        assert rotate_speed_manager.current_speed == 60
-        assert tilt_speed_manager.current_speed == 12
+        # Should not have been called again, since target didn't change.
+        assert target_speed_calculator.calculate.call_count == 1
+        # Target speeds are reached
+        assert rotate_speed_manager.current_speed == 7
+        assert tilt_speed_manager.current_speed == 2
         gimbal.control.assert_called_once_with(
             yaw_mode=ControlMode.angle,
             yaw_speed=rotate_speed_manager.current_speed,
@@ -388,7 +444,9 @@ class TestBaseCamPathOfMotionCameraController:
         controller.update(camera_speeds)
         # call to get_angles required to check if target is reached
         assert gimbal.get_angles.call_count == 1
-        # target speed already reached => no control command needs to be sent
+        # Should not have been called again, since target didn't change.
+        assert target_speed_calculator.calculate.call_count == 1
+        # Target speed already reached => no control command needs to be sent
         assert gimbal.control.call_count == 0
         # but time of speed managers has to be updated
         assert (rotate_speed_manager.update.call_count == 1
@@ -399,31 +457,63 @@ class TestBaseCamPathOfMotionCameraController:
 
     def test_move_to_next_point_when_current_point_is_reached(
             self, controller, camera_speeds, gimbal, get_zero_angles,
-            rotate_speed_manager, tilt_speed_manager):
+            rotate_speed_manager, tilt_speed_manager, target_speed_calculator,
+            max_speeds):
         gimbal.control = Mock()
-        rotate_speed_manager.acceleration_per_second = 30
+        rotate_speed_manager.acceleration_per_second = 4
+        rotate_speed_manager.target_speed = 60
         rotate_speed_manager.current_speed = rotate_speed_manager.target_speed
-        tilt_speed_manager.acceleration_per_second = 6
+        tilt_speed_manager.acceleration_per_second = 1
+        tilt_speed_manager.target_speed = 12
         tilt_speed_manager.current_speed = tilt_speed_manager.target_speed
         current_point = PointOfMotion(pan_angle=0, tilt_angle=0)
-        target_point = PointOfMotion(pan_angle=21, tilt_angle=6)
+        target_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
 
         controller.add_point(current_point)
         controller.add_point(target_point)
+        controller.start()
 
-        # gimbal still moves with target speed according to the speed manager
+        # gimbal is already moving
+        gimbal.get_angles = Mock(
+            return_value=get_angles_in_cmd(pan_angle=1, pan_speed=60,
+                                           tilt_angle=1, tilt_speed=12))
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
+        # and should move to first point
+        controller.update(camera_speeds)
+        gimbal.control.reset_mock()
+
+        # Gimbal still moves with target speed according to the speed manager
         assert rotate_speed_manager.current_speed == 60
         assert tilt_speed_manager.current_speed == 12
-        # first point is reached
+        # Old target speeds used to move to first point
+        assert rotate_speed_manager.target_speed == 60
+        assert tilt_speed_manager.target_speed == 12
+        # First point is reached
         gimbal.get_angles = get_zero_angles
+        camera_state = CameraState(speeds=camera_speeds,
+                                   pan_angle=current_point.pan_angle,
+                                   tilt_angle=current_point.tilt_angle)
+        # New target speeds are calculated based on next point of motion.
+        # Gimbal has to pan 7°/s to get in 3s from 0° to 21°.
+        # Gimbal has to tilt 2°/s to get in 3s from 0° to 6°.
+        target_speeds = CameraSpeeds(pan_speed=7, tilt_speed=2)
+        target_speed_calculator.calculate = Mock(return_value=target_speeds)
+        # TODO assert target speeds have been set before calculate is called
+
         controller.update(camera_speeds)
         assert controller.current_point() == target_point
         assert gimbal.get_angles.call_count == 1
+        # calculator has been used to calculate target speeds
+        target_speed_calculator.calculate.assert_called_once_with(
+            camera_state, target_point)
+        # and target speeds have been set on speed managers
+        assert rotate_speed_manager.target_speed == target_speeds.pan_speed
+        assert tilt_speed_manager.target_speed == target_speeds.tilt_speed
         # Gimbal stopped by itself, when it reached the last point.
         # The speed managers don't know that. Hence, the current speed
         # has to be set to zero and then updated.
-        assert rotate_speed_manager.current_speed == 30
-        assert tilt_speed_manager.current_speed == 6
+        assert rotate_speed_manager.current_speed == 4
+        assert tilt_speed_manager.current_speed == 1
         gimbal.control.assert_called_once_with(
             yaw_mode=ControlMode.angle,
             yaw_speed=rotate_speed_manager.current_speed,
@@ -431,3 +521,103 @@ class TestBaseCamPathOfMotionCameraController:
             pitch_mode=ControlMode.angle,
             pitch_speed=tilt_speed_manager.current_speed,
             pitch_angle=target_point.tilt_angle)
+
+    def test_target_speeds_are_calculated_before_current_speeds_are_updated(
+            self, controller, camera_speeds, gimbal, get_zero_angles,
+            rotate_speed_manager, tilt_speed_manager, target_speed_calculator,
+            max_speeds):
+        rotate_speed_manager.acceleration_per_second = 2
+        tilt_speed_manager.acceleration_per_second = 1
+
+        first_point = PointOfMotion(pan_angle=0, tilt_angle=0)
+        last_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
+
+        controller.add_point(first_point)
+        controller.add_point(last_point)
+        controller.start()
+
+        # gimbal is not at first point yet
+        gimbal.get_angles = Mock(
+            return_value=get_angles_in_cmd(pan_angle=180, pan_speed=60,
+                                           tilt_angle=90, tilt_speed=12))
+        camera_speeds.pan_speed = 60
+        camera_speeds.tilt_speed = 12
+        camera_state = CameraState(speeds=camera_speeds, pan_angle=180,
+                                   tilt_angle=90)
+        # gimbal should move with maximum speed to first point
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
+        # Assert that target speeds are set on speed manager before updating
+        # current speeds. Save update-method, replace it with assertion that
+        # calls saved update-method.
+        update_rotate_speed_manager = rotate_speed_manager.update
+        update_tilt_speed_manager = tilt_speed_manager.update
+
+        def assert_update_rotate_speed_manager():
+            assert rotate_speed_manager.target_speed == max_speeds.pan_speed, \
+                'target pan speed has to be set before updating current speed'
+            return update_rotate_speed_manager()
+
+        def assert_update_tilt_speed_manager():
+            assert tilt_speed_manager.target_speed == max_speeds.tilt_speed, \
+                'target tilt speed has to be set before updating current speed'
+            return update_tilt_speed_manager()
+
+        rotate_speed_manager.update = Mock(
+            side_effect=assert_update_rotate_speed_manager)
+        tilt_speed_manager.update = Mock(
+            side_effect=assert_update_tilt_speed_manager)
+        # TODO pass camera state to update (do not get angles in controller)
+        controller.update(camera_speeds)
+        # calculator has been used to calculate target speeds
+        target_speed_calculator.calculate.assert_called_once_with(
+            camera_state, first_point)
+        # and target speeds have been set on speed managers
+        assert rotate_speed_manager.target_speed == max_speeds.pan_speed
+        assert tilt_speed_manager.target_speed == max_speeds.tilt_speed
+        # and then current speeds have been updated
+        rotate_speed_manager.update.assert_called_once()
+        tilt_speed_manager.update.assert_called_once()
+        # and used to control the gimbal
+        gimbal.control.assert_called_once_with(
+            yaw_mode=ControlMode.angle,
+            yaw_speed=2,
+            yaw_angle=first_point.pan_angle,
+            pitch_mode=ControlMode.angle,
+            pitch_speed=1,
+            pitch_angle=first_point.tilt_angle)
+
+
+class TestPointOfMotionTargetSpeedCalculator:
+    @pytest.fixture()
+    def max_pan_speed(self):
+        return 60
+
+    @pytest.fixture()
+    def max_tilt_speed(self):
+        return 12
+
+    @pytest.fixture()
+    def calculator(self, max_pan_speed, max_tilt_speed):
+        return PointOfMotionTargetSpeedCalculator(max_pan_speed=max_pan_speed,
+                                                  max_tilt_speed=max_tilt_speed)
+
+    def test_get_degree_per_second(self, calculator):
+        # gimbal has to move 2°/s to get in 3s from 0° to 6°
+        assert 2 == calculator.get_degree_per_second(0, 6, 3)
+
+    def test_calculate(self, calculator):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=0, tilt_angle=0),
+            target=PointOfMotion(pan_angle=180, tilt_angle=90, time=9))
+        # gimbal has to pan 20°/s to get in 9s from 0° to 180°
+        assert 20 == target_speeds.pan_speed
+        # gimbal has to tilt 10°/s to get in 9s from 0° to 90°
+        assert 10 == target_speeds.tilt_speed
+
+    def test_calculate_respects_max_speed(
+            self, calculator, max_pan_speed, max_tilt_speed):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=0, tilt_angle=0),
+            target=PointOfMotion(pan_angle=180, tilt_angle=90, time=1))
+        assert max_pan_speed == target_speeds.pan_speed
+        assert max_tilt_speed == target_speeds.tilt_speed

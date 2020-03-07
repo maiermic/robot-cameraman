@@ -1,6 +1,7 @@
 import logging
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
+from enum import Enum, auto
 from logging import Logger
 from typing import List
 
@@ -176,6 +177,7 @@ class PointOfMotion:
     pan_clockwise: bool = True
     tilt_angle: int = 0
     tilt_clockwise: bool = True
+    time: float = 0.0
     zoom_factor: float = 1.0
 
 
@@ -186,6 +188,32 @@ class CameraState:
     pan_angle: int
     tilt_angle: int
     zoom_factor: float = 1.0
+
+
+class PointOfMotionTargetSpeedCalculator:
+    def __init__(self, max_pan_speed: int = 60, max_tilt_speed: int = 12):
+        self._max_pan_speed = max_pan_speed
+        self._max_tilt_speed = max_tilt_speed
+
+    # TODO does not need the whole state only angles
+    def calculate(self, state: CameraState, target: PointOfMotion):
+        if target.time == 0:
+            return CameraSpeeds(pan_speed=self._max_pan_speed,
+                                tilt_speed=self._max_tilt_speed)
+        return CameraSpeeds(
+            pan_speed=min(self._max_pan_speed,
+                          self.get_degree_per_second(state.pan_angle,
+                                                     target.pan_angle,
+                                                     target.time)),
+            tilt_speed=min(self._max_tilt_speed,
+                           self.get_degree_per_second(state.tilt_angle,
+                                                      target.tilt_angle,
+                                                      target.time)))
+
+    @staticmethod
+    def get_degree_per_second(current_angle, target_angle, time):
+        delta_angle = abs(target_angle - current_angle)
+        return delta_angle / time
 
 
 class PathOfMotionCameraController(ABC):
@@ -218,36 +246,68 @@ class PathOfMotionCameraController(ABC):
 
 
 class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
+    class _State(Enum):
+        """The controller has to be started using """
+        STARTED = auto()
+        RUNNING = auto()
+        STOPPED = auto()
 
     def __init__(self,
                  gimbal: Gimbal,
                  rotate_speed_manager: SpeedManager,
-                 tilt_speed_manager: SpeedManager):
+                 tilt_speed_manager: SpeedManager,
+                 target_speed_calculator: PointOfMotionTargetSpeedCalculator):
         super().__init__()
         self._gimbal = gimbal
         self._is_end_of_path_reached = False
         self._rotate_speed_manager = rotate_speed_manager
         self._tilt_speed_manager = tilt_speed_manager
-        self._rotate_speed_manager.target_speed = 60
-        self._tilt_speed_manager.target_speed = 12
+        self._target_speed_calculator = target_speed_calculator
+        self._state = self._State.STOPPED
+
+    def start(self):
+        self._reset_speed_managers()
+        self._state = self._State.STARTED
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
+        assert self._state is not self._State.STOPPED
         if not self.has_points():
             return
-        if self._is_current_point_reached():
+        angles = self._gimbal.get_angles()
+        _log_angles(angles)
+        if self._state is self._State.STARTED:
+            self._state = self._State.RUNNING
+            if self._is_current_point_reached(angles):
+                if self.has_next_point():
+                    previous_point = self.current_point()
+                    self.next_point()
+                else:
+                    self._stop()
+                    return
+            else:
+                pan_angle = to_degree(angles.target_angle_3)
+                tilt_angle = to_degree(angles.target_angle_2)
+                # TODO avoid conversion to int by using float in PointOfMotion?
+                previous_point = PointOfMotion(pan_angle=int(pan_angle),
+                                               tilt_angle=int(tilt_angle))
+            self._update_target_speeds(camera_speeds, previous_point)
+            self._update_speed_managers()
+            self._move_gimbal_to_current_point()
+        elif self._is_current_point_reached(angles):
             logger.debug('move to next point')
             if self.has_next_point():
+                previous_point = self.current_point()
                 self.next_point()
                 # Gimbal stopped by itself, when it reached the last point.
                 # The speed managers don't know that. Hence, the current speed
                 # has to be set to zero and then updated.
                 self._rotate_speed_manager.current_speed = 0
                 self._tilt_speed_manager.current_speed = 0
+                self._update_target_speeds(camera_speeds, previous_point)
                 self._update_speed_managers()
                 self._move_gimbal_to_current_point()
             else:
-                # indicates that end of path is reached
-                self.next_point()
+                self._stop()
         elif not self.is_target_speed_reached():
             logger.debug('increase speed')
             self._update_speed_managers()
@@ -257,8 +317,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             # update elapsed time of speed managers
             self._update_speed_managers()
 
-    def start(self):
-        self._reset_speed_managers()
+    def _stop(self):
+        # indicates that end of path is reached
+        self.next_point()
+        self._state = self._State.STOPPED
 
     def _reset_speed_managers(self):
         self._rotate_speed_manager.reset()
@@ -268,13 +330,22 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         self._rotate_speed_manager.update()
         self._tilt_speed_manager.update()
 
+    def _update_target_speeds(self, camera_speeds: CameraSpeeds,
+                              previous_point: PointOfMotion):
+        next_point = self.current_point()
+        camera_state = CameraState(speeds=camera_speeds,
+                                   pan_angle=previous_point.pan_angle,
+                                   tilt_angle=previous_point.tilt_angle)
+        target_speeds = self._target_speed_calculator.calculate(
+            camera_state, next_point)
+        self._rotate_speed_manager.target_speed = target_speeds.pan_speed
+        self._tilt_speed_manager.target_speed = target_speeds.tilt_speed
+
     def is_target_speed_reached(self):
         return (self._rotate_speed_manager.is_target_speed_reached()
                 and self._tilt_speed_manager.is_target_speed_reached())
 
-    def _is_current_point_reached(self):
-        angles = self._gimbal.get_angles()
-        _log_angles(angles)
+    def _is_current_point_reached(self, angles: GetAnglesInCmd):
         pan_angle = to_degree(angles.target_angle_3)
         tilt_angle = to_degree(angles.target_angle_2)
         p = self.current_point()
@@ -318,10 +389,11 @@ def _main():
     controller = BaseCamPathOfMotionCameraController(
         Gimbal(),
         rotate_speed_manager=SpeedManager(60),
-        tilt_speed_manager=SpeedManager(12))
+        tilt_speed_manager=SpeedManager(12),
+        target_speed_calculator=PointOfMotionTargetSpeedCalculator())
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
-    controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30))
-    controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
+    controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30, time=6))
+    controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0, time=3))
     camera_speeds = CameraSpeeds()
     controller.start()
     while not controller.is_end_of_path_reached():
