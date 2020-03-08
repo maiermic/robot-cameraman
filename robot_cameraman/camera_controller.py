@@ -204,16 +204,41 @@ class PointOfMotionTargetSpeedCalculator:
             pan_speed=min(self._max_pan_speed,
                           self.get_degree_per_second(state.pan_angle,
                                                      target.pan_angle,
+                                                     target.pan_clockwise,
                                                      target.time)),
             tilt_speed=min(self._max_tilt_speed,
                            self.get_degree_per_second(state.tilt_angle,
                                                       target.tilt_angle,
+                                                      target.tilt_clockwise,
                                                       target.time)))
 
-    @staticmethod
-    def get_degree_per_second(current_angle, target_angle, time):
-        delta_angle = abs(target_angle - current_angle)
+    @classmethod
+    def get_degree_per_second(
+            cls,
+            current_angle: float,
+            target_angle: float,
+            clockwise: bool,
+            time: float) -> float:
+        if clockwise:
+            delta_angle = cls.get_delta_angle_clockwise(
+                current_angle=current_angle, target_angle=target_angle)
+        else:
+            delta_angle = cls.get_delta_angle_counter_clockwise(
+                current_angle=current_angle, target_angle=target_angle)
         return delta_angle / time
+
+    @classmethod
+    def get_delta_angle_clockwise(
+            cls, current_angle: float, target_angle: float) -> float:
+        return abs(360 - current_angle) % 360 + target_angle
+
+    @classmethod
+    def get_delta_angle_counter_clockwise(
+            cls, current_angle: float, target_angle: float) -> float:
+        if current_angle >= target_angle:
+            return current_angle - target_angle
+        else:
+            return abs(360 - target_angle) + current_angle
 
 
 class PathOfMotionCameraController(ABC):
@@ -392,8 +417,10 @@ def _main():
         tilt_speed_manager=SpeedManager(12),
         target_speed_calculator=PointOfMotionTargetSpeedCalculator())
     controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0))
-    controller.add_point(PointOfMotion(pan_angle=180, tilt_angle=30, time=6))
-    controller.add_point(PointOfMotion(pan_angle=0, tilt_angle=0, time=3))
+    controller.add_point(PointOfMotion(pan_angle=180, pan_clockwise=False,
+                                       tilt_angle=30, time=6))
+    controller.add_point(PointOfMotion(pan_angle=0, pan_clockwise=True,
+                                       tilt_angle=0, time=3))
     camera_speeds = CameraSpeeds()
     controller.start()
     while not controller.is_end_of_path_reached():

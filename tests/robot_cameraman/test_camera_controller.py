@@ -602,8 +602,28 @@ class TestPointOfMotionTargetSpeedCalculator:
                                                   max_tilt_speed=max_tilt_speed)
 
     def test_get_degree_per_second(self, calculator):
-        # gimbal has to move 2°/s to get in 3s from 0° to 6°
-        assert 2 == calculator.get_degree_per_second(0, 6, 3)
+        # gimbal has to move 2°/s clockwise to get in 3s from 0° to 6°
+        assert 2 == calculator.get_degree_per_second(
+            current_angle=0, target_angle=6, clockwise=True, time=3)
+        # gimbal has to move 2°/s counter clockwise to get in 3s from 6° to 0°
+        assert 2 == calculator.get_degree_per_second(
+            current_angle=6, target_angle=0, clockwise=False, time=3)
+
+    def test_get_delta_angle_clockwise(self, calculator):
+        assert 6 == calculator.get_delta_angle_clockwise(
+            current_angle=0, target_angle=6)
+        assert 354 == calculator.get_delta_angle_clockwise(
+            current_angle=6, target_angle=0)
+        assert 0 == calculator.get_delta_angle_clockwise(
+            current_angle=0, target_angle=0)
+
+    def test_get_delta_angle_counter_clockwise(self, calculator):
+        assert 354 == calculator.get_delta_angle_counter_clockwise(
+            current_angle=0, target_angle=6)
+        assert 6 == calculator.get_delta_angle_counter_clockwise(
+            current_angle=6, target_angle=0)
+        assert 0 == calculator.get_delta_angle_counter_clockwise(
+            current_angle=0, target_angle=0)
 
     def test_calculate_returns_max_speeds_when_time_is_zero(
             self, calculator, max_pan_speed, max_tilt_speed):
@@ -620,6 +640,41 @@ class TestPointOfMotionTargetSpeedCalculator:
         # gimbal has to pan 20°/s to get in 9s from 0° to 180°
         assert 20 == target_speeds.pan_speed
         # gimbal has to tilt 10°/s to get in 9s from 0° to 90°
+        assert 10 == target_speeds.tilt_speed
+
+    def test_calculate_overstep_360(self, calculator):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=280, tilt_angle=320),
+            target=PointOfMotion(pan_angle=10, tilt_angle=20, time=6))
+        # gimbal has to pan 15°/s counter-clockwise to get
+        # in 6s from 280° to 10° (90° difference)
+        assert 15 == target_speeds.pan_speed
+        # gimbal has to tilt 10°/s counter-clockwise to get
+        # in 6s from 320° to 20° (60° difference)
+        assert 10 == target_speeds.tilt_speed
+
+    def test_calculate_counter_clockwise(self, calculator):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=100, tilt_angle=80),
+            target=PointOfMotion(pan_angle=10, pan_clockwise=False,
+                                 tilt_angle=20, tilt_clockwise=False, time=6))
+        # gimbal has to pan 15°/s counter-clockwise to get
+        # in 6s from 100° to 10° (90° difference)
+        assert 15 == target_speeds.pan_speed
+        # gimbal has to tilt 10°/s counter-clockwise to get
+        # in 6s from 80° to 20° (60° difference)
+        assert 10 == target_speeds.tilt_speed
+
+    def test_calculate_counter_clockwise_overstep_360(self, calculator):
+        target_speeds = calculator.calculate(
+            state=CameraState(speeds=Mock(), pan_angle=10, tilt_angle=20),
+            target=PointOfMotion(pan_angle=280, pan_clockwise=False,
+                                 tilt_angle=320, tilt_clockwise=False, time=6))
+        # gimbal has to pan 15°/s counter-clockwise to get
+        # in 6s from 10° to 280° (90° difference)
+        assert 15 == target_speeds.pan_speed
+        # gimbal has to tilt 10°/s counter-clockwise to get
+        # in 6s from 20° to 320° (60° difference)
         assert 10 == target_speeds.tilt_speed
 
     def test_calculate_respects_max_speed(
