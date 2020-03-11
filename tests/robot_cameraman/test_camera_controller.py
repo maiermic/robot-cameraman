@@ -363,7 +363,8 @@ class TestBaseCamPathOfMotionCameraController:
         rotate_speed_manager.acceleration_per_second = 4
         tilt_speed_manager.acceleration_per_second = 1
         current_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
-        next_point = PointOfMotion(pan_angle=0, tilt_angle=0, time=3)
+        next_point = PointOfMotion(pan_angle=0, pan_clockwise=False,
+                                   tilt_angle=0, tilt_clockwise=False, time=3)
 
         controller.add_point(current_point)
         controller.add_point(next_point)
@@ -466,7 +467,8 @@ class TestBaseCamPathOfMotionCameraController:
         tilt_speed_manager.acceleration_per_second = 1
         tilt_speed_manager.target_speed = 12
         tilt_speed_manager.current_speed = tilt_speed_manager.target_speed
-        current_point = PointOfMotion(pan_angle=0, tilt_angle=0)
+        current_point = PointOfMotion(pan_angle=0, pan_clockwise=False,
+                                      tilt_angle=0, tilt_clockwise=False)
         target_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
 
         controller.add_point(current_point)
@@ -529,7 +531,8 @@ class TestBaseCamPathOfMotionCameraController:
         rotate_speed_manager.acceleration_per_second = 2
         tilt_speed_manager.acceleration_per_second = 1
 
-        first_point = PointOfMotion(pan_angle=0, tilt_angle=0)
+        first_point = PointOfMotion(pan_angle=0, pan_clockwise=False,
+                                    tilt_angle=0, tilt_clockwise=False)
         last_point = PointOfMotion(pan_angle=21, tilt_angle=6, time=3)
 
         controller.add_point(first_point)
@@ -585,6 +588,74 @@ class TestBaseCamPathOfMotionCameraController:
             pitch_mode=ControlMode.angle,
             pitch_speed=1,
             pitch_angle=first_point.tilt_angle)
+
+    def test_no_stop_at_intermediate_point_if_next_point_is_in_same_direction(
+            self, controller, camera_speeds, gimbal, get_zero_angles,
+            zero_point,
+            rotate_speed_manager, tilt_speed_manager, target_speed_calculator,
+            max_speeds, max_pan_speed, max_tilt_speed):
+        gimbal.control = Mock()
+        target_speed_calculator.calculate = Mock(return_value=max_speeds)
+        rotate_speed_manager.acceleration_per_second = max_pan_speed / 2
+        tilt_speed_manager.acceleration_per_second = max_tilt_speed / 2
+
+        first_point = zero_point
+        second_point = PointOfMotion(pan_angle=100, tilt_angle=20, time=2)
+        controller.add_point(first_point)
+        controller.add_point(second_point)
+        controller.start()
+
+        gimbal.get_angles = Mock(
+            return_value=get_angles_in_cmd(pan_angle=300, pan_speed=0,
+                                           tilt_angle=354, tilt_speed=0))
+        controller.update(camera_speeds)
+        # Tell gimbal to move with the speed of the first point to the second
+        # point.
+        gimbal.control.assert_called_once_with(
+            yaw_mode=ControlMode.angle,
+            yaw_speed=max_pan_speed / 2,
+            yaw_angle=second_point.pan_angle,
+            pitch_mode=ControlMode.angle,
+            pitch_speed=max_tilt_speed / 2,
+            pitch_angle=second_point.tilt_angle)
+        gimbal.control.reset_mock()
+
+        assert rotate_speed_manager.current_speed < rotate_speed_manager.target_speed
+        assert tilt_speed_manager.current_speed < tilt_speed_manager.target_speed
+        # increase speed
+        controller.update(camera_speeds)
+        # Tell gimbal to move with the speed of the first point to the second
+        # point.
+        gimbal.control.assert_called_once_with(
+            yaw_mode=ControlMode.angle,
+            yaw_speed=max_pan_speed,
+            yaw_angle=second_point.pan_angle,
+            pitch_mode=ControlMode.angle,
+            pitch_speed=max_tilt_speed,
+            pitch_angle=second_point.tilt_angle)
+        gimbal.control.reset_mock()
+
+        # First point is reached
+        gimbal.get_angles = get_zero_angles
+        # Continue moving to the second point, but with the speed of the second
+        # point, i.e. speed has to be decreased from max speed to:
+        # - pan 50°/s to get in 2s from 0° to 100°
+        # - tilt 10°/s to get in 2s from 0° to 20°
+        target_speed_calculator.calculate = Mock(
+            return_value=CameraSpeeds(pan_speed=50, tilt_speed=10))
+        controller.update(camera_speeds)
+        target_speed_calculator.calculate.assert_called_once_with(
+            CameraState(speeds=camera_speeds,
+                        pan_angle=first_point.pan_angle,
+                        tilt_angle=first_point.tilt_angle),
+            second_point)
+        gimbal.control.assert_called_once_with(
+            yaw_mode=ControlMode.angle,
+            yaw_speed=50,
+            yaw_angle=second_point.pan_angle,
+            pitch_mode=ControlMode.angle,
+            pitch_speed=10,
+            pitch_angle=second_point.tilt_angle)
 
 
 class TestPointOfMotionTargetSpeedCalculator:
