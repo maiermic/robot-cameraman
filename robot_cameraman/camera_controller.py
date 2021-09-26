@@ -294,6 +294,10 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         self._state = self._State.STOPPED
         self._previous_point: Optional[PointOfMotion] = None
 
+    def next_point(self):
+        self._previous_point = self.current_point()
+        super().next_point()
+
     def start(self):
         self._reset_speed_managers()
         self._state = self._State.STARTED
@@ -308,7 +312,6 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             self._state = self._State.RUNNING
             if self._is_current_point_reached(angles):
                 if self.has_next_point():
-                    self._previous_point = self.current_point()
                     self.next_point()
                 else:
                     self._stop()
