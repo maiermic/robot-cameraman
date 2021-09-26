@@ -239,8 +239,8 @@ class TestBaseCamPathOfMotionCameraController:
         # angle of last point is reached
         gimbal.get_angles = Mock(
             return_value=get_angles_in_cmd(
-                pan_angle=non_zero_point.pan_angle, pan_speed=0,
-                tilt_angle=non_zero_point.tilt_angle, tilt_speed=0))
+                pan_angle=int(non_zero_point.pan_angle), pan_speed=0,
+                tilt_angle=int(non_zero_point.tilt_angle), tilt_speed=0))
         controller.update(camera_speeds)
         gimbal.get_angles = should_not_be_called_mock('gimbal.get_angles')
         assert controller.is_end_of_path_reached()

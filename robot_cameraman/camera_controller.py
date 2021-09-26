@@ -173,9 +173,9 @@ class SmoothCameraController(CameraController):
 
 @dataclass()
 class PointOfMotion:
-    pan_angle: int = 0
+    pan_angle: float = 0
     pan_clockwise: bool = True
-    tilt_angle: int = 0
+    tilt_angle: float = 0
     tilt_clockwise: bool = True
     time: float = 0.0
     zoom_factor: float = 1.0
@@ -185,8 +185,8 @@ class PointOfMotion:
 @dataclass()
 class CameraState:
     speeds: CameraSpeeds
-    pan_angle: int
-    tilt_angle: int
+    pan_angle: float
+    tilt_angle: float
     zoom_factor: float = 1.0
 
 
@@ -316,9 +316,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             else:
                 pan_angle = to_degree(angles.target_angle_3)
                 tilt_angle = to_degree(angles.target_angle_2)
-                # TODO avoid conversion to int by using float in PointOfMotion?
-                self._previous_point = PointOfMotion(pan_angle=int(pan_angle),
-                                                     tilt_angle=int(tilt_angle))
+                self._previous_point = PointOfMotion(pan_angle=pan_angle,
+                                                     tilt_angle=tilt_angle)
             assert self._previous_point is not None
             self._update_target_speeds(camera_speeds, self._previous_point)
             self._update_speed_managers()
