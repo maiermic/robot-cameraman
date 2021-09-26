@@ -328,20 +328,30 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         elif self._is_current_point_reached(angles):
             logger.debug('move to next point')
             if self.has_next_point():
+                self.next_point()
                 current_point = self.current_point()
-                # should have been set when started (first call of update)
-                assert self._previous_point is not None
                 previous = self._previous_point
                 # If the gimbal switches moving direction (clockwise <-> counter
                 # clockwise), then it stopped by itself, when it reached the
                 # last point. The speed managers don't know that. Hence, the
                 # current speed has to be set to zero and then updated.
                 if previous.pan_clockwise != current_point.pan_clockwise:
+                    logger.debug('reset pan speed to 0')
                     self._rotate_speed_manager.current_speed = 0
                 if previous.tilt_clockwise != current_point.tilt_clockwise:
+                    logger.debug('reset tilt speed to 0')
                     self._tilt_speed_manager.current_speed = 0
-                self.next_point()
-                self._update_target_speeds(camera_speeds, current_point)
+                # TODO consider to update target speeds based on real angles
+                #   of gimbal, since they may be different than the target
+                #   point, which is assumed has been reached exactly.
+                #   However, overstepping has to be considered.
+                # pan_angle = to_degree(angles.target_angle_3)
+                # tilt_angle = to_degree(angles.target_angle_2)
+                # real_current_point = PointOfMotion(pan_angle=pan_angle,
+                #                                    tilt_angle=tilt_angle)
+                # self._update_target_speeds(camera_speeds, real_current_point)
+                # TODO only pass angles instead of PointOfMotion
+                self._update_target_speeds(camera_speeds, previous)
                 self._update_speed_managers()
                 self._move_gimbal_to_current_point()
             else:
