@@ -444,6 +444,9 @@ def _main():
     controller.add_point(PointOfMotion(pan_angle=180, pan_clockwise=True,
                                        tilt_angle=30, tilt_clockwise=True,
                                        time=6))
+    controller.add_point(PointOfMotion(pan_angle=270, pan_clockwise=True,
+                                       tilt_angle=15, tilt_clockwise=False,
+                                       time=3))
     controller.add_point(PointOfMotion(pan_angle=0, pan_clockwise=False,
                                        tilt_angle=0, tilt_clockwise=False,
                                        time=3))
