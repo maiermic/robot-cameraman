@@ -383,8 +383,14 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         camera_state = CameraState(speeds=camera_speeds,
                                    pan_angle=previous_point.pan_angle,
                                    tilt_angle=previous_point.tilt_angle)
+        logger.debug(f'camera state {camera_state}')
+        logger.debug(f'next point {next_point}')
+        next_but_one_point = \
+            self.get_next_point() if self.has_next_point() else None
+        logger.debug(f'next but one point {next_but_one_point}')
         target_speeds = self._target_speed_calculator.calculate(
             camera_state, next_point)
+        logger.debug(f'target speeds {target_speeds}')
         self._rotate_speed_manager.target_speed = target_speeds.pan_speed
         self._tilt_speed_manager.target_speed = target_speeds.tilt_speed
 
