@@ -421,6 +421,12 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
                     tilt_angle = next_point.tilt_angle
             yaw_speed = self._current_speed(self._rotate_speed_manager)
             pitch_speed = self._current_speed(self._tilt_speed_manager)
+            logger.debug(' '.join((
+                f'pan to {pan_angle}',
+                f'with {self._rotate_speed_manager.current_speed}°/s,',
+                f'tilt to {tilt_angle}',
+                f'with {self._tilt_speed_manager.current_speed}°/s',
+            )))
             self._gimbal.control(
                 yaw_mode=ControlMode.angle, yaw_speed=yaw_speed,
                 yaw_angle=pan_angle,
