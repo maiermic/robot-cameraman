@@ -8,7 +8,6 @@ from typing import List, Optional
 import numpy
 import serial
 from math import isclose
-from more_itertools import grouper
 from time import time
 from typing_extensions import Protocol
 
@@ -430,14 +429,15 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
 
 def _log_angles(angles: GetAnglesInCmd):
-    column_names = ('imu_angle', 'target_angle', 'target_speed')
-    logger.debug('\t'.join(column_names))
-    # noinspection Mypy
-    for imu_angle, target_angle, target_speed in grouper(angles, 3):
-        logger.debug('\t'.join((
-            f'{to_degree(imu_angle):{len(column_names[0]) - 1}.2f}°',
-            f'{to_degree(target_angle):{len(column_names[1]) - 1}.2f}°',
-            f'{to_degree_per_sec(target_speed):{len(column_names[2]) - 3}.2f}°/s')))
+    logger.debug(' '.join((
+        'pan:',
+        f'{to_degree(angles.target_angle_3):6.2f}°',
+        f'{to_degree_per_sec(angles.target_speed_3):6.2f}°/s',
+        ' ' * 4,
+        'tilt:',
+        f'{to_degree(angles.target_angle_2):6.2f}°',
+        f'{to_degree_per_sec(angles.target_speed_2):6.2f}°/s',
+    )))
 
 
 def is_current_point_reached(
