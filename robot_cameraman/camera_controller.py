@@ -394,11 +394,12 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
                 and self._tilt_speed_manager.is_target_speed_reached())
 
     def _is_current_point_reached(self, angles: GetAnglesInCmd):
-        pan_angle = to_degree(angles.target_angle_3)
-        tilt_angle = to_degree(angles.target_angle_2)
-        p = self.current_point()
-        return (isclose(p.pan_angle, pan_angle, abs_tol=0.05)
-                and isclose(p.tilt_angle, tilt_angle, abs_tol=0.05))
+        next_point = self.get_next_point() if self.has_next_point() else None
+        return is_current_point_reached(
+            pan_angle=to_degree(angles.target_angle_3),
+            tilt_angle=to_degree(angles.target_angle_2),
+            current_target=self.current_point(),
+            next_target=next_point)
 
     @classmethod
     def _current_speed(cls, speed_manager: SpeedManager):
@@ -437,6 +438,80 @@ def _log_angles(angles: GetAnglesInCmd):
             f'{to_degree(imu_angle):{len(column_names[0]) - 1}.2f}°',
             f'{to_degree(target_angle):{len(column_names[1]) - 1}.2f}°',
             f'{to_degree_per_sec(target_speed):{len(column_names[2]) - 3}.2f}°/s')))
+
+
+def is_current_point_reached(
+        pan_angle: float,
+        tilt_angle: float,
+        current_target: PointOfMotion,
+        next_target: Optional[PointOfMotion]) -> bool:
+    next_pan_angle = getattr(next_target, 'pan_angle', None)
+    next_pan_clockwise = getattr(next_target, 'pan_clockwise', None)
+    next_tilt_angle = getattr(next_target, 'tilt_angle', None)
+    next_tilt_clockwise = getattr(next_target, 'tilt_clockwise', None)
+    pan_reached = is_current_angle_reached(
+        current_angle=pan_angle,
+        current_target_angle=current_target.pan_angle,
+        current_target_rotate_clockwise=current_target.pan_clockwise,
+        next_target_angle=next_pan_angle,
+        next_target_rotate_clockwise=next_pan_clockwise)
+    tilt_reached = is_current_angle_reached(
+        current_angle=tilt_angle,
+        current_target_angle=current_target.tilt_angle,
+        current_target_rotate_clockwise=current_target.tilt_clockwise,
+        next_target_angle=next_tilt_angle,
+        next_target_rotate_clockwise=next_tilt_clockwise)
+    if pan_reached:
+        logger.debug(f'pan angle reached {current_target.pan_angle:.2f}°')
+    if tilt_reached:
+        logger.debug(f'tilt angle reached {current_target.tilt_angle:.2f}°')
+    return pan_reached and tilt_reached
+
+
+def is_current_angle_reached(
+        current_angle: float,
+        current_target_angle: float,
+        current_target_rotate_clockwise: bool,
+        next_target_angle: float,
+        next_target_rotate_clockwise: bool) -> bool:
+    if is_close_angle(current_target_angle, current_angle, abs_tol=0.05):
+        return True
+    if current_target_rotate_clockwise == next_target_rotate_clockwise:
+        return is_angle_between(
+            left=current_target_angle,
+            angle=current_angle,
+            right=next_target_angle,
+            clockwise=current_target_rotate_clockwise)
+    return False
+
+
+def is_close_angle(a: float, b: float, abs_tol: float) -> bool:
+    """
+    Determine whether the two angles are close in value.
+
+      abs_tol
+        maximum difference for being considered "close", regardless of the
+        magnitude of the input values
+    """
+    if isclose(a, b, abs_tol=abs_tol):
+        return True
+    a_distance_to_overstep = abs(360 - a) % 360
+    b_distance_to_overstep = abs(360 - b) % 360
+    return a_distance_to_overstep + b_distance_to_overstep <= abs_tol
+
+
+def is_angle_between(
+        left: float, angle: float, right: float, clockwise: bool) -> bool:
+    if clockwise:
+        if left <= right:
+            return left <= angle <= right
+        else:
+            return left <= angle or angle <= right
+    else:
+        if left >= right:
+            return left >= angle >= right
+        else:
+            return left >= angle or angle >= right
 
 
 def _main():

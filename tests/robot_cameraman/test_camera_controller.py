@@ -4,7 +4,8 @@ import pytest
 
 from robot_cameraman.camera_controller import \
     BaseCamPathOfMotionCameraController, PointOfMotion, SpeedManager, \
-    ElapsedTime, CameraState, PointOfMotionTargetSpeedCalculator
+    ElapsedTime, CameraState, PointOfMotionTargetSpeedCalculator, \
+    is_current_point_reached, is_angle_between
 from robot_cameraman.tracking import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
@@ -755,3 +756,102 @@ class TestPointOfMotionTargetSpeedCalculator:
             target=PointOfMotion(pan_angle=180, tilt_angle=90, time=1))
         assert max_pan_speed == target_speeds.pan_speed
         assert max_tilt_speed == target_speeds.tilt_speed
+
+
+class TestIsCurrentPointReached:
+    @pytest.fixture()
+    def zero_point(self):
+        return PointOfMotion(pan_angle=0, tilt_angle=0)
+
+    def test_current_point_is_reached_if_close(self):
+        c = PointOfMotion(pan_angle=180, pan_clockwise=True,
+                          tilt_angle=30, tilt_clockwise=True)
+        n = PointOfMotion(pan_angle=270, pan_clockwise=True,
+                          tilt_angle=15, tilt_clockwise=False)
+        assert is_current_point_reached(pan_angle=179.96, tilt_angle=30.04,
+                                        current_target=c, next_target=n)
+        assert is_current_point_reached(pan_angle=179.96, tilt_angle=30.04,
+                                        current_target=c, next_target=None)
+
+    def test_current_point_is_reached_if_close_with_overstep_360(
+            self, zero_point):
+        assert is_current_point_reached(
+            pan_angle=359.99, tilt_angle=359.96,
+            current_target=zero_point,
+            next_target=PointOfMotion(pan_angle=100, tilt_angle=20, time=2))
+
+    def test_current_point_is_not_reached_if_not_close_with_overstep_360(
+            self, zero_point):
+        assert not is_current_point_reached(
+            pan_angle=300, tilt_angle=354,
+            current_target=zero_point,
+            next_target=PointOfMotion(pan_angle=100, tilt_angle=20, time=2))
+
+    def test_current_point_is_reached_if_close_with_counter_clockwise_overstep_360(
+            self, zero_point):
+        assert is_current_point_reached(
+            pan_angle=0, tilt_angle=0,
+            current_target=PointOfMotion(
+                pan_angle=359.99, pan_clockwise=False,
+                tilt_angle=359.99, tilt_clockwise=False),
+            next_target=zero_point)
+
+    def test_current_point_is_not_reached_if_not_close_with_counter_clockwise_overstep_360(
+            self, zero_point):
+        assert not is_current_point_reached(
+            pan_angle=300, tilt_angle=354,
+            current_target=PointOfMotion(
+                pan_angle=359.99, pan_clockwise=False,
+                tilt_angle=359.99, tilt_clockwise=False),
+            next_target=zero_point)
+
+    def test_current_point_is_not_reached_if_only_one_is_close(self):
+        c = PointOfMotion(pan_angle=180, pan_clockwise=True,
+                          tilt_angle=30, tilt_clockwise=True)
+        n = PointOfMotion(pan_angle=270, pan_clockwise=True,
+                          tilt_angle=15, tilt_clockwise=False)
+        # tilt angle is reached before pan angle is reached
+        assert not is_current_point_reached(pan_angle=179.91, tilt_angle=30.04,
+                                            current_target=c, next_target=n)
+        # pan angle is reached before tilt angle is reached
+        assert not is_current_point_reached(pan_angle=179.96, tilt_angle=29.91,
+                                            current_target=c, next_target=n)
+
+    def test_current_point_is_reached_if_one_is_close_after_the_other(self):
+        c = PointOfMotion(pan_angle=180, pan_clockwise=True,
+                          tilt_angle=30, tilt_clockwise=True)
+        n = PointOfMotion(pan_angle=270, pan_clockwise=True,
+                          tilt_angle=45, tilt_clockwise=True)
+        # If the next point is in the same direction as the current point,
+        # there is no stop at the intermediate point.
+
+        # Tilt angle has been reached before pan angle is reached,
+        # but tilting did not stop and tilt angle is not close anymore.
+        assert is_current_point_reached(pan_angle=179.96, tilt_angle=30.14,
+                                        current_target=c, next_target=n)
+        # Pan angle has been reached before tilt angle is reached,
+        # but panning did not stop and pan angle is not close anymore.
+        assert is_current_point_reached(pan_angle=180.14, tilt_angle=29.96,
+                                        current_target=c, next_target=n)
+
+
+class TestIsAngleBetween:
+    def test_is_angle_between(self):
+        assert is_angle_between(left=0, angle=10, right=20, clockwise=True)
+        assert not is_angle_between(left=0, angle=10, right=20, clockwise=False)
+        assert is_angle_between(left=0, angle=0, right=0, clockwise=True)
+        assert is_angle_between(left=0, angle=0, right=0, clockwise=False)
+        assert is_angle_between(left=4.2, angle=4.2, right=4.2, clockwise=True)
+        assert is_angle_between(left=4.2, angle=4.2, right=4.2, clockwise=False)
+
+    def test_is_angle_between_clockwise_overstep_360(self):
+        assert is_angle_between(left=300, angle=310, right=120, clockwise=True)
+        assert is_angle_between(left=300, angle=110, right=120, clockwise=True)
+        assert not is_angle_between(
+            left=300, angle=180, right=120, clockwise=True)
+
+    def test_is_angle_between_counter_clockwise_overstep_360(self):
+        assert is_angle_between(left=120, angle=310, right=300, clockwise=False)
+        assert is_angle_between(left=120, angle=110, right=300, clockwise=False)
+        assert not is_angle_between(
+            left=120, angle=180, right=300, clockwise=False)
