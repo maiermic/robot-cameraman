@@ -272,6 +272,16 @@ class PathOfMotionCameraController(ABC):
         raise NotImplementedError
 
 
+# TODO consider time to accelerate and decelerate,
+#   e.g. it takes currently 6.5s instead of 6s if camera needs to accelerate
+#   and decelerate (i.e. camera moves slower than calculated target speed in
+#   that time)
+#   e.g. accelerate and decelerate (according to next point) before
+#   intermediate point without stop is reached
+# TODO easier definition of full rotations
+# TODO wait if same point as before is given, but with a time > 0
+# TODO zoom
+# TODO move more than 360° (e.g. 0 -> 180 -> 360)
 class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
     class _State(Enum):
         """The controller has to be started using """
@@ -307,6 +317,8 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
             return
         angles = self._gimbal.get_angles()
         _log_angles(angles)
+        camera_speeds.pan_speed = to_degree_per_sec(angles.target_speed_3)
+        camera_speeds.tilt_speed = to_degree_per_sec(angles.target_speed_2)
         if self._state is self._State.STARTED:
             self._state = self._State.RUNNING
             if self._is_current_point_reached(angles):
