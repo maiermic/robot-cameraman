@@ -23,7 +23,7 @@ class CameramanModeManager:
         self._tracking_strategy = tracking_strategy
         self._search_target_strategy = search_target_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
-        self.mode_name = ''
+        self.mode_name = 'manual'
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists
