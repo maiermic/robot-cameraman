@@ -676,10 +676,10 @@ class TestPointOfMotionTargetSpeedCalculator:
     def test_get_degree_per_second(self, calculator):
         # gimbal has to move 2°/s clockwise to get in 3s from 0° to 6°
         assert 2 == calculator.get_degree_per_second(
-            current_angle=0, target_angle=6, clockwise=True, time=3)
+            current_angle=0, target_angle=6, clockwise=True, travel_time=3)
         # gimbal has to move 2°/s counter clockwise to get in 3s from 6° to 0°
         assert 2 == calculator.get_degree_per_second(
-            current_angle=6, target_angle=0, clockwise=False, time=3)
+            current_angle=6, target_angle=0, clockwise=False, travel_time=3)
 
     def test_get_delta_angle_clockwise(self, calculator):
         assert 6 == calculator.get_delta_angle_clockwise(
