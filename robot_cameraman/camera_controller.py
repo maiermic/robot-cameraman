@@ -3,12 +3,12 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from enum import Enum, auto
 from logging import Logger
+from math import isclose
+from time import time
 from typing import List, Optional
 
 import numpy
 import serial
-from math import isclose
-from time import time
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
