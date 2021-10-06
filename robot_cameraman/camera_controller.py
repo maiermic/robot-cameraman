@@ -420,6 +420,9 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
 
     @classmethod
     def _current_speed(cls, speed_manager: SpeedManager):
+        # TODO this detail is specific to SimpleBGC gimbals.
+        #   The logic should be moved as the controller should be independent
+        #   of the used gimbal.
         # Never return 0, since then the value is omitted (see page 34 of
         # SimpleBGC 2.6 serial protocol specification)
         return max(1, speed_manager.current_speed)
