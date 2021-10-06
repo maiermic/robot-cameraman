@@ -217,14 +217,14 @@ class PointOfMotionTargetSpeedCalculator:
             current_angle: float,
             target_angle: float,
             clockwise: bool,
-            time: float) -> float:
+            travel_time: float) -> float:
         if clockwise:
             delta_angle = cls.get_delta_angle_clockwise(
                 current_angle=current_angle, target_angle=target_angle)
         else:
             delta_angle = cls.get_delta_angle_counter_clockwise(
                 current_angle=current_angle, target_angle=target_angle)
-        return delta_angle / time
+        return delta_angle / travel_time
 
     @classmethod
     def get_delta_angle_clockwise(
