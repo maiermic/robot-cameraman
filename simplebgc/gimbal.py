@@ -66,6 +66,11 @@ class Gimbal:
             f'expected confirmation, but received command with ID' \
             f' {confirmation.command_id}'
 
+    def stop(self):
+        self.control(roll_mode=ControlMode.no_control,
+                     pitch_mode=ControlMode.no_control,
+                     yaw_mode=ControlMode.no_control)
+
     def get_angles(self) -> GetAnglesInCmd:
         self.send_message(create_message(CMD_GET_ANGLES))
         cmd = read_cmd(self._connection)
