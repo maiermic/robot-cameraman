@@ -201,15 +201,15 @@ class PointOfMotionTargetSpeedCalculator:
                                 tilt_speed=self._max_tilt_speed)
         return CameraSpeeds(
             pan_speed=min(self._max_pan_speed,
-                          self.get_degree_per_second(state.pan_angle,
-                                                     target.pan_angle,
-                                                     target.pan_clockwise,
-                                                     target.time)),
+                          int(self.get_degree_per_second(state.pan_angle,
+                                                         target.pan_angle,
+                                                         target.pan_clockwise,
+                                                         target.time))),
             tilt_speed=min(self._max_tilt_speed,
-                           self.get_degree_per_second(state.tilt_angle,
-                                                      target.tilt_angle,
-                                                      target.tilt_clockwise,
-                                                      target.time)))
+                           int(self.get_degree_per_second(state.tilt_angle,
+                                                          target.tilt_angle,
+                                                          target.tilt_clockwise,
+                                                          target.time))))
 
     @classmethod
     def get_degree_per_second(
