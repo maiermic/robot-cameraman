@@ -19,7 +19,7 @@ netdisco==2.6.0
 numpy==1.17.0
 opencv-python==4.1.0.25
 packaging==20.0
-Pillow==6.1.0
+Pillow==9.0.0
 pluggy==0.13.1
 py==1.8.1
 pyparsing==2.4.6
