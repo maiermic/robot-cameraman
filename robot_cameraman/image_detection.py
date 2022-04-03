@@ -17,13 +17,13 @@ class DetectionCandidate:
     bounding_box: Box
 
 
-class BaseDetectionEngine(Protocol):
+class DetectionEngine(Protocol):
     @abstractmethod
     def detect(self, image) -> Iterable[DetectionCandidate]:
         raise NotImplementedError
 
 
-class EdgeTpuDetectionEngine(BaseDetectionEngine):
+class EdgeTpuDetectionEngine(DetectionEngine):
     def __init__(
             self,
             model: Path,
@@ -47,6 +47,6 @@ class EdgeTpuDetectionEngine(BaseDetectionEngine):
                 top_k=self._max_objects))
 
 
-class DummyDetectionEngine(BaseDetectionEngine):
+class DummyDetectionEngine(DetectionEngine):
     def detect(self, image) -> Iterable[DetectionCandidate]:
         return []

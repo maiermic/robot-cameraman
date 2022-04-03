@@ -18,7 +18,7 @@ from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.image_detection import DetectionCandidate, \
-    BaseDetectionEngine
+    DetectionEngine
 from robot_cameraman.live_view import LiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
@@ -35,7 +35,7 @@ class Cameraman:
             self,
             live_view: LiveView,
             annotator: ImageAnnotator,
-            detection_engine: BaseDetectionEngine,
+            detection_engine: DetectionEngine,
             destination: Destination,
             mode_manager: CameramanModeManager,
             object_tracker: ObjectTracker,
