@@ -2,7 +2,7 @@ import argparse
 import glob
 import os
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any, Set
+from typing import List, Optional, Dict, Any, Iterable
 
 import PIL.Image
 import PIL.ImageDraw
