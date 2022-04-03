@@ -73,10 +73,10 @@ def parse_arguments():
                              "Either 'Panasonic' or 'Webcam'")
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
-                        help="UDP Socket IP address.")
+                        help="UDP Socket IP address of Panasonic live view.")
     parser.add_argument('--port', type=int,
                         default=49199,
-                        help="UDP Socket port.")
+                        help="UDP Socket port of Panasonic live view.")
     parser.add_argument('--targetLabelId', type=int,
                         default=0,
                         help="ID of label to track.")
