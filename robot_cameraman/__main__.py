@@ -11,7 +11,6 @@ import PIL.ImageFont
 import cv2
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
-from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager
@@ -19,6 +18,7 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     DetectionEngine
+from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
@@ -67,6 +67,10 @@ def parse_arguments():
     parser.add_argument('--gimbal', type=str,
                         default='SimpleBGC',
                         help="The gimbal to use. Either 'SimpleBGC' or 'Dummy'")
+    parser.add_argument('--liveView', type=str,
+                        default='Panasonic',
+                        help="The live view (camera) to use."
+                             "Either 'Panasonic' or 'Webcam'")
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
                         help="UDP Socket IP address.")
@@ -187,6 +191,7 @@ cameraman_mode_manager = CameramanModeManager(
                                                         max_allowed_speed=200),
     tracking_strategy=tracking_strategy,
     search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
+
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
 elif args.detectionEngine == 'EdgeTPU':
@@ -197,8 +202,18 @@ elif args.detectionEngine == 'EdgeTPU':
 else:
     print(f"Unknown detection engine {args.detectionEngine}")
     exit(1)
+
+if args.liveView == 'Webcam':
+    live_view = WebcamLiveView()
+elif args.liveView == 'Panasonic':
+    live_view = PanasonicLiveView(args.ip, args.port)
+else:
+    print(f"Unknown live view {args.liveView}")
+    exit(1)
+
+# noinspection PyUnboundLocalVariable
 cameraman = PanasonicCameraman(
-    live_view=LiveView(args.ip, args.port),
+    live_view=live_view,
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
     detection_engine=detection_engine,
     destination=destination,
