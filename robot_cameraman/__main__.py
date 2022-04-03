@@ -20,7 +20,7 @@ from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
 from robot_cameraman.object_tracking import ObjectTracker
-from robot_cameraman.panasonic_cameraman import Cameraman
+from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
