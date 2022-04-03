@@ -1,8 +1,7 @@
-import io
 import logging
 import os
-import socket
 import threading
+import time
 from logging import Logger
 from typing import Optional, Iterable, Tuple
 
@@ -12,15 +11,15 @@ import PIL.ImageFile
 import PIL.ImageFont
 import cv2
 import numpy
-import time
 from imutils.video import FPS
 
-from panasonic_camera.live_view import LiveView
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
-from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
+from robot_cameraman.image_detection import DetectionCandidate, \
+    BaseDetectionEngine
+from robot_cameraman.live_view import LiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination
@@ -36,7 +35,7 @@ class PanasonicCameraman:
             self,
             live_view: LiveView,
             annotator: ImageAnnotator,
-            detection_engine: DetectionEngine,
+            detection_engine: BaseDetectionEngine,
             destination: Destination,
             mode_manager: CameramanModeManager,
             object_tracker: ObjectTracker,
@@ -70,10 +69,8 @@ class PanasonicCameraman:
         frame_counter = 0
         while not to_exit.is_set():
             try:
-                try:
-                    image = PIL.Image.open(io.BytesIO(self._live_view.image()))
-                except (socket.timeout, OSError) as e:
-                    logger.error(f'error reading live view image: {e}')
+                image = self._live_view.image()
+                if image is None:
                     self._mode_manager.update(self._target_box,
                                               is_target_lost=True)
                     self.handle_keyboard_input(to_exit)
@@ -123,6 +120,7 @@ class PanasonicCameraman:
                     logger.error(e)
 
                 server_image.image = image
+                # noinspection PyTypeChecker
                 cv2_image = cv2.cvtColor(numpy.asarray(image),
                                          cv2.COLOR_RGB2BGR)
                 if self._output:
