@@ -16,6 +16,7 @@ from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
@@ -24,7 +25,6 @@ from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
     StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
     RotateSearchTargetStrategy
-from simplebgc.gimbal import Gimbal
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -59,6 +59,9 @@ def parse_arguments():
     parser.add_argument('--confidence', type=float,
                         default=0.50,
                         help="Minimum confidence threshold to tag objects.")
+    parser.add_argument('--gimbal', type=str,
+                        default='SimpleBGC',
+                        help="The gimbal to use. Either 'SimpleBGC' or 'Dummy'")
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
                         help="UDP Socket IP address.")
@@ -168,9 +171,10 @@ tracking_strategy = StopIfLostTrackingStrategy(
     destination,
     SimpleTrackingStrategy(destination, max_allowed_speed=500),
     slow_down_time=1)
+gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
-        Gimbal(),
+        gimbal,
         camera_manager,
         rotate_speed_manager=SpeedManager(args.rotationalAccelerationPerSecond),
         tilt_speed_manager=SpeedManager(args.tiltingAccelerationPerSecond)),
