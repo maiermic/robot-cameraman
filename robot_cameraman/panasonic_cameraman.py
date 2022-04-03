@@ -27,7 +27,7 @@ from robot_cameraman.tracking import Destination
 logger: Logger = logging.getLogger(__name__)
 
 
-class PanasonicCameraman:
+class Cameraman:
     _target_id: Optional[int] = None
     _target_box: Optional[Box] = None
 
