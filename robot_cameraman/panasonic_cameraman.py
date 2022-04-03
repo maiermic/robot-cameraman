@@ -80,7 +80,11 @@ class PanasonicCameraman:
                     continue
                 frame_counter += 1
                 logger.debug(f'frame {frame_counter}')
-                assert image.size == expected_image_size, image.size
+                assert image.size == expected_image_size, \
+                    f"expected live view image size" \
+                    f"{expected_image_size}" \
+                    f"but got size" \
+                    f"{image.size}"
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
