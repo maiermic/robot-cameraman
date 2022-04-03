@@ -1,10 +1,11 @@
+from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import PIL.Image
 import PIL.ImageFont
-import edgetpu.detection.engine
+from typing_extensions import Protocol
 
 from robot_cameraman.box import Box
 
@@ -16,12 +17,20 @@ class DetectionCandidate:
     bounding_box: Box
 
 
-class DetectionEngine:
+class BaseDetectionEngine(Protocol):
+    @abstractmethod
+    def detect(self, image) -> Iterable[DetectionCandidate]:
+        raise NotImplementedError
+
+
+# TODO rename to EdgeTpuDetectionEngine
+class DetectionEngine(BaseDetectionEngine):
     def __init__(
             self,
             model: Path,
             confidence: float,
             max_objects: int) -> None:
+        import edgetpu.detection.engine
         self._engine = edgetpu.detection.engine.DetectionEngine(str(model))
         self._confidence = confidence
         self._max_objects = max_objects
@@ -37,3 +46,8 @@ class DetectionEngine:
                 keep_aspect_ratio=True,
                 relative_coord=False,
                 top_k=self._max_objects))
+
+
+class DummyDetectionEngine(BaseDetectionEngine):
+    def detect(self, image) -> Iterable[DetectionCandidate]:
+        return []
