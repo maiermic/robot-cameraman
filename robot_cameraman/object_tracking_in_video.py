@@ -131,7 +131,7 @@ def main(args):
             filtered_candidates = filter_intersections(candidates)
             log_candidates('filtered_candidates', filtered_candidates)
             annotator.global_candidate_id += (
-                        len(candidates) - len(filtered_candidates))
+                    len(candidates) - len(filtered_candidates))
             candidates = object_tracker.update(filtered_candidates)
             if previous_candidates:
                 previous_candidates = {
@@ -218,6 +218,7 @@ if __name__ == '__main__':
     if args.input is None:
         import tkinter as tk
         from tkinter import filedialog
+
         root = tk.Tk()
         root.withdraw()
         args.input = filedialog.askopenfilename(title='Select input file')
