@@ -9,11 +9,11 @@ import PIL.ImageFont
 import cv2
 
 from robot_cameraman.box import Box
-from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.image_detection import EdgeTpuDetectionEngine
 
 
 def main(args):
-    detection_engine = DetectionEngine(
+    detection_engine = EdgeTpuDetectionEngine(
         model=args.model,
         confidence=args.confidence,
         max_objects=args.maxObjects)

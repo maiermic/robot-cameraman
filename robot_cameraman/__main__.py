@@ -17,7 +17,7 @@ from robot_cameraman.camera_controller import SmoothCameraController, \
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
-    DetectionEngine
+    EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
@@ -195,7 +195,7 @@ cameraman_mode_manager = CameramanModeManager(
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
 elif args.detectionEngine == 'EdgeTPU':
-    detection_engine = DetectionEngine(
+    detection_engine = EdgeTpuDetectionEngine(
         model=args.model,
         confidence=args.confidence,
         max_objects=args.maxObjects)

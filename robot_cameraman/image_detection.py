@@ -23,8 +23,7 @@ class BaseDetectionEngine(Protocol):
         raise NotImplementedError
 
 
-# TODO rename to EdgeTpuDetectionEngine
-class DetectionEngine(BaseDetectionEngine):
+class EdgeTpuDetectionEngine(BaseDetectionEngine):
     def __init__(
             self,
             model: Path,

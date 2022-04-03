@@ -15,7 +15,8 @@ from PIL.ImageFont import FreeTypeFont
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.color import Color
-from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
+from robot_cameraman.image_detection import EdgeTpuDetectionEngine, \
+    DetectionCandidate
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 
@@ -65,6 +66,7 @@ class ColoredCandidatesImageAnnotator(ImageAnnotator):
         if previous_candidates:
             for candidate_id, candidate in previous_candidates.items():
                 color = get_color(candidate_id, (255, 255, 255))
+                # noinspection PyTypeChecker
                 self.draw_detection_candidate(draw, candidate_id, candidate,
                                               (*color, 60),
                                               outline_width=8,
@@ -103,7 +105,7 @@ def log_candidates(
 def main(args):
     labels = read_label_file(args.labels)
     font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-    detection_engine = DetectionEngine(
+    detection_engine = EdgeTpuDetectionEngine(
         model=args.model,
         confidence=args.confidence,
         max_objects=args.maxObjects)
