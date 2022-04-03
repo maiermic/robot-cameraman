@@ -17,7 +17,8 @@ from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
-from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.image_detection import DummyDetectionEngine, \
+    DetectionEngine
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.panasonic_cameraman import PanasonicCameraman
 from robot_cameraman.resource import read_label_file
@@ -43,6 +44,10 @@ def parse_arguments():
     mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     parser = argparse.ArgumentParser(
         description="Detect objects in a video file using Google Coral USB.")
+    parser.add_argument('--detectionEngine', type=str,
+                        default='EdgeTPU',
+                        help="The detection engine to use."
+                             "Either 'EdgeTPU' (Google Coral) or 'Dummy'")
     parser.add_argument(
         '--model',
         type=Path,
@@ -182,13 +187,20 @@ cameraman_mode_manager = CameramanModeManager(
                                                         max_allowed_speed=200),
     tracking_strategy=tracking_strategy,
     search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
+if args.detectionEngine == 'Dummy':
+    detection_engine = DummyDetectionEngine()
+elif args.detectionEngine == 'EdgeTPU':
+    detection_engine = DetectionEngine(
+        model=args.model,
+        confidence=args.confidence,
+        max_objects=args.maxObjects)
+else:
+    print(f"Unknown detection engine {args.detectionEngine}")
+    exit(1)
 cameraman = PanasonicCameraman(
     live_view=LiveView(args.ip, args.port),
     annotator=ImageAnnotator(args.targetLabelId, labels, font),
-    detection_engine=DetectionEngine(
-        model=args.model,
-        confidence=args.confidence,
-        max_objects=args.maxObjects),
+    detection_engine=detection_engine,
     destination=destination,
     mode_manager=cameraman_mode_manager,
     object_tracker=ObjectTracker(max_disappeared=25),
