@@ -72,6 +72,10 @@ class ColorDetectionEngineUI(UserInterface):
 
     def open(self):
         cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
+        self._create_trackbar(
+            'Min Contour Radius',
+            self.engine.minimum_contour_radius,
+            self._update_minimum_contour_radius)
         self._setup_hsv_trackbars()
         cv2.createButton(
             'Single Object Detection',
@@ -79,6 +83,9 @@ class ColorDetectionEngineUI(UserInterface):
             None,
             cv2.QT_CHECKBOX,
             1 if self.engine.is_single_object_detection else 0)
+
+    def _update_minimum_contour_radius(self, value):
+        self.engine.minimum_contour_radius = value
 
     def _toggle_single_object_detection(self, value, _user_data):
         self.engine.is_single_object_detection = value == 1
