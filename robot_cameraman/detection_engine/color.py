@@ -24,7 +24,7 @@ class ColorDetectionEngine(DetectionEngine):
         self.max_hsv = numpy.asarray(max_hsv)
         self.mask = None
         self.is_single_object_detection = True
-        self.minimum_contour_radius = 10
+        self.minimum_contour_radius = 20
 
     def detect(self, image) -> Iterable[DetectionCandidate]:
         image_array = numpy.asarray(image)
