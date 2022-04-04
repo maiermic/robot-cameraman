@@ -3,7 +3,7 @@ import os
 import threading
 import time
 from logging import Logger
-from typing import Optional, Iterable, Tuple
+from typing import Optional, Iterable, Tuple, List
 
 import PIL.Image
 import PIL.ImageDraw
@@ -23,6 +23,7 @@ from robot_cameraman.live_view import LiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination
+from robot_cameraman.ui import UserInterface
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -40,7 +41,8 @@ class Cameraman:
             mode_manager: CameramanModeManager,
             object_tracker: ObjectTracker,
             target_label_id: int,
-            output: Optional[cv2.VideoWriter]) -> None:
+            output: Optional[cv2.VideoWriter],
+            user_interfaces: List[UserInterface]) -> None:
         self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
@@ -49,6 +51,7 @@ class Cameraman:
         self._object_tracker = object_tracker
         self._target_label_id = target_label_id
         self._output = output
+        self._user_interfaces = user_interfaces
 
     def _is_target_id_registered(self) -> bool:
         return (self._target_id is not None
@@ -58,6 +61,10 @@ class Cameraman:
             server_image: ImageContainer,
             to_exit: threading.Event,
             expected_image_size: Tuple[int, int]) -> None:
+        if 'DISPLAY' in os.environ:
+            cv2.namedWindow('Robot Cameraman', cv2.WINDOW_NORMAL)
+            for ui in self._user_interfaces:
+                ui.open()
         # Parts at the end of the live view image are sometimes not received.
         # These truncated images cause an exception in the detection engine,
         # if the following option is not enabled. In the cases observed so far,
@@ -127,6 +134,8 @@ class Cameraman:
                     self._output.write(cv2_image)
                 if 'DISPLAY' in os.environ:
                     cv2.imshow('Robot Cameraman', cv2_image)
+                    for ui in self._user_interfaces:
+                        ui.update()
 
                 self.handle_keyboard_input(to_exit)
 

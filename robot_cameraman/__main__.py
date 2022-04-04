@@ -192,6 +192,7 @@ cameraman_mode_manager = CameramanModeManager(
     tracking_strategy=tracking_strategy,
     search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
 
+user_interfaces = []
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
 elif args.detectionEngine == 'EdgeTPU':
@@ -220,7 +221,8 @@ cameraman = Cameraman(
     mode_manager=cameraman_mode_manager,
     object_tracker=ObjectTracker(max_disappeared=25),
     target_label_id=args.targetLabelId,
-    output=create_video_writer(args.output, live_view_image_size))
+    output=create_video_writer(args.output, live_view_image_size),
+    user_interfaces=user_interfaces)
 
 to_exit = threading.Event()
 server_image = ImageContainer(
