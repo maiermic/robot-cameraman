@@ -23,6 +23,8 @@ class ColorDetectionEngine(DetectionEngine):
         self.min_hsv = numpy.asarray(min_hsv)
         self.max_hsv = numpy.asarray(max_hsv)
         self.mask = None
+        self.is_single_object_detection = True
+        self.minimum_contour_radius = 10
 
     def detect(self, image) -> Iterable[DetectionCandidate]:
         image_array = numpy.asarray(image)
@@ -40,29 +42,24 @@ class ColorDetectionEngine(DetectionEngine):
                                     cv2.CHAIN_APPROX_SIMPLE)
         contours = imutils.grab_contours(contours)
 
-        if len(contours) == 0:
-            return []
+        return self._contours_to_detection_candidates(contours)
 
-        # TODO return all contours that are considered large enough
-        # find the largest contour in the mask, then use
-        # it to compute the minimum enclosing circle and
-        # centroid
-        c = max(contours, key=cv2.contourArea)
-        (x, y), radius = cv2.minEnclosingCircle(c)
-        size = 2 * radius
-
-        # only proceed if the radius meets a minimum size
-        if radius <= 10:
-            return []
-        bounding_box = Box.from_center_and_size(
-            center=Point(x, y), width=size, height=size)
-        return [
-            DetectionCandidate(
-                label_id=self.target_label_id,
-                score=1.0,
-                bounding_box=bounding_box
-            )
-        ]
+    def _contours_to_detection_candidates(self, contours):
+        if self.is_single_object_detection and len(contours) > 0:
+            contours = [max(contours, key=cv2.contourArea)]
+        for contour in contours:
+            (x, y), radius = cv2.minEnclosingCircle(contour)
+            if radius > self.minimum_contour_radius:
+                size = 2 * radius
+                bounding_box = \
+                    Box.from_center_and_size(
+                        center=Point(x, y),
+                        width=size,
+                        height=size)
+                yield DetectionCandidate(
+                    label_id=self.target_label_id,
+                    score=1.0,
+                    bounding_box=bounding_box)
 
 
 class ColorDetectionEngineUI(UserInterface):
@@ -76,6 +73,18 @@ class ColorDetectionEngineUI(UserInterface):
     def open(self):
         cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
         self._setup_trackbars()
+        cv2.createButton(
+            'Single Object Detection',
+            self._toggle_single_object_detection,
+            None,
+            cv2.QT_CHECKBOX,
+            1 if self.engine.is_single_object_detection else 0)
+
+    def _toggle_single_object_detection(self, value, _user_data):
+        self.engine.is_single_object_detection = value == 1
+        logger.error('single object detection '
+                     'enabled' if self.engine.is_single_object_detection
+                     else 'disabled')
 
     def _setup_trackbars(self):
         def min_change(index):
