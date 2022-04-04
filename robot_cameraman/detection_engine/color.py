@@ -72,7 +72,7 @@ class ColorDetectionEngineUI(UserInterface):
 
     def open(self):
         cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
-        self._setup_trackbars()
+        self._setup_hsv_trackbars()
         cv2.createButton(
             'Single Object Detection',
             self._toggle_single_object_detection,
@@ -86,7 +86,7 @@ class ColorDetectionEngineUI(UserInterface):
                      'enabled' if self.engine.is_single_object_detection
                      else 'disabled')
 
-    def _setup_trackbars(self):
+    def _setup_hsv_trackbars(self):
         def min_change(index):
             def on_min_change(value):
                 self.engine.min_hsv[index] = value
