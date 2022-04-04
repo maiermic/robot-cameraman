@@ -14,13 +14,15 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager
+from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
+    ColorDetectionEngineUI
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
 from robot_cameraman.object_tracking import ObjectTracker
-from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
@@ -47,7 +49,8 @@ def parse_arguments():
     parser.add_argument('--detectionEngine', type=str,
                         default='EdgeTPU',
                         help="The detection engine to use."
-                             "Either 'EdgeTPU' (Google Coral) or 'Dummy'")
+                             " Either 'EdgeTPU' (Google Coral),"
+                             " 'Color' or 'Dummy'")
     parser.add_argument(
         '--model',
         type=Path,
@@ -195,6 +198,12 @@ cameraman_mode_manager = CameramanModeManager(
 user_interfaces = []
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
+elif args.detectionEngine == 'Color':
+    detection_engine = ColorDetectionEngine(
+        target_label_id=args.targetLabelId,
+        min_hsv=(24, 86, 6),
+        max_hsv=(64, 255, 255))
+    user_interfaces.append(ColorDetectionEngineUI(engine=detection_engine))
 elif args.detectionEngine == 'EdgeTPU':
     detection_engine = EdgeTpuDetectionEngine(
         model=args.model,
