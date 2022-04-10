@@ -66,11 +66,11 @@ class TrackingStrategy(Protocol):
 
 class SimpleTrackingStrategy(TrackingStrategy):
     _destination: Destination
-    _maxAllowedSpeed: int
+    max_allowed_speed: int
 
     def __init__(self, destination: Destination, max_allowed_speed: int = 1000):
         self._destination = destination
-        self._maxAllowedSpeed = max_allowed_speed
+        self.max_allowed_speed = max_allowed_speed
 
     def update(
             self,
@@ -97,8 +97,8 @@ class SimpleTrackingStrategy(TrackingStrategy):
         if abs_distance < self._destination.variance:
             return 0
         else:
-            speed = round(abs_distance / 320 * self._maxAllowedSpeed)
-            speed = min(self._maxAllowedSpeed, speed)
+            speed = round(abs_distance / 320 * self.max_allowed_speed)
+            speed = min(self.max_allowed_speed, speed)
             if distance < 0:
                 speed = -speed
             return int(speed)
