@@ -24,7 +24,7 @@ class ColorDetectionEngine(DetectionEngine):
         self.max_hsv = numpy.asarray(max_hsv)
         self.mask = None
         self.is_single_object_detection = True
-        self.minimum_contour_radius = 20
+        self.minimum_contour_size = 20
 
     def detect(self, image) -> Iterable[DetectionCandidate]:
         image_array = numpy.asarray(image)
@@ -49,7 +49,7 @@ class ColorDetectionEngine(DetectionEngine):
             contours = [max(contours, key=cv2.contourArea)]
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
-            if w + h > 4 * self.minimum_contour_radius:
+            if w + h > 4 * self.minimum_contour_size:
                 bounding_box = \
                     Box.from_coordinates(x, y, x + w, y + h)
                 yield DetectionCandidate(
@@ -69,8 +69,8 @@ class ColorDetectionEngineUI(UserInterface):
     def open(self):
         cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
         self._create_trackbar(
-            'Min Contour Radius',
-            self.engine.minimum_contour_radius,
+            'Min Contour Size (width + height)',
+            self.engine.minimum_contour_size,
             self._update_minimum_contour_radius)
         self._setup_hsv_trackbars()
         cv2.createButton(
@@ -81,7 +81,7 @@ class ColorDetectionEngineUI(UserInterface):
             1 if self.engine.is_single_object_detection else 0)
 
     def _update_minimum_contour_radius(self, value):
-        self.engine.minimum_contour_radius = value
+        self.engine.minimum_contour_size = value
 
     def _toggle_single_object_detection(self, value, _user_data):
         self.engine.is_single_object_detection = value == 1
