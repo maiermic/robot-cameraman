@@ -9,7 +9,7 @@ import cv2
 import imutils
 import numpy
 
-from robot_cameraman.box import Box, Point
+from robot_cameraman.box import Box
 from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
 from robot_cameraman.ui import UserInterface
 
@@ -48,14 +48,10 @@ class ColorDetectionEngine(DetectionEngine):
         if self.is_single_object_detection and len(contours) > 0:
             contours = [max(contours, key=cv2.contourArea)]
         for contour in contours:
-            (x, y), radius = cv2.minEnclosingCircle(contour)
-            if radius > self.minimum_contour_radius:
-                size = 2 * radius
+            x, y, w, h = cv2.boundingRect(contour)
+            if w + h > 4 * self.minimum_contour_radius:
                 bounding_box = \
-                    Box.from_center_and_size(
-                        center=Point(x, y),
-                        width=size,
-                        height=size)
+                    Box.from_coordinates(x, y, x + w, y + h)
                 yield DetectionCandidate(
                     label_id=self.target_label_id,
                     score=1.0,
