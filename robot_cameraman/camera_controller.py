@@ -82,14 +82,14 @@ class ElapsedTime:
 
 
 class SpeedManager:
-    def __init__(self, acceleration_per_second: int = 400,
+    def __init__(self, acceleration_per_second: float = 400,
                  elapsed_time: ElapsedTime = None):
         if elapsed_time is None:
             elapsed_time = ElapsedTime()
         self._elapsed_time = elapsed_time
-        self.acceleration_per_second: int = acceleration_per_second
-        self.target_speed: int = 0
-        self.current_speed: int = 0
+        self.acceleration_per_second: float = acceleration_per_second
+        self.target_speed: float = 0
+        self.current_speed: float = 0
 
     def reset(self):
         self._elapsed_time.reset()
@@ -97,12 +97,12 @@ class SpeedManager:
     def is_target_speed_reached(self):
         return self.current_speed == self.target_speed
 
-    def update(self) -> int:
+    def update(self) -> float:
         elapsed_time = self._elapsed_time.update()
         delta_speed = self.target_speed - self.current_speed
         acceleration = min(self.acceleration_per_second * elapsed_time,
                            abs(delta_speed))
-        self.current_speed += round(numpy.sign(delta_speed) * acceleration)
+        self.current_speed += numpy.sign(delta_speed) * acceleration
         return self.current_speed
 
 
@@ -428,7 +428,7 @@ class BaseCamPathOfMotionCameraController(PathOfMotionCameraController):
         #   of the used gimbal.
         # Never return 0, since then the value is omitted (see page 34 of
         # SimpleBGC 2.6 serial protocol specification)
-        return max(1, speed_manager.current_speed)
+        return max(1.0, speed_manager.current_speed)
 
     def _move_gimbal_to_current_point(self):
         if not self.is_end_of_path_reached():
