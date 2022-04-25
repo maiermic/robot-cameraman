@@ -168,27 +168,33 @@ class Cameraman:
         elif key == ord('i'):
             logger.debug('manually tilt up')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_tilt(-self._manual_camera_speeds.tilt_speed)
+            self._mode_manager.manual_tilt(
+                -self._manual_camera_speeds.tilt_speed)
         elif key == ord('k'):
             logger.debug('manually tilt down')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_tilt(self._manual_camera_speeds.tilt_speed)
+            self._mode_manager.manual_tilt(
+                self._manual_camera_speeds.tilt_speed)
         elif key == ord('j'):
             logger.debug('manually rotate left')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_rotate(-self._manual_camera_speeds.pan_speed)
+            self._mode_manager.manual_rotate(
+                -self._manual_camera_speeds.pan_speed)
         elif key == ord('l'):
             logger.debug('manually rotate right')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_rotate(self._manual_camera_speeds.pan_speed)
+            self._mode_manager.manual_rotate(
+                self._manual_camera_speeds.pan_speed)
         elif key == ord('-'):
             logger.debug('manually zoom out')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_zoom(-self._manual_camera_speeds.zoom_speed)
+            self._mode_manager.manual_zoom(
+                -self._manual_camera_speeds.zoom_speed)
         elif key == ord('+'):
             logger.debug('manually zoom in')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_zoom(self._manual_camera_speeds.zoom_speed)
+            self._mode_manager.manual_zoom(
+                self._manual_camera_speeds.zoom_speed)
         elif self._mode_manager.is_manual_mode() and key == ord('o'):
             logger.debug('manually stop')
             self._mode_manager.stop_camera()
