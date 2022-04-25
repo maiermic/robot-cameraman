@@ -39,7 +39,7 @@ class CameraController(Protocol):
 
 
 class SimpleCameraController(CameraController):
-    yaw_speed: int = 0
+    yaw_speed: float = 0
 
     def __init__(self, gimbal: Gimbal) -> None:
         self.yaw_speed = 0
@@ -102,7 +102,7 @@ class SpeedManager:
         delta_speed = self.target_speed - self.current_speed
         acceleration = min(self.acceleration_per_second * elapsed_time,
                            abs(delta_speed))
-        self.current_speed += int(round(numpy.sign(delta_speed) * acceleration))
+        self.current_speed += round(numpy.sign(delta_speed) * acceleration)
         return self.current_speed
 
 
@@ -193,7 +193,7 @@ class CameraState:
 
 
 class PointOfMotionTargetSpeedCalculator:
-    def __init__(self, max_pan_speed: int = 60, max_tilt_speed: int = 12):
+    def __init__(self, max_pan_speed: float = 60, max_tilt_speed: float = 12):
         self._max_pan_speed = max_pan_speed
         self._max_tilt_speed = max_tilt_speed
 
@@ -204,15 +204,15 @@ class PointOfMotionTargetSpeedCalculator:
                                 tilt_speed=self._max_tilt_speed)
         return CameraSpeeds(
             pan_speed=min(self._max_pan_speed,
-                          int(self.get_degree_per_second(state.pan_angle,
-                                                         target.pan_angle,
-                                                         target.pan_clockwise,
-                                                         target.time))),
+                          self.get_degree_per_second(state.pan_angle,
+                                                     target.pan_angle,
+                                                     target.pan_clockwise,
+                                                     target.time)),
             tilt_speed=min(self._max_tilt_speed,
-                           int(self.get_degree_per_second(state.tilt_angle,
-                                                          target.tilt_angle,
-                                                          target.tilt_clockwise,
-                                                          target.time))))
+                           self.get_degree_per_second(state.tilt_angle,
+                                                      target.tilt_angle,
+                                                      target.tilt_clockwise,
+                                                      target.time)))
 
     @classmethod
     def get_degree_per_second(

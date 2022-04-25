@@ -1,10 +1,10 @@
 import logging
+import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
 from typing import Tuple, Optional
 
-import time
 from typing_extensions import Protocol
 
 from robot_cameraman.box import Box, TwoPointsBox, Point
@@ -44,8 +44,8 @@ class Destination:
 
 @dataclass
 class CameraSpeeds:
-    pan_speed: int = 0
-    tilt_speed: int = 0
+    pan_speed: float = 0
+    tilt_speed: float = 0
     zoom_speed: int = 0
 
     def reset(self):
@@ -91,7 +91,7 @@ class SimpleTrackingStrategy(TrackingStrategy):
         else:
             camera_speeds.zoom_speed = 0
 
-    def _get_speed_by_distance(self, tx: float, dx: float) -> int:
+    def _get_speed_by_distance(self, tx: float, dx: float) -> float:
         distance = tx - dx
         abs_distance = abs(distance)
         if abs_distance < self._destination.variance:
@@ -101,7 +101,7 @@ class SimpleTrackingStrategy(TrackingStrategy):
             speed = min(self.max_allowed_speed, speed)
             if distance < 0:
                 speed = -speed
-            return int(speed)
+            return speed
 
 
 class StopIfLostTrackingStrategy(TrackingStrategy):
@@ -134,10 +134,10 @@ class StopIfLostTrackingStrategy(TrackingStrategy):
                 delta_time = time.time() - self._timeOfLoss
                 t = min(delta_time, self._slowDownTime)
                 slow_down_factor = 1 - (t / self._slowDownTime)
-                camera_speeds.pan_speed = int(
-                    camera_speeds.pan_speed * slow_down_factor)
-                camera_speeds.tilt_speed = int(
-                    camera_speeds.tilt_speed * slow_down_factor)
+                camera_speeds.pan_speed = \
+                    camera_speeds.pan_speed * slow_down_factor
+                camera_speeds.tilt_speed = \
+                    camera_speeds.tilt_speed * slow_down_factor
                 camera_speeds.zoom_speed = int(
                     camera_speeds.zoom_speed * slow_down_factor)
         self._hasTargetBeenLost = is_target_lost

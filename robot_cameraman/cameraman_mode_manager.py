@@ -78,10 +78,10 @@ class CameramanModeManager:
     def manual_mode(self) -> None:
         self.mode_name = 'manual'
 
-    def manual_rotate(self, pan_speed: int) -> None:
+    def manual_rotate(self, pan_speed: float) -> None:
         self._camera_speeds.pan_speed = pan_speed
 
-    def manual_tilt(self, tilt_speed: int) -> None:
+    def manual_tilt(self, tilt_speed: float) -> None:
         self._camera_speeds.tilt_speed = tilt_speed
 
     def manual_zoom(self, zoom_speed: int) -> None:
