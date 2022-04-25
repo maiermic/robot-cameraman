@@ -134,6 +134,9 @@ class SmoothCameraController(CameraController):
         old_speed = self._rotate_speed_manager.current_speed
         old_tilt_speed = self._tilt_speed_manager.current_speed
         try:
+            logger.debug('current gimbal accelerations are: pan %5d, tilt %5d',
+                         self._rotate_speed_manager.acceleration_per_second,
+                         self._tilt_speed_manager.acceleration_per_second)
             self._gimbal.control(yaw_speed=self._rotate_speed_manager.update(),
                                  pitch_speed=-self._tilt_speed_manager.update())
             logger.debug('current gimbal speeds are: pan %5d, tilt %5d',
