@@ -27,7 +27,7 @@ from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
     StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
-    RotateSearchTargetStrategy
+    RotateSearchTargetStrategy, CameraSpeeds
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -231,7 +231,12 @@ cameraman = Cameraman(
     object_tracker=ObjectTracker(max_disappeared=25),
     target_label_id=args.targetLabelId,
     output=create_video_writer(args.output, live_view_image_size),
-    user_interfaces=user_interfaces)
+    user_interfaces=user_interfaces,
+    # TODO get max speeds from separate CLI arguments
+    manual_camera_speeds=CameraSpeeds(
+        pan_speed=10,
+        tilt_speed=4,
+        zoom_speed=200))
 
 to_exit = threading.Event()
 server_image = ImageContainer(

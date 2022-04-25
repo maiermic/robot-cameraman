@@ -22,7 +22,7 @@ from robot_cameraman.image_detection import DetectionCandidate, \
 from robot_cameraman.live_view import LiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination
+from robot_cameraman.tracking import Destination, CameraSpeeds
 from robot_cameraman.ui import UserInterface
 
 logger: Logger = logging.getLogger(__name__)
@@ -42,7 +42,8 @@ class Cameraman:
             object_tracker: ObjectTracker,
             target_label_id: int,
             output: Optional[cv2.VideoWriter],
-            user_interfaces: List[UserInterface]) -> None:
+            user_interfaces: List[UserInterface],
+            manual_camera_speeds: CameraSpeeds) -> None:
         self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
@@ -52,6 +53,7 @@ class Cameraman:
         self._target_label_id = target_label_id
         self._output = output
         self._user_interfaces = user_interfaces
+        self._manual_camera_speeds = manual_camera_speeds
 
     def _is_target_id_registered(self) -> bool:
         return (self._target_id is not None
@@ -166,27 +168,27 @@ class Cameraman:
         elif key == ord('i'):
             logger.debug('manually tilt up')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_tilt(-100)
+            self._mode_manager.manual_tilt(-self._manual_camera_speeds.tilt_speed)
         elif key == ord('k'):
             logger.debug('manually tilt down')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_tilt(100)
+            self._mode_manager.manual_tilt(self._manual_camera_speeds.tilt_speed)
         elif key == ord('j'):
             logger.debug('manually rotate left')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_rotate(-100)
+            self._mode_manager.manual_rotate(-self._manual_camera_speeds.pan_speed)
         elif key == ord('l'):
             logger.debug('manually rotate right')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_rotate(100)
+            self._mode_manager.manual_rotate(self._manual_camera_speeds.pan_speed)
         elif key == ord('-'):
             logger.debug('manually zoom out')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_zoom(-200)
+            self._mode_manager.manual_zoom(-self._manual_camera_speeds.zoom_speed)
         elif key == ord('+'):
             logger.debug('manually zoom in')
             self._mode_manager.manual_mode()
-            self._mode_manager.manual_zoom(200)
+            self._mode_manager.manual_zoom(self._manual_camera_speeds.zoom_speed)
         elif self._mode_manager.is_manual_mode() and key == ord('o'):
             logger.debug('manually stop')
             self._mode_manager.stop_camera()
