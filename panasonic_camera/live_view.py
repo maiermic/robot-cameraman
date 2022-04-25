@@ -218,6 +218,14 @@ class LiveView:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((ip, port))
         self.sock.settimeout(0.5)
+        self._header_listeners = []
+
+    def add_ex_header_listener(self, callback):
+        self._header_listeners.append(callback)
+
+    def _notify_ex_header_listeners(self, ex_header: ExHeader):
+        for listener in self._header_listeners:
+            listener(ex_header)
 
     def image(self) -> bytes:
         """
@@ -248,6 +256,7 @@ class LiveView:
             else:
                 logger.warning('unhandled ex header type %d', ex_header_type)
             logger.debug(f'ex header: {ex_header}')
+            self._notify_ex_header_listeners(ex_header)
         offset = bhs + ehs
         if offset != reader.i:
             logger.warning('offsets differ: %d != %d', offset, reader.i)

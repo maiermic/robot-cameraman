@@ -26,6 +26,9 @@ class PanasonicLiveView(LiveView):
         import panasonic_camera.live_view
         self._live_view = panasonic_camera.live_view.LiveView(ip, port)
 
+    def add_ex_header_listener(self, callback):
+        self._live_view.add_ex_header_listener(callback)
+
     def image(self) -> Optional[Image]:
         try:
             return PIL.Image.open(io.BytesIO(self._live_view.image()))
