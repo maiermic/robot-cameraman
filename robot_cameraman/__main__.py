@@ -201,8 +201,8 @@ if args.detectionEngine == 'Dummy':
 elif args.detectionEngine == 'Color':
     detection_engine = ColorDetectionEngine(
         target_label_id=args.targetLabelId,
-        min_hsv=(24, 86, 6),
-        max_hsv=(64, 255, 255))
+        min_hsv=(69, 30, 114),
+        max_hsv=(100, 255, 255))
     user_interfaces.append(ColorDetectionEngineUI(engine=detection_engine))
 elif args.detectionEngine == 'EdgeTPU':
     detection_engine = EdgeTpuDetectionEngine(
