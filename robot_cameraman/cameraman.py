@@ -54,6 +54,7 @@ class Cameraman:
         self._output = output
         self._user_interfaces = user_interfaces
         self._manual_camera_speeds = manual_camera_speeds
+        self._window_title = 'Robot Cameraman'
 
     def _is_target_id_registered(self) -> bool:
         return (self._target_id is not None
@@ -64,7 +65,7 @@ class Cameraman:
             to_exit: threading.Event,
             expected_image_size: Tuple[int, int]) -> None:
         if 'DISPLAY' in os.environ:
-            cv2.namedWindow('Robot Cameraman', cv2.WINDOW_NORMAL)
+            cv2.namedWindow(self._window_title, cv2.WINDOW_NORMAL)
             for ui in self._user_interfaces:
                 ui.open()
         # Parts at the end of the live view image are sometimes not received.
@@ -135,7 +136,7 @@ class Cameraman:
                 if self._output:
                     self._output.write(cv2_image)
                 if 'DISPLAY' in os.environ:
-                    cv2.imshow('Robot Cameraman', cv2_image)
+                    cv2.imshow(self._window_title, cv2_image)
                     for ui in self._user_interfaces:
                         ui.update()
 
