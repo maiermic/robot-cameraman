@@ -19,6 +19,7 @@ from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
     ColorDetectionEngineUI
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
@@ -47,6 +48,7 @@ def create_video_writer(output_file: Path, image_size: Tuple[int, int]):
 
 
 class RobotCameramanArguments(Protocol):
+    config: Path
     detectionEngine: str
     model: Path
     labels: Path
@@ -78,6 +80,12 @@ def parse_arguments() -> RobotCameramanArguments:
     mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     parser = argparse.ArgumentParser(
         description="Detect objects in a video file using Google Coral USB.")
+    parser.add_argument(
+        '--config',
+        type=Path,
+        default=Path(__file__).parent.parent / '.robot-cameraman.config.json',
+        help="Path to the JSON file that is used to load"
+             "and store the configuration.")
     parser.add_argument('--detectionEngine', type=str,
                         default='EdgeTPU',
                         help="The detection engine to use."
@@ -217,6 +225,7 @@ def configure_logging():
 
 args = parse_arguments()
 configure_logging()
+configuration = read_configuration_file(args.config)
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 live_view_image_size = (args.liveViewWith, args.liveViewHeight)
@@ -249,9 +258,11 @@ if args.detectionEngine == 'Dummy':
 elif args.detectionEngine == 'Color':
     detection_engine = ColorDetectionEngine(
         target_label_id=args.targetLabelId,
-        min_hsv=(69, 30, 114),
-        max_hsv=(100, 255, 255))
-    user_interfaces.append(ColorDetectionEngineUI(engine=detection_engine))
+        min_hsv=configuration['tracking']['color']['min_hsv'],
+        max_hsv=configuration['tracking']['color']['max_hsv'])
+    user_interfaces.append(
+        ColorDetectionEngineUI(engine=detection_engine,
+                               configuration_file=args.config))
 elif args.detectionEngine == 'EdgeTPU':
     detection_engine = EdgeTpuDetectionEngine(
         model=args.model,

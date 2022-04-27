@@ -3,13 +3,16 @@
 
 import logging
 from logging import Logger
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional
 
 import cv2
 import imutils
 import numpy
 
 from robot_cameraman.box import Box
+from robot_cameraman.configuration import read_configuration_file, \
+    save_configuration_file
 from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
 from robot_cameraman.ui import UserInterface
 
@@ -62,9 +65,11 @@ class ColorDetectionEngineUI(UserInterface):
     def __init__(
             self,
             engine: ColorDetectionEngine,
-            window_title: str = 'Mask') -> None:
+            window_title: str = 'Mask',
+            configuration_file: Optional[Path] = None) -> None:
         self.engine = engine
         self._window_title = window_title
+        self._configuration_file = configuration_file
 
     def open(self):
         cv2.namedWindow('Mask', cv2.WINDOW_NORMAL)
@@ -79,6 +84,37 @@ class ColorDetectionEngineUI(UserInterface):
             None,
             cv2.QT_CHECKBOX,
             1 if self.engine.is_single_object_detection else 0)
+        if (self._configuration_file is not None
+                and self._configuration_file.exists()):
+            cv2.createButton('Store Configuration', self._update_configuration)
+            cv2.createButton('Reset Configuration', self._reset_configuration)
+
+    def _update_configuration(self, *_args):
+        configuration = read_configuration_file(self._configuration_file)
+        color_configuration = configuration['tracking']['color']
+        color_configuration['min_hsv'] = list(map(int, self.engine.min_hsv))
+        color_configuration['max_hsv'] = list(map(int, self.engine.max_hsv))
+        save_configuration_file(self._configuration_file, configuration)
+
+    def _reset_configuration(self, *_args):
+        configuration = read_configuration_file(self._configuration_file)
+        color_configuration = configuration['tracking']['color']
+
+        min_h, min_s, min_v = color_configuration['min_hsv']
+        self.engine.min_hsv[0] = min_h
+        cv2.setTrackbarPos('MIN_H', self._window_title, min_h)
+        self.engine.min_hsv[1] = min_s
+        cv2.setTrackbarPos('MIN_S', self._window_title, min_s)
+        self.engine.min_hsv[2] = min_v
+        cv2.setTrackbarPos('MIN_V', self._window_title, min_v)
+
+        max_h, max_s, max_v = color_configuration['max_hsv']
+        self.engine.max_hsv[0] = max_h
+        cv2.setTrackbarPos('MAX_H', self._window_title, max_h)
+        self.engine.max_hsv[1] = max_s
+        cv2.setTrackbarPos('MAX_S', self._window_title, max_s)
+        self.engine.max_hsv[2] = max_v
+        cv2.setTrackbarPos('MAX_V', self._window_title, max_v)
 
     def _update_minimum_contour_radius(self, value):
         self.engine.minimum_contour_size = value

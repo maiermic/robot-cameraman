@@ -197,3 +197,6 @@ fabric.properties
 
 # Output file of robot_cameraman
 out.avi
+
+# Default configuration file of last used configuration
+.robot-cameraman.config.json
