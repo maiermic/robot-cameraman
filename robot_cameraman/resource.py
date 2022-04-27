@@ -1,8 +1,9 @@
 # Read labels from text files.
+from pathlib import Path
 from typing import Dict
 
 
-def read_label_file(file_path: str) -> Dict[int, str]:
+def read_label_file(file_path: Path) -> Dict[int, str]:
     with open(file_path, 'r') as f:
         lines = f.readlines()
         ret = {}

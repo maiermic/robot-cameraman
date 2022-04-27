@@ -43,7 +43,7 @@ class CameraObservable(ABC):
 
 class PanasonicCameraObservable(CameraObservable):
 
-    def __init__(self, min_focal_length: int):
+    def __init__(self, min_focal_length: float):
         super().__init__()
         self.min_focal_length = min_focal_length
 
