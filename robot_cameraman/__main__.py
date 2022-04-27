@@ -14,6 +14,8 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager
+from robot_cameraman.camera_observable import \
+    PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
@@ -22,6 +24,8 @@ from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
+from robot_cameraman.max_speed_and_acceleration_updater import \
+    MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
@@ -120,6 +124,16 @@ def parse_arguments():
     parser.add_argument('--liveViewHeight',
                         type=int, default=480,
                         help="Height of live view of used camera")
+    parser.add_argument('--cameraMinFocalLength',
+                        type=float, default=6.0,
+                        help="Minimum focal length in millimeter"
+                             "of the used camera. The actual focal length"
+                             "and not the 35mm equivalent is expected.")
+    parser.add_argument('--cameraMaxFocalLength',
+                        type=float, default=42.8,
+                        help="Maximum focal length in millimeter"
+                             "of the used camera. The actual focal length"
+                             "and not the 35mm equivalent is expected.")
     parser.add_argument(
         '--ssl-key',
         type=Path,
@@ -179,21 +193,26 @@ font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 live_view_image_size = (args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager()
+max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
-    SimpleTrackingStrategy(destination, max_allowed_speed=500),
+    max_speed_and_acceleration_updater.add(
+        SimpleTrackingStrategy(destination, max_allowed_speed=24)),
     slow_down_time=1)
 gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
         camera_manager,
-        rotate_speed_manager=SpeedManager(args.rotationalAccelerationPerSecond),
-        tilt_speed_manager=SpeedManager(args.tiltingAccelerationPerSecond)),
-    align_tracking_strategy=SimpleAlignTrackingStrategy(destination,
-                                                        max_allowed_speed=200),
+        rotate_speed_manager=max_speed_and_acceleration_updater.add(
+            SpeedManager(args.rotationalAccelerationPerSecond)),
+        tilt_speed_manager=max_speed_and_acceleration_updater.add(
+            SpeedManager(args.tiltingAccelerationPerSecond))),
+    align_tracking_strategy=max_speed_and_acceleration_updater.add(
+        SimpleAlignTrackingStrategy(destination, max_allowed_speed=16)),
     tracking_strategy=tracking_strategy,
-    search_target_strategy=RotateSearchTargetStrategy(args.rotatingSearchSpeed))
+    search_target_strategy=max_speed_and_acceleration_updater.add(
+        RotateSearchTargetStrategy(args.rotatingSearchSpeed)))
 
 user_interfaces = []
 if args.detectionEngine == 'Dummy':
@@ -217,6 +236,12 @@ if args.liveView == 'Webcam':
     live_view = WebcamLiveView()
 elif args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
+    camera_observable = PanasonicCameraObservable(
+        min_focal_length=args.cameraMinFocalLength)
+    live_view.add_ex_header_listener(camera_observable.on_ex_header)
+    camera_observable.add_listener(
+        ObservableCameraProperty.ZOOM_RATIO,
+        max_speed_and_acceleration_updater.on_zoom_ratio)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
@@ -233,10 +258,11 @@ cameraman = Cameraman(
     output=create_video_writer(args.output, live_view_image_size),
     user_interfaces=user_interfaces,
     # TODO get max speeds from separate CLI arguments
-    manual_camera_speeds=CameraSpeeds(
-        pan_speed=10,
-        tilt_speed=4,
-        zoom_speed=200))
+    manual_camera_speeds=max_speed_and_acceleration_updater.add(
+        CameraSpeeds(
+            pan_speed=10,
+            tilt_speed=4,
+            zoom_speed=200)))
 
 to_exit = threading.Event()
 server_image = ImageContainer(
