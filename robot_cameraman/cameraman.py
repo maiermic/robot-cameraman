@@ -23,7 +23,7 @@ from robot_cameraman.live_view import LiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination, CameraSpeeds
-from robot_cameraman.ui import UserInterface
+from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -66,6 +66,10 @@ class Cameraman:
             expected_image_size: Tuple[int, int]) -> None:
         if 'DISPLAY' in os.environ:
             cv2.namedWindow(self._window_title, cv2.WINDOW_NORMAL)
+            create_attribute_checkbox(
+                'Zoom Enabled',
+                self._mode_manager,
+                'is_zoom_enabled')
             for ui in self._user_interfaces:
                 ui.open()
         # Parts at the end of the live view image are sometimes not received.

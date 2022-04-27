@@ -24,6 +24,7 @@ class CameramanModeManager:
         self._search_target_strategy = search_target_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self.mode_name = 'manual'
+        self.is_zoom_enabled = True
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists
@@ -45,6 +46,8 @@ class CameramanModeManager:
                 self._tracking_strategy.update(self._camera_speeds, target,
                                                is_target_lost)
         if self.mode_name != 'angle':
+            if not self.is_zoom_enabled and self.mode_name != 'manual':
+                self._camera_speeds.zoom_speed = 0
             self._camera_controller.update(self._camera_speeds)
 
     def start(self):
