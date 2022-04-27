@@ -9,6 +9,7 @@ from typing import Tuple
 import PIL.Image
 import PIL.ImageFont
 import cv2
+from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
@@ -45,7 +46,34 @@ def create_video_writer(output_file: Path, image_size: Tuple[int, int]):
         image_size)
 
 
-def parse_arguments():
+class RobotCameramanArguments(Protocol):
+    detectionEngine: str
+    model: Path
+    labels: Path
+    maxObjects: int
+    confidence: float
+    gimbal: str
+    liveView: str
+    ip: str
+    port: int
+    targetLabelId: int
+    output: Path
+    font: Path
+    fontSize: int
+    debug: bool
+    rotatingSearchSpeed: int
+    rotationalAccelerationPerSecond: int
+    tiltingAccelerationPerSecond: int
+    variance: int
+    liveViewWith: int
+    liveViewHeight: int
+    cameraMinFocalLength: float
+    cameraMaxFocalLength: float
+    ssl_key: Path
+    ssl_certificate: Path
+
+
+def parse_arguments() -> RobotCameramanArguments:
     resources: Path = Path(__file__).parent / 'resources'
     mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     parser = argparse.ArgumentParser(
@@ -144,6 +172,7 @@ def parse_arguments():
         type=Path,
         default=resources / 'server.pem',
         help="Path to server SSL-certificate file.")
+    # noinspection PyTypeChecker
     return parser.parse_args()
 
 
