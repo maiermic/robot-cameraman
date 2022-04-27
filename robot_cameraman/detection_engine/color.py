@@ -14,7 +14,7 @@ from robot_cameraman.box import Box
 from robot_cameraman.configuration import read_configuration_file, \
     save_configuration_file
 from robot_cameraman.image_detection import DetectionEngine, DetectionCandidate
-from robot_cameraman.ui import UserInterface
+from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -78,12 +78,10 @@ class ColorDetectionEngineUI(UserInterface):
             self.engine.minimum_contour_size,
             self._update_minimum_contour_radius)
         self._setup_hsv_trackbars()
-        cv2.createButton(
+        create_attribute_checkbox(
             'Single Object Detection',
-            self._toggle_single_object_detection,
-            None,
-            cv2.QT_CHECKBOX,
-            1 if self.engine.is_single_object_detection else 0)
+            self.engine,
+            'is_single_object_detection')
         if (self._configuration_file is not None
                 and self._configuration_file.exists()):
             cv2.createButton('Store Configuration', self._update_configuration)
@@ -118,12 +116,6 @@ class ColorDetectionEngineUI(UserInterface):
 
     def _update_minimum_contour_radius(self, value):
         self.engine.minimum_contour_size = value
-
-    def _toggle_single_object_detection(self, value, _user_data):
-        self.engine.is_single_object_detection = value == 1
-        logger.error('single object detection '
-                     'enabled' if self.engine.is_single_object_detection
-                     else 'disabled')
 
     def _setup_hsv_trackbars(self):
         def min_change(index):
