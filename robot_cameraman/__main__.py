@@ -260,7 +260,7 @@ cameraman = Cameraman(
     # TODO get max speeds from separate CLI arguments
     manual_camera_speeds=max_speed_and_acceleration_updater.add(
         CameraSpeeds(
-            pan_speed=10,
+            pan_speed=8,
             tilt_speed=4,
             zoom_speed=200)))
 
