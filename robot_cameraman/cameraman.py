@@ -3,7 +3,7 @@ import os
 import threading
 import time
 from logging import Logger
-from typing import Optional, Iterable, Tuple, List
+from typing import Optional, Iterable, List
 
 import PIL.Image
 import PIL.ImageDraw
@@ -19,7 +19,7 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.image_detection import DetectionCandidate, \
     DetectionEngine
-from robot_cameraman.live_view import LiveView
+from robot_cameraman.live_view import LiveView, ImageSize
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
 from robot_cameraman.tracking import Destination, CameraSpeeds
@@ -63,7 +63,7 @@ class Cameraman:
     def run(self,
             server_image: ImageContainer,
             to_exit: threading.Event,
-            expected_image_size: Tuple[int, int]) -> None:
+            expected_image_size: ImageSize) -> None:
         if 'DISPLAY' in os.environ:
             cv2.namedWindow(self._window_title, cv2.WINDOW_NORMAL)
             create_attribute_checkbox(

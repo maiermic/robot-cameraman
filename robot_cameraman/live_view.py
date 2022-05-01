@@ -2,7 +2,7 @@ import io
 import logging
 import socket
 from logging import Logger
-from typing import Optional
+from typing import Optional, NamedTuple
 
 import PIL.Image
 import PIL.Image
@@ -14,6 +14,11 @@ from PIL.Image import Image
 from typing_extensions import Protocol
 
 logger: Logger = logging.getLogger(__name__)
+
+ImageSize = NamedTuple('ImageSize', [
+    ('width', int),
+    ('height', int),
+])
 
 
 class LiveView(Protocol):

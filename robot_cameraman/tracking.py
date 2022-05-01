@@ -3,18 +3,19 @@ import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from logging import Logger
-from typing import Tuple, Optional
+from typing import Optional
 
 from typing_extensions import Protocol
 
 from robot_cameraman.box import Box, TwoPointsBox, Point
+from robot_cameraman.live_view import ImageSize
 
 logger: Logger = logging.getLogger(__name__)
 
 
 class Destination:
 
-    def __init__(self, image_size: Tuple[int, int], variance: int = 50) -> None:
+    def __init__(self, image_size: ImageSize, variance: int = 50) -> None:
         width, height = image_size
         x, y = width / 2, height / 2
         self.center = Point(x, y)

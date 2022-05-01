@@ -4,7 +4,6 @@ import signal
 import threading
 # noinspection Mypy
 from pathlib import Path
-from typing import Tuple
 
 import PIL.Image
 import PIL.ImageFont
@@ -25,7 +24,8 @@ from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
 from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
-from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView
+from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
+    ImageSize
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
@@ -39,7 +39,7 @@ to_exit: threading.Event
 server_image: ImageContainer
 
 
-def create_video_writer(output_file: Path, image_size: Tuple[int, int]):
+def create_video_writer(output_file: Path, image_size: ImageSize):
     return cv2.VideoWriter(
         str(output_file),
         cv2.VideoWriter_fourcc(*'MJPG'),
@@ -228,7 +228,7 @@ configure_logging()
 configuration = read_configuration_file(args.config)
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-live_view_image_size = (args.liveViewWith, args.liveViewHeight)
+live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager()
 max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
