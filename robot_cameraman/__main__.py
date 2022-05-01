@@ -235,7 +235,8 @@ max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
     max_speed_and_acceleration_updater.add(
-        SimpleTrackingStrategy(destination, max_allowed_speed=24)),
+        SimpleTrackingStrategy(
+            destination, live_view_image_size, max_allowed_speed=24)),
     slow_down_time=1)
 gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
 cameraman_mode_manager = CameramanModeManager(
@@ -247,7 +248,8 @@ cameraman_mode_manager = CameramanModeManager(
         tilt_speed_manager=max_speed_and_acceleration_updater.add(
             SpeedManager(args.tiltingAccelerationPerSecond))),
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
-        SimpleAlignTrackingStrategy(destination, max_allowed_speed=16)),
+        SimpleAlignTrackingStrategy(
+            destination, live_view_image_size, max_allowed_speed=16)),
     tracking_strategy=tracking_strategy,
     search_target_strategy=max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed)))

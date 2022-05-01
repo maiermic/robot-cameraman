@@ -67,13 +67,16 @@ class TrackingStrategy(Protocol):
 
 class SimpleTrackingStrategy(TrackingStrategy):
     _destination: Destination
+    _image_size: ImageSize
     max_allowed_speed: float
 
     def __init__(
             self,
             destination: Destination,
+            image_size: ImageSize,
             max_allowed_speed: float = 1000):
         self._destination = destination
+        self._image_size = image_size
         self.max_allowed_speed = max_allowed_speed
 
     def update(
@@ -86,8 +89,10 @@ class SimpleTrackingStrategy(TrackingStrategy):
         tx, ty = target.center
         self._destination.update_size_box_center(tx, ty)
         dx, dy = self._destination.center
-        camera_speeds.pan_speed = self._get_speed_by_distance(tx, dx)
-        camera_speeds.tilt_speed = self._get_speed_by_distance(ty, dy)
+        camera_speeds.pan_speed = \
+            self._get_speed_by_distance(tx, dx, self._image_size.width)
+        camera_speeds.tilt_speed = \
+            self._get_speed_by_distance(ty, dy, self._image_size.height)
         if target.height < self._destination.min_size_box.height:
             camera_speeds.zoom_speed = 200
         elif target.height > self._destination.max_size_box.height:
@@ -95,13 +100,13 @@ class SimpleTrackingStrategy(TrackingStrategy):
         else:
             camera_speeds.zoom_speed = 0
 
-    def _get_speed_by_distance(self, tx: float, dx: float) -> float:
+    def _get_speed_by_distance(self, tx: float, dx: float, size: int) -> float:
         distance = tx - dx
         abs_distance = abs(distance)
         if abs_distance < self._destination.variance:
             return 0
         else:
-            speed = round(abs_distance / 320 * self.max_allowed_speed)
+            speed = abs_distance / (size / 2) * self.max_allowed_speed
             speed = min(self.max_allowed_speed, speed)
             if distance < 0:
                 speed = -speed
