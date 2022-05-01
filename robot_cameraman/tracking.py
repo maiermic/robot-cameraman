@@ -66,9 +66,12 @@ class TrackingStrategy(Protocol):
 
 class SimpleTrackingStrategy(TrackingStrategy):
     _destination: Destination
-    max_allowed_speed: int
+    max_allowed_speed: float
 
-    def __init__(self, destination: Destination, max_allowed_speed: int = 1000):
+    def __init__(
+            self,
+            destination: Destination,
+            max_allowed_speed: float = 1000):
         self._destination = destination
         self.max_allowed_speed = max_allowed_speed
 
