@@ -31,9 +31,9 @@ from robot_cameraman.max_speed_and_acceleration_updater import \
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
-from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
-    StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
-    RotateSearchTargetStrategy, CameraSpeeds
+from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
+    RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
+    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi
 from robot_cameraman.ui import ShowSpeedsInStatusBar
 
 to_exit: threading.Event
@@ -233,17 +233,22 @@ live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager()
 max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
+configurable_tracking_strategy = \
+    ConfigurableTrackingStrategy(
+        destination, live_view_image_size, max_allowed_speed=24)
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
     max_speed_and_acceleration_updater.add(
-        SimpleTrackingStrategy(
-            destination, live_view_image_size, max_allowed_speed=24)),
+        configurable_tracking_strategy),
     slow_down_time=1)
 gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
 rotate_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.rotationalAccelerationPerSecond))
 tilt_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.tiltingAccelerationPerSecond))
+configurable_align_tracking_strategy = \
+    ConfigurableAlignTrackingStrategy(
+        destination, live_view_image_size, max_allowed_speed=16)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
@@ -251,8 +256,7 @@ cameraman_mode_manager = CameramanModeManager(
         rotate_speed_manager=rotate_speed_manager,
         tilt_speed_manager=tilt_speed_manager),
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
-        SimpleAlignTrackingStrategy(
-            destination, live_view_image_size, max_allowed_speed=16)),
+        configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
     search_target_strategy=max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed)))
@@ -260,6 +264,10 @@ cameraman_mode_manager = CameramanModeManager(
 # noinspection PyListCreation
 user_interfaces = []
 
+user_interfaces.append(
+    ConfigurableTrackingStrategyUi(
+        tracking_strategy=configurable_tracking_strategy,
+        align_strategy=configurable_align_tracking_strategy))
 # noinspection PyProtectedMember
 user_interfaces.append(
     ShowSpeedsInStatusBar(

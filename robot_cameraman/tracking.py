@@ -2,6 +2,7 @@ import logging
 import time
 from abc import abstractmethod
 from dataclasses import dataclass
+from enum import Enum, auto
 from logging import Logger
 from typing import Optional
 
@@ -114,6 +115,56 @@ class SimpleTrackingStrategy(TrackingStrategy):
             return speed
 
 
+class TrackingStrategyRotationMode(Enum):
+    STOP = auto()
+    """Stop rotation, when distance of object to center is smaller than
+    the variance."""
+
+    LINEAR = auto()
+    "Rotation speed increases linear based on distance of object to center."
+
+    QUADRATIC = auto()
+    "Rotation speed increases quadratic based on distance of object to center."
+
+    QUADRATIC_TO_LINEAR = auto()
+    """Rotation speed increases quadratic based on distance of object to center,
+     when distance of object to center is smaller than the variance.
+     Otherwise, rotation speed increases linear based on distance of object
+     to center."""
+
+
+class ConfigurableTrackingStrategy(SimpleTrackingStrategy):
+    rotation_mode: TrackingStrategyRotationMode
+
+    def __init__(self, destination: Destination, image_size: ImageSize,
+                 max_allowed_speed: float = 1000):
+        super().__init__(destination, image_size, max_allowed_speed)
+        self.rotation_mode = TrackingStrategyRotationMode.QUADRATIC_TO_LINEAR
+
+    def _get_speed_by_distance(
+            self, target: float, destination: float, size: int) -> float:
+        distance = target - destination
+        abs_distance = abs(distance)
+        max_distance = size / 2
+        variance = self._destination.variance
+        if abs_distance < variance:
+            if self.rotation_mode is TrackingStrategyRotationMode.STOP:
+                return 0
+            if (self.rotation_mode
+                    is TrackingStrategyRotationMode.QUADRATIC_TO_LINEAR):
+                return (self.max_allowed_speed * distance * abs_distance) \
+                       / (variance * max_distance)
+        percentage_distance = abs_distance / max_distance
+        if self.rotation_mode is TrackingStrategyRotationMode.QUADRATIC:
+            speed = (percentage_distance ** 2) * self.max_allowed_speed
+        else:
+            speed = percentage_distance * self.max_allowed_speed
+        speed = min(self.max_allowed_speed, speed)
+        if distance < 0:
+            speed = -speed
+        return speed
+
+
 class StopIfLostTrackingStrategy(TrackingStrategy):
     _destination: Destination
     _trackingStrategy: TrackingStrategy
@@ -163,6 +214,53 @@ class SimpleAlignTrackingStrategy(SimpleTrackingStrategy,
                                   AlignTrackingStrategy):
     def is_aligned(self, target: Box) -> bool:
         return self._destination.box.contains_point(target.center)
+
+
+class ConfigurableAlignTrackingStrategy(ConfigurableTrackingStrategy,
+                                        AlignTrackingStrategy):
+    def is_aligned(self, target: Box) -> bool:
+        return self._destination.box.contains_point(target.center)
+
+
+class ConfigurableTrackingStrategyUi:
+
+    def __init__(
+            self,
+            tracking_strategy: ConfigurableTrackingStrategy,
+            align_strategy: ConfigurableAlignTrackingStrategy) -> None:
+        self._tracking_strategy = tracking_strategy
+        self._align_strategy = align_strategy
+
+    def on_change(self, _value, rotation_mode):
+        logger.debug(f"change rotation mode to: {str(rotation_mode)}")
+        self._tracking_strategy.rotation_mode = rotation_mode
+        self._align_strategy.rotation_mode = rotation_mode
+
+    def create_radio_button(
+            self,
+            name: str,
+            value: TrackingStrategyRotationMode,
+            initial_state=0):
+        import cv2
+        cv2.createButton(
+            name,
+            self.on_change,
+            userData=value,
+            buttonType=cv2.QT_RADIOBOX,
+            initialButtonState=initial_state)
+
+    def open(self) -> None:
+        self.create_radio_button('Stop', TrackingStrategyRotationMode.STOP)
+        self.create_radio_button(
+            'Linear', TrackingStrategyRotationMode.LINEAR, initial_state=1)
+        self.create_radio_button(
+            'Quadratic', TrackingStrategyRotationMode.QUADRATIC)
+        self.create_radio_button(
+            'Quadratic-To-Linear',
+            TrackingStrategyRotationMode.QUADRATIC_TO_LINEAR)
+
+    def update(self) -> None:
+        pass
 
 
 class SearchTargetStrategy(Protocol):
