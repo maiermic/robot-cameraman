@@ -100,8 +100,9 @@ class SimpleTrackingStrategy(TrackingStrategy):
         else:
             camera_speeds.zoom_speed = 0
 
-    def _get_speed_by_distance(self, tx: float, dx: float, size: int) -> float:
-        distance = tx - dx
+    def _get_speed_by_distance(
+            self, target: float, destination: float, size: int) -> float:
+        distance = target - destination
         abs_distance = abs(distance)
         if abs_distance < self._destination.variance:
             return 0
