@@ -34,6 +34,7 @@ from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, SimpleTrackingStrategy, \
     StopIfLostTrackingStrategy, SimpleAlignTrackingStrategy, \
     RotateSearchTargetStrategy, CameraSpeeds
+from robot_cameraman.ui import ShowSpeedsInStatusBar
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -239,14 +240,16 @@ tracking_strategy = StopIfLostTrackingStrategy(
             destination, live_view_image_size, max_allowed_speed=24)),
     slow_down_time=1)
 gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
+rotate_speed_manager = max_speed_and_acceleration_updater.add(
+    SpeedManager(args.rotationalAccelerationPerSecond))
+tilt_speed_manager = max_speed_and_acceleration_updater.add(
+    SpeedManager(args.tiltingAccelerationPerSecond))
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
         camera_manager,
-        rotate_speed_manager=max_speed_and_acceleration_updater.add(
-            SpeedManager(args.rotationalAccelerationPerSecond)),
-        tilt_speed_manager=max_speed_and_acceleration_updater.add(
-            SpeedManager(args.tiltingAccelerationPerSecond))),
+        rotate_speed_manager=rotate_speed_manager,
+        tilt_speed_manager=tilt_speed_manager),
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         SimpleAlignTrackingStrategy(
             destination, live_view_image_size, max_allowed_speed=16)),
@@ -254,7 +257,16 @@ cameraman_mode_manager = CameramanModeManager(
     search_target_strategy=max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed)))
 
+# noinspection PyListCreation
 user_interfaces = []
+
+# noinspection PyProtectedMember
+user_interfaces.append(
+    ShowSpeedsInStatusBar(
+        pan_speed_manager=rotate_speed_manager,
+        tilt_speed_manager=tilt_speed_manager,
+        camera_speeds=cameraman_mode_manager._camera_speeds))
+
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
 elif args.detectionEngine == 'Color':
