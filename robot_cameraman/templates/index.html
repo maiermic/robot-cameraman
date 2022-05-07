@@ -42,7 +42,11 @@
 <body>
     <img class="live-view" src="cam.mjpg" alt="Live View">
     <div class="buttons">
-        <div class="grid-item"></div>
+        <input id="fullscreen"
+               class="button grid-item"
+               type="button"
+               value="Fullscreen"
+               onpointerup="toggleFullScreen()">
         <input id="up"
                class="button grid-item"
                type="button"
@@ -140,6 +144,14 @@
           removeEventListener('deviceorientationabsolute', onDeviceOrientation);
           clearInterval(updateInterval);
           document.getElementById('angles').innerText = '';
+        }
+      }
+
+      function toggleFullScreen() {
+        if (document.fullscreenElement) {
+          document.exitFullscreen()
+        } else {
+          document.documentElement.requestFullscreen();
         }
       }
     </script>
