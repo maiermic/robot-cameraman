@@ -102,6 +102,9 @@ class SimpleTrackingStrategy(TrackingStrategy):
             self._get_speed_by_distance(tx, dx, self._image_size.width)
         camera_speeds.tilt_speed = \
             self._get_speed_by_distance(ty, dy, self._image_size.height)
+        self._update_zoom_speed(camera_speeds, target)
+
+    def _update_zoom_speed(self, camera_speeds, target):
         if target.height < self._destination.min_size_box.height:
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_FAST
         elif target.height > self._destination.max_size_box.height:
