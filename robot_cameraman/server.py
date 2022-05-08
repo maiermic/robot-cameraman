@@ -9,7 +9,7 @@ import PIL.Image
 from flask import Flask, render_template, Response, request
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
-from robot_cameraman.tracking import ZoomSpeed
+from robot_cameraman.tracking import ZoomSpeed, CameraSpeeds
 
 logger: Logger = getLogger(__name__)
 
@@ -21,6 +21,7 @@ class ImageContainer:
 
 to_exit: threading.Event
 server_image: ImageContainer
+manual_camera_speeds: CameraSpeeds
 cameraman_mode_manager: CameramanModeManager
 
 app = Flask(__name__)
@@ -42,7 +43,7 @@ def start_tracking():
 def manually_rotate_left():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually rotate left')
-    cameraman_mode_manager.manual_rotate(-100)
+    cameraman_mode_manager.manual_rotate(-manual_camera_speeds.pan_speed)
     return '', 204
 
 
@@ -50,7 +51,7 @@ def manually_rotate_left():
 def manually_rotate_right():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually rotate right')
-    cameraman_mode_manager.manual_rotate(100)
+    cameraman_mode_manager.manual_rotate(manual_camera_speeds.pan_speed)
     return '', 204
 
 
@@ -58,7 +59,7 @@ def manually_rotate_right():
 def manually_tilt_up():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually tilt up')
-    cameraman_mode_manager.manual_tilt(-100)
+    cameraman_mode_manager.manual_tilt(-manual_camera_speeds.tilt_speed)
     return '', 204
 
 
@@ -66,7 +67,7 @@ def manually_tilt_up():
 def manually_tilt_down():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually tilt down')
-    cameraman_mode_manager.manual_tilt(100)
+    cameraman_mode_manager.manual_tilt(manual_camera_speeds.tilt_speed)
     return '', 204
 
 
@@ -74,7 +75,8 @@ def manually_tilt_down():
 def manually_zoom_out():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually zoom out')
-    cameraman_mode_manager.manual_zoom(ZoomSpeed.ZOOM_OUT_FAST)
+    cameraman_mode_manager.manual_zoom(
+        ZoomSpeed(-manual_camera_speeds.zoom_speed))
     return '', 204
 
 
@@ -82,7 +84,7 @@ def manually_zoom_out():
 def manually_zoom_in():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually zoom in')
-    cameraman_mode_manager.manual_zoom(ZoomSpeed.ZOOM_IN_FAST)
+    cameraman_mode_manager.manual_zoom(manual_camera_speeds.zoom_speed)
     return '', 204
 
 
@@ -135,12 +137,14 @@ def live_view():
 def run_server(_to_exit: threading.Event,
                _cameraman_mode_manager: CameramanModeManager,
                _server_image: ImageContainer,
+               _manual_camera_speeds: CameraSpeeds,
                ssl_certificate: Path,
                ssl_key: Path):
     # TODO use dependency injection instead of global variables
-    global to_exit, cameraman_mode_manager, server_image
+    global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds
     to_exit = _to_exit
     cameraman_mode_manager = _cameraman_mode_manager
     server_image = _server_image
+    manual_camera_speeds = _manual_camera_speeds
     app.run(host='0.0.0.0', port=9000, threaded=True,
             ssl_context=(ssl_certificate, ssl_key))

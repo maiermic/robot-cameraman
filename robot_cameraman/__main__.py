@@ -308,6 +308,8 @@ else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
 
+manual_camera_speeds = max_speed_and_acceleration_updater.add(
+    CameraSpeeds(pan_speed=8, tilt_speed=4, zoom_speed=ZoomSpeed.ZOOM_IN_FAST))
 # noinspection PyUnboundLocalVariable
 cameraman = Cameraman(
     live_view=live_view,
@@ -320,11 +322,7 @@ cameraman = Cameraman(
     output=create_video_writer(args.output, live_view_image_size),
     user_interfaces=user_interfaces,
     # TODO get max speeds from separate CLI arguments
-    manual_camera_speeds=max_speed_and_acceleration_updater.add(
-        CameraSpeeds(
-            pan_speed=8,
-            tilt_speed=4,
-            zoom_speed=ZoomSpeed.ZOOM_IN_FAST)))
+    manual_camera_speeds=manual_camera_speeds)
 
 to_exit = threading.Event()
 server_image = ImageContainer(
@@ -340,5 +338,6 @@ print('Open https://localhost:9000/index.html in your browser')
 run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
            _server_image=server_image,
+           _manual_camera_speeds=manual_camera_speeds,
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)
