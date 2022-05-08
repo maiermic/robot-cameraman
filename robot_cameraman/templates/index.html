@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Robot Cameraman</title>
     <style>
         html, body {
@@ -21,13 +22,24 @@
         }
 
         #angles {
-            margin-left: 32px;
+            margin: 0.1em 0 0.1em 1.5em;
+        }
+
+        @media (orientation: landscape) {
+            .live-view,
+            .buttons {
+                /* subtract height of #debugLog #angles */
+                height: calc(100vh - 1.2em);
+                /* TODO should depend on live view height */
+                max-height: 480px;
+            }
         }
 
         .live-view {
             width: 100%;
+            /* TODO should depend on live view width */
             max-width: 640px;
-            max-height: 480px;
+            margin: 0 auto;
         }
 
         .buttons {
@@ -35,7 +47,23 @@
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
             grid-template-areas: ". . ." ". . ." ". . .";
-            height: 100vh;
+        }
+
+        @media (orientation: portrait) {
+            .buttons {
+                /* show buttons below live view */
+                grid-row: 2;
+                margin-top: 0.1em;
+            }
+
+            .buttons .grid-item {
+                /* If buttons are shown in the same row as the live view,
+                   their height is scaled with the height of the live view.
+                   However, if they are shown in the row below the live view,
+                   the default height is used, which is too small to touch the
+                   buttons comfortably. */
+                height: 4em;
+            }
         }
     </style>
 </head>
