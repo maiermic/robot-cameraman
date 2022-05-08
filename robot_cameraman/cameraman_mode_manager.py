@@ -5,7 +5,7 @@ from typing import Optional
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController
 from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
-    AlignTrackingStrategy, SearchTargetStrategy
+    AlignTrackingStrategy, SearchTargetStrategy, ZoomSpeed
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class CameramanModeManager:
                                                is_target_lost)
         if self.mode_name != 'angle':
             if not self.is_zoom_enabled and self.mode_name != 'manual':
-                self._camera_speeds.zoom_speed = 0
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
             self._camera_controller.update(self._camera_speeds)
 
     def start(self):
@@ -87,7 +87,7 @@ class CameramanModeManager:
     def manual_tilt(self, tilt_speed: float) -> None:
         self._camera_speeds.tilt_speed = tilt_speed
 
-    def manual_zoom(self, zoom_speed: int) -> None:
+    def manual_zoom(self, zoom_speed: ZoomSpeed) -> None:
         self._camera_speeds.zoom_speed = zoom_speed
 
     def is_manual_mode(self):

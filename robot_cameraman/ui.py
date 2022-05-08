@@ -5,7 +5,7 @@ import cv2
 from typing_extensions import Protocol
 
 from robot_cameraman.camera_controller import SpeedManager
-from robot_cameraman.tracking import CameraSpeeds
+from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -64,11 +64,15 @@ class ShowSpeedsInStatusBar(UserInterface):
     def update(self) -> None:
         pan_speed = float(self._pan_speed_manager.current_speed)
         tilt_speed = float(self._tilt_speed_manager.current_speed)
-        zoom_speed = self._camera_speeds.zoom_speed
-        zoom_speed_str = \
-            'in' if zoom_speed > 0 else 'out' if zoom_speed < 0 else 'no'
+        zoom_speed_str = {
+            ZoomSpeed.ZOOM_IN_FAST: 'zoom in fast',
+            ZoomSpeed.ZOOM_IN_SLOW: 'zoom in slow',
+            ZoomSpeed.ZOOM_STOPPED: 'zoom stopped',
+            ZoomSpeed.ZOOM_OUT_SLOW: 'zoom out slow',
+            ZoomSpeed.ZOOM_OUT_FAST: 'zoom out fast',
+        }[self._camera_speeds.zoom_speed]
         cv2.displayStatusBar(
             'Robot Cameraman',
             f"pan: {pan_speed :3.2}, "
             f"tilt: {tilt_speed :3.2}, "
-            f"zoom: {zoom_speed_str}")
+            f"{zoom_speed_str}")

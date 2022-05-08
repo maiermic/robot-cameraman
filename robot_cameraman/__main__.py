@@ -33,7 +33,7 @@ from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
-    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi
+    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
 from robot_cameraman.ui import ShowSpeedsInStatusBar
 
 to_exit: threading.Event
@@ -324,7 +324,7 @@ cameraman = Cameraman(
         CameraSpeeds(
             pan_speed=8,
             tilt_speed=4,
-            zoom_speed=200)))
+            zoom_speed=ZoomSpeed.ZOOM_IN_FAST)))
 
 to_exit = threading.Event()
 server_image = ImageContainer(

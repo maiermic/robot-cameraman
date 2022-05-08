@@ -12,7 +12,7 @@ import serial
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
-from robot_cameraman.tracking import CameraSpeeds
+from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
 from simplebgc.units import to_degree, to_degree_per_sec
@@ -109,7 +109,7 @@ class SpeedManager:
 class SmoothCameraController(CameraController):
     _rotate_speed_manager: SpeedManager
     _tilt_speed_manager: SpeedManager
-    _old_zoom_speed: int = 0
+    _old_zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
 
     def __init__(self,
                  gimbal: Gimbal,
@@ -151,15 +151,22 @@ class SmoothCameraController(CameraController):
             if camera is not None:
                 logger.debug('zoom: new {: >5}, old {: >5}'.format(
                     camera_speeds.zoom_speed, self._old_zoom_speed))
-                if camera_speeds.zoom_speed > 0 >= self._old_zoom_speed:
-                    logger.debug('zoom in')
-                    camera.zoom_in_fast()
-                elif camera_speeds.zoom_speed < 0 <= self._old_zoom_speed:
-                    logger.debug('zoom out')
-                    camera.zoom_out_fast()
-                elif camera_speeds.zoom_speed == 0 != self._old_zoom_speed:
-                    logger.debug('zoom stop')
-                    camera.zoom_stop()
+                if camera_speeds.zoom_speed is not self._old_zoom_speed:
+                    if camera_speeds.zoom_speed is ZoomSpeed.ZOOM_IN_FAST:
+                        logger.debug('zoom in fast')
+                        camera.zoom_in_fast()
+                    elif camera_speeds.zoom_speed is ZoomSpeed.ZOOM_IN_SLOW:
+                        logger.debug('zoom in slow')
+                        camera.zoom_in_fast()
+                    elif camera_speeds.zoom_speed is ZoomSpeed.ZOOM_STOPPED:
+                        logger.debug('zoom stop')
+                        camera.zoom_stop()
+                    elif camera_speeds.zoom_speed is ZoomSpeed.ZOOM_OUT_SLOW:
+                        logger.debug('zoom out slow')
+                        camera.zoom_out_slow()
+                    elif camera_speeds.zoom_speed is ZoomSpeed.ZOOM_OUT_FAST:
+                        logger.debug('zoom out fast')
+                        camera.zoom_out_fast()
                 self._old_zoom_speed = camera_speeds.zoom_speed
         except Exception as e:
             logger.error('failed to zoom camera: %s', e)

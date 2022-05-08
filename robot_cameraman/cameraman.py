@@ -22,7 +22,7 @@ from robot_cameraman.image_detection import DetectionCandidate, \
 from robot_cameraman.live_view import LiveView, ImageSize
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer
-from robot_cameraman.tracking import Destination, CameraSpeeds
+from robot_cameraman.tracking import Destination, CameraSpeeds, ZoomSpeed
 from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
 logger: Logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ class Cameraman:
             logger.debug('manually zoom out')
             self._mode_manager.manual_mode()
             self._mode_manager.manual_zoom(
-                -self._manual_camera_speeds.zoom_speed)
+                ZoomSpeed(-self._manual_camera_speeds.zoom_speed))
         elif key == ord('+'):
             logger.debug('manually zoom in')
             self._mode_manager.manual_mode()

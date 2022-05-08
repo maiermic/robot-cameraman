@@ -9,6 +9,7 @@ import PIL.Image
 from flask import Flask, render_template, Response, request
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
+from robot_cameraman.tracking import ZoomSpeed
 
 logger: Logger = getLogger(__name__)
 
@@ -73,7 +74,7 @@ def manually_tilt_down():
 def manually_zoom_out():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually zoom out')
-    cameraman_mode_manager.manual_zoom(-200)
+    cameraman_mode_manager.manual_zoom(ZoomSpeed.ZOOM_OUT_FAST)
     return '', 204
 
 
@@ -81,7 +82,7 @@ def manually_zoom_out():
 def manually_zoom_in():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually zoom in')
-    cameraman_mode_manager.manual_zoom(200)
+    cameraman_mode_manager.manual_zoom(ZoomSpeed.ZOOM_IN_FAST)
     return '', 204
 
 

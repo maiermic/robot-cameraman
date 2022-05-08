@@ -2,7 +2,7 @@ import logging
 import time
 from abc import abstractmethod
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum, auto, IntEnum
 from logging import Logger
 from typing import Optional
 
@@ -44,16 +44,24 @@ class Destination:
         self.min_size_box.center.set(x, y)
 
 
+class ZoomSpeed(IntEnum):
+    ZOOM_OUT_FAST = -200
+    ZOOM_OUT_SLOW = -100
+    ZOOM_STOPPED = 0
+    ZOOM_IN_SLOW = 100
+    ZOOM_IN_FAST = 200
+
+
 @dataclass
 class CameraSpeeds:
     pan_speed: float = 0
     tilt_speed: float = 0
-    zoom_speed: int = 0
+    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
 
     def reset(self):
         self.pan_speed = 0
         self.tilt_speed = 0
-        self.zoom_speed = 0
+        self.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
 
 class TrackingStrategy(Protocol):
@@ -95,11 +103,11 @@ class SimpleTrackingStrategy(TrackingStrategy):
         camera_speeds.tilt_speed = \
             self._get_speed_by_distance(ty, dy, self._image_size.height)
         if target.height < self._destination.min_size_box.height:
-            camera_speeds.zoom_speed = 200
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_FAST
         elif target.height > self._destination.max_size_box.height:
-            camera_speeds.zoom_speed = -200
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_FAST
         else:
-            camera_speeds.zoom_speed = 0
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
     def _get_speed_by_distance(
             self, target: float, destination: float, size: int) -> float:
@@ -199,8 +207,7 @@ class StopIfLostTrackingStrategy(TrackingStrategy):
                     camera_speeds.pan_speed * slow_down_factor
                 camera_speeds.tilt_speed = \
                     camera_speeds.tilt_speed * slow_down_factor
-                camera_speeds.zoom_speed = int(
-                    camera_speeds.zoom_speed * slow_down_factor)
+                camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
         self._hasTargetBeenLost = is_target_lost
 
 
