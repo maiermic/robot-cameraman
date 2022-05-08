@@ -309,7 +309,7 @@ else:
     exit(1)
 
 manual_camera_speeds = max_speed_and_acceleration_updater.add(
-    CameraSpeeds(pan_speed=8, tilt_speed=4, zoom_speed=ZoomSpeed.ZOOM_IN_FAST))
+    CameraSpeeds(pan_speed=8, tilt_speed=4, zoom_speed=ZoomSpeed.ZOOM_IN_SLOW))
 # noinspection PyUnboundLocalVariable
 cameraman = Cameraman(
     live_view=live_view,
