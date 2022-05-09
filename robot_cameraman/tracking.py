@@ -144,13 +144,103 @@ class TrackingStrategyRotationMode(Enum):
      to center."""
 
 
+class TrackingStrategyZoomInMode(Enum):
+    SLOW = auto()
+    "Zoom in slowly when threshold (based on variance) is reached."
+
+    FAST = auto()
+    "Zoom in fast when threshold (based on variance) is reached."
+
+    SLOW_WHEN_ALIGNED = auto()
+    """Zoom in slowly when threshold (based on variance) is reached
+    and target is vertically and horizontally aligned.
+    """
+
+    FAST_WHEN_ALIGNED = auto()
+    """Zoom in fast when threshold (based on variance) is reached
+    and target is vertically and horizontally aligned.
+    """
+
+    GRADUALLY = auto()
+    """When threshold (based on variance) is reached,
+    zoom in faster the nearer the target is to the destination center, i.e.
+     
+    - zoom in fast when target is vertically and horizontally aligned,
+    - zoom in slowly when target is mostly vertically and horizontally aligned,
+      i.e. the distance of the target box to the edge of the live view is
+      at least 1.5 times its
+      
+      - width (distance to left/right edge) or
+      - height (distance to top/bottom edge)
+    - otherwise, do not zoom in
+    """
+
+    # TODO it might be beneficial to gradually zoom based on predicting the
+    #  size of the target after zooming, i.e. don't just use a magic constant
+    #  as mode GRADUALLY, but predict the size change based on zoom ratio or
+    #  DistanceEstimator
+
+    # TODO add mode similar to GRADUALLY, but with configurable ranges,
+    #  e.g. zoom in slow, when distance is at least times 2.0 times its
+    #  width/height, and fast, when distance is at least times 4.0 times its
+    #  width/height. Different factors might be used for width and height.
+
+
 class ConfigurableTrackingStrategy(SimpleTrackingStrategy):
     rotation_mode: TrackingStrategyRotationMode
+    zoom_in_mode: TrackingStrategyZoomInMode
 
-    def __init__(self, destination: Destination, image_size: ImageSize,
-                 max_allowed_speed: float = 1000):
+    def __init__(
+            self,
+            destination: Destination,
+            image_size: ImageSize,
+            max_allowed_speed: float = 1000):
         super().__init__(destination, image_size, max_allowed_speed)
         self.rotation_mode = TrackingStrategyRotationMode.QUADRATIC_TO_LINEAR
+        self.zoom_in_mode = TrackingStrategyZoomInMode.SLOW_WHEN_ALIGNED
+
+    def _is_xy_aligned(self, target: Box) -> bool:
+        return self._destination.box.contains_point(target.center)
+
+    def _is_in_slow_zoom_in_range(self, target: Box):
+        slow_zoom_in_range = Box.from_center_and_size(
+            self._destination.center,
+            self._image_size.width - 3 * target.width,
+            self._image_size.height - 3 * target.height)
+        return slow_zoom_in_range.intersect(target).area() > 0
+
+    def _update_zoom_speed(self, camera_speeds, target: Box):
+        if target.height < self._destination.min_size_box.height:
+            camera_speeds.zoom_speed = self._zoom_in(target)
+        elif target.height > self._destination.max_size_box.height:
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_FAST
+        else:
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+    def _zoom_in(self, target):
+        if self.zoom_in_mode is TrackingStrategyZoomInMode.SLOW:
+            return ZoomSpeed.ZOOM_IN_SLOW
+        if self.zoom_in_mode is TrackingStrategyZoomInMode.FAST:
+            return ZoomSpeed.ZOOM_IN_FAST
+        if self.zoom_in_mode is TrackingStrategyZoomInMode.SLOW_WHEN_ALIGNED:
+            if self._is_xy_aligned(target):
+                return ZoomSpeed.ZOOM_IN_SLOW
+            else:
+                return ZoomSpeed.ZOOM_STOPPED
+        if self.zoom_in_mode is TrackingStrategyZoomInMode.FAST_WHEN_ALIGNED:
+            if self._is_xy_aligned(target):
+                return ZoomSpeed.ZOOM_IN_FAST
+            else:
+                return ZoomSpeed.ZOOM_STOPPED
+        if self.zoom_in_mode is TrackingStrategyZoomInMode.GRADUALLY:
+            if self._is_xy_aligned(target):
+                return ZoomSpeed.ZOOM_IN_FAST
+            elif self._is_in_slow_zoom_in_range(target):
+                return ZoomSpeed.ZOOM_IN_SLOW
+            else:
+                return ZoomSpeed.ZOOM_STOPPED
+        logger.warning(f"unhandled zoom in mode {self.zoom_in_mode}")
+        return ZoomSpeed.ZOOM_STOPPED
 
     def _get_speed_by_distance(
             self, target: float, destination: float, size: int) -> float:
@@ -228,8 +318,14 @@ class SimpleAlignTrackingStrategy(SimpleTrackingStrategy,
 
 class ConfigurableAlignTrackingStrategy(ConfigurableTrackingStrategy,
                                         AlignTrackingStrategy):
+
+    def _is_zoom_aligned(self, target: Box) -> bool:
+        min_height = self._destination.min_size_box.height
+        max_height = self._destination.max_size_box.height
+        return min_height <= target.height <= max_height
+
     def is_aligned(self, target: Box) -> bool:
-        return self._destination.box.contains_point(target.center)
+        return self._is_xy_aligned(target) and self._is_zoom_aligned(target)
 
 
 class ConfigurableTrackingStrategyUi:
