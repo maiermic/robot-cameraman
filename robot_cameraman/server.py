@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import PIL.Image
-from flask import Flask, render_template, Response, request
+from flask import Flask, Response, request, redirect
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.tracking import ZoomSpeed, CameraSpeeds
@@ -31,7 +31,7 @@ app = Flask(__name__,
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return redirect('index.html')
 
 
 @app.route('/api/start_tracking')
