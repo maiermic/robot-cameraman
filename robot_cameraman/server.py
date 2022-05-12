@@ -24,7 +24,9 @@ server_image: ImageContainer
 manual_camera_speeds: CameraSpeeds
 cameraman_mode_manager: CameramanModeManager
 
-app = Flask(__name__)
+app = Flask(__name__,
+            static_url_path='',
+            static_folder=Path(__file__).parent / 'server_static_folder')
 
 
 @app.route('/')
