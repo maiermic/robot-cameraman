@@ -65,10 +65,45 @@
                 height: 4em;
             }
         }
+        .overlay-button {
+            position: absolute;
+            text-shadow: -2px 0 white, 0 2px white, 2px 0 white, 0 -2px white;
+            color: black;
+            font-size: 2em;
+            opacity: 50%;
+        }
+        #show-menu-button {
+            right: 1rem;
+            top: 1rem;
+        }
+        #fullscreen-overlay-button {
+            right: 1rem;
+            bottom: 1rem;
+        }
+        #show-controls-overlay-button {
+            left: 1rem;
+            bottom: 1rem;
+        }
+        .live-view-container {
+            position: relative;
+        }
     </style>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 </head>
 <body>
-    <img class="live-view" src="cam.mjpg" alt="Live View">
+    <div class="live-view-container">
+        <i id="show-menu-button"
+           class="overlay-button bi bi-gear-fill"
+           onpointerup="toggleMenu()"></i>
+        <i id="fullscreen-overlay-button"
+           class="overlay-button bi bi-fullscreen"
+           onpointerup="toggleFullScreen()"></i>
+        <i id="show-controls-overlay-button"
+           class="overlay-button bi bi-joystick"
+           onpointerup="showOverlayManualControls()"></i>
+        <img class="live-view" src="cam.mjpg" alt="Live View">
+    </div>
     <div class="buttons">
         <input id="fullscreen"
                class="button grid-item"
