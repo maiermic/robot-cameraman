@@ -27,6 +27,7 @@
 
         @media (orientation: landscape) {
             .live-view,
+            .menu,
             .buttons {
                 /* subtract height of #debugLog #angles */
                 height: calc(100vh - 1.2em);
@@ -42,6 +43,46 @@
             margin: 0 auto;
         }
 
+        .menu__body,
+        .buttons {
+            height: 100%;
+        }
+
+        .menu__body--list,
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2em;
+        }
+
+        .menu {
+            margin: 0.3em 0.5em 0 0.5em;
+            font-size: 2em;
+        }
+
+        .menu[data-menu-name="main"] .menu__back-button {
+            visibility: hidden;
+        }
+
+        .menu__header {
+            white-space: nowrap;
+            border-bottom: 0.2rem solid black;
+            padding-bottom: 0.2em;
+            margin-bottom: 0.2em;
+        }
+
+        .menu__header__title {
+            text-transform: capitalize;
+        }
+
+        .menu__button {
+            white-space: nowrap;
+            touch-action: manipulation;
+            cursor: pointer;
+            user-select: none;
+            text-decoration: none;
+        }
+
         .buttons {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -50,6 +91,7 @@
         }
 
         @media (orientation: portrait) {
+            .menu,
             .buttons {
                 /* show buttons below live view */
                 grid-row: 2;
@@ -71,6 +113,9 @@
             color: black;
             font-size: 2em;
             opacity: 50%;
+        }
+        .overlay-button--hidden {
+            display: none;
         }
         #show-menu-button {
             right: 1rem;
@@ -104,60 +149,202 @@
            onpointerup="showOverlayManualControls()"></i>
         <img class="live-view" src="cam.mjpg" alt="Live View">
     </div>
-    <div class="buttons">
-        <input id="fullscreen"
-               class="button grid-item"
-               type="button"
-               value="Fullscreen"
-               onpointerup="toggleFullScreen()">
-        <input id="up"
-               class="button grid-item"
-               type="button"
-               value="Up"
-               onpointerdown="disableOrientation(); fetch('api/tilt_up')"
-               onpointerup="fetch('api/stop')">
-        <input id="zoom_in"
-               class="button grid-item"
-               type="button"
-               value="+"
-               onpointerdown="disableOrientation(); fetch('api/zoom_in')"
-               onpointerup="fetch('api/stop')">
+    <div class="menu" data-menu-name="main-menu">
+        <div class="menu__header">
+            <i class="menu__back-button menu__button__icon bi bi-arrow-left-circle"
+               onpointerup="menu.navigateBack()"></i>
+            <span class="menu__header__title">Menu</span>
+        </div>
+        <div class="menu__body menu__body--list">
+            <!-- Content is added dynamically using templates (see below) -->
+        </div>
 
-        <input id="left"
-               class="button grid-item"
-               type="button"
-               value="Left"
-               onpointerdown="disableOrientation(); fetch('api/left')"
-               onpointerup="fetch('api/stop')">
-        <input id="startTrackingButton"
-               type="button"
-               class="button"
-               value="Track"
-               onpointerup="disableOrientation(); fetch('api/start_tracking')">
-        <input id="right"
-               class="button grid-item"
-               type="button"
-               value="Right"
-               onpointerdown="disableOrientation(); fetch('api/right')"
-               onpointerup="fetch('api/stop')">
+        <template data-menu-name="main">
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('manual controls')">
+                <i class="menu__button__icon bi bi-joystick"></i>
+                manual controls
+            </div>
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('overlay')">
+                <i class="menu__button__icon bi bi-layers"></i>
+                overlay
+            </div>
+        </template>
 
-        <input id="orientate"
-               class="button grid-item"
-               type="button"
-               value="Orientate"
-               onpointerdown="toggleOrientation()">
-        <input id="down"
-               class="button grid-item"
-               type="button"
-               value="Down"
-               onpointerdown="disableOrientation(); fetch('api/tilt_down')"
-               onpointerup="fetch('api/stop')">
-        <input id="zoom_out"
-               class="button grid-item"
-               type="button"
-               value="-"
-               onpointerdown="disableOrientation(); fetch('api/zoom_out')"
-               onpointerup="fetch('api/stop')">
+        <template data-menu-name="manual controls">
+            <div class="buttons">
+                <input id="fullscreen"
+                       class="button grid-item"
+                       type="button"
+                       value="Fullscreen"
+                       onpointerup="toggleFullScreen()">
+                <input id="up"
+                       class="button grid-item"
+                       type="button"
+                       value="Up"
+                       onpointerdown="disableOrientation(); fetch('api/tilt_up')"
+                       onpointerup="fetch('api/stop')">
+                <input id="zoom_in"
+                       class="button grid-item"
+                       type="button"
+                       value="+"
+                       onpointerdown="disableOrientation(); fetch('api/zoom_in')"
+                       onpointerup="fetch('api/stop')">
+
+                <input id="left"
+                       class="button grid-item"
+                       type="button"
+                       value="Left"
+                       onpointerdown="disableOrientation(); fetch('api/left')"
+                       onpointerup="fetch('api/stop')">
+                <input id="startTrackingButton"
+                       type="button"
+                       class="button"
+                       value="Track"
+                       onpointerup="disableOrientation(); fetch('api/start_tracking')">
+                <input id="right"
+                       class="button grid-item"
+                       type="button"
+                       value="Right"
+                       onpointerdown="disableOrientation(); fetch('api/right')"
+                       onpointerup="fetch('api/stop')">
+
+                <input id="orientate"
+                       class="button grid-item"
+                       type="button"
+                       value="Orientate"
+                       onpointerdown="toggleOrientation()">
+                <input id="down"
+                       class="button grid-item"
+                       type="button"
+                       value="Down"
+                       onpointerdown="disableOrientation(); fetch('api/tilt_down')"
+                       onpointerup="fetch('api/stop')">
+                <input id="zoom_out"
+                       class="button grid-item"
+                       type="button"
+                       value="-"
+                       onpointerdown="disableOrientation(); fetch('api/zoom_out')"
+                       onpointerup="fetch('api/stop')">
+            </div>
+        </template>
+
+        <template data-menu-name="overlay">
+            <div class="menu__button overlay-menu__toggle-overlay-button-visibility"
+                 onpointerup="window.robotCameraman.overlayMenu.toggleOverlayButtonVisibility()">
+                <i class="menu__button__icon bi bi-eye"></i>
+                <span class="menu__button__text"></span>
+            </div>
+            <script>
+              window.robotCameraman.overlayMenu.updateMenu()
+            </script>
+        </template>
+
+        <script>
+          class Menu {
+            /**
+             * @param menuElement {HTMLElement}
+             */
+            constructor(menuElement) {
+              this._menuStack = [];
+              this._menuElement = menuElement
+              this._menuHeaderTitleElement =
+                menuElement.querySelector('.menu__header .menu__header__title')
+              this.menuBodyElement =
+                menuElement.querySelector('.menu__body')
+            }
+
+            navigateBack() {
+              const menuName = this._menuStack.pop();
+              if (menuName) {
+                this._navigateToMenu(menuName)
+              } else {
+                this.navigateToMainMenu()
+              }
+            }
+
+            navigateToSubMenu(menuName) {
+              this._menuStack.push(this._getCurrentMenuName())
+              this._navigateToMenu(menuName)
+            }
+
+            _getCurrentMenuName() {
+              return this._menuElement.getAttribute('data-menu-name');
+            }
+
+            _navigateToMenu(menuName) {
+              const menuTemplate = this._findMenuTemplate(menuName)
+              this._menuElement.setAttribute('data-menu-name', menuName)
+              this._menuHeaderTitleElement.textContent = menuName
+              this.menuBodyElement.replaceChildren(
+                menuTemplate.content.cloneNode(true))
+            }
+
+            /**
+             * @param menuName {string}
+             * @return {HTMLTemplateElement}
+             * @private
+             */
+            _findMenuTemplate(menuName) {
+              const templateElement =
+                this._menuElement
+                  .querySelector(`template[data-menu-name="${menuName}"]`);
+              if (!templateElement) {
+                throw Error(`Unknown menu template: ${menuName}`)
+              }
+              return templateElement;
+            }
+
+            navigateToMainMenu() {
+              this._navigateToMenu('main')
+            }
+          }
+
+          const menu = new Menu(document.querySelector('.menu'))
+          document.addEventListener('DOMContentLoaded', (_event) => {
+            menu.navigateToMainMenu()
+          });
+
+          class OverlayMenu {
+            constructor(areOverlayButtonsVisible) {
+              this._areOverlayButtonsVisible = areOverlayButtonsVisible
+            }
+
+            _getButtonTextElement() {
+              return menu.menuBodyElement.querySelector(
+                '.overlay-menu__toggle-overlay-button-visibility .menu__button__text');
+            }
+
+            toggleOverlayButtonVisibility() {
+              this._areOverlayButtonsVisible = !this._areOverlayButtonsVisible
+              this._updateToggleOverlayButtonText();
+
+              const overlayButtons =
+                document.querySelectorAll('.live-view-container .overlay-button');
+              const hiddenClass = 'overlay-button--hidden';
+              for (const overlayButton of overlayButtons) {
+                if (this._areOverlayButtonsVisible) {
+                  overlayButton.classList.remove(hiddenClass)
+                } else {
+                  overlayButton.classList.add(hiddenClass)
+                }
+              }
+            }
+
+            _updateToggleOverlayButtonText() {
+              this._getButtonTextElement().textContent =
+                this._areOverlayButtonsVisible ? 'hide' : 'show'
+            }
+
+            updateMenu() {
+              this._updateToggleOverlayButtonText();
+            }
+          }
+
+          const overlayMenu = new OverlayMenu(true)
+          Object.assign(window.robotCameraman = {}, {menu, overlayMenu})
+        </script>
     </div>
     <div id="debugLog">
         <p id="angles"></p>
