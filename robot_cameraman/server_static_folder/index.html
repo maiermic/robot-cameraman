@@ -26,9 +26,11 @@
         }
 
         @media (orientation: landscape) {
-            .live-view,
-            .menu,
-            .buttons {
+            body {
+                /* subtract height of #debugLog #angles */
+                grid-template-rows: calc(100vh - 1.2em) 1.2em;
+            }
+            .live-view {
                 /* subtract height of #debugLog #angles */
                 height: calc(100vh - 1.2em);
                 /* TODO should depend on live view height */
