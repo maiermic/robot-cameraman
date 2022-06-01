@@ -17,11 +17,12 @@ from robot_cameraman.annotation import ImageAnnotator, draw_destination
 from robot_cameraman.box import Box
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
+from robot_cameraman.detection_engine.color import ColorDetectionEngine
 from robot_cameraman.image_detection import DetectionCandidate, \
     DetectionEngine
 from robot_cameraman.live_view import LiveView, ImageSize
 from robot_cameraman.object_tracking import ObjectTracker
-from robot_cameraman.server import ImageContainer
+from robot_cameraman.server import ImageContainer, ServerImageSource
 from robot_cameraman.tracking import Destination, CameraSpeeds, ZoomSpeed
 from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
@@ -133,7 +134,7 @@ class Cameraman:
                 except OSError as e:
                     logger.error(e)
 
-                server_image.image = image
+                self.update_server_image(server_image, image)
                 # noinspection PyTypeChecker
                 cv2_image = cv2.cvtColor(numpy.asarray(image),
                                          cv2.COLOR_RGB2BGR)
@@ -158,6 +159,13 @@ class Cameraman:
         logger.debug("Approx FPS: :" + str(fps.fps()))
 
         cv2.destroyAllWindows()
+
+    def update_server_image(self, server_image, image):
+        if server_image.source is ServerImageSource.LIVE_VIEW:
+            server_image.image = image
+        elif (server_image.source is ServerImageSource.COLOR_MASK
+              and isinstance(self.detection_engine, ColorDetectionEngine)):
+            server_image.image = PIL.Image.fromarray(self.detection_engine.mask)
 
     def handle_keyboard_input(self, to_exit):
         # Display the frame for 5ms, and close the window so that the

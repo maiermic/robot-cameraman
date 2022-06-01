@@ -1,3 +1,4 @@
+import enum
 import threading
 from dataclasses import dataclass
 from io import BytesIO
@@ -6,22 +7,30 @@ from pathlib import Path
 from typing import Optional
 
 import PIL.Image
-from flask import Flask, Response, request, redirect
+from flask import Flask, Response, request, redirect, jsonify
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.tracking import ZoomSpeed, CameraSpeeds
+from robot_cameraman.updatable_configuration import UpdatableConfiguration
 
 logger: Logger = getLogger(__name__)
+
+
+class ServerImageSource(enum.Enum):
+    LIVE_VIEW = enum.auto()
+    COLOR_MASK = enum.auto()
 
 
 @dataclass
 class ImageContainer:
     image: Optional[PIL.Image.Image]
+    source: ServerImageSource = ServerImageSource.LIVE_VIEW
 
 
 to_exit: threading.Event
 server_image: ImageContainer
 manual_camera_speeds: CameraSpeeds
+updatable_configuration: UpdatableConfiguration
 cameraman_mode_manager: CameramanModeManager
 
 app = Flask(__name__,
@@ -117,6 +126,40 @@ def angle():
     return '', 204
 
 
+@app.route('/api/configuration', methods=['GET'])
+def get_configuration():
+    global updatable_configuration
+    return jsonify(updatable_configuration.configuration)
+
+
+@app.route('/api/configuration', methods=['PUT'])
+def update_configuration():
+    global updatable_configuration
+    if 'tracking' in request.json:
+        tracking = request.json['tracking']
+        if 'color' in tracking:
+            color = tracking['color']
+            if 'min_hsv' in color:
+                updatable_configuration.update_tracking_color(
+                    min_hsv=color['min_hsv'])
+            if 'max_hsv' in color:
+                updatable_configuration.update_tracking_color(
+                    max_hsv=color['max_hsv'])
+    return '', 200
+
+
+@app.route('/api/live-view/source', methods=['PUT'])
+def update_live_view_source():
+    global server_image
+    if request.json == 'LIVE_VIEW':
+        server_image.source = ServerImageSource.LIVE_VIEW
+    elif request.json == 'COLOR_MASK':
+        server_image.source = ServerImageSource.COLOR_MASK
+    else:
+        return f"unknown source {request.json}", 400
+    return '', 200
+
+
 def stream_frames():
     """Read live view frames regularly."""
     # TODO synchronize with source (do not send the same image twice)
@@ -140,13 +183,16 @@ def run_server(_to_exit: threading.Event,
                _cameraman_mode_manager: CameramanModeManager,
                _server_image: ImageContainer,
                _manual_camera_speeds: CameraSpeeds,
+               _updatable_configuration: UpdatableConfiguration,
                ssl_certificate: Path,
                ssl_key: Path):
     # TODO use dependency injection instead of global variables
-    global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds
+    global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds,\
+        updatable_configuration
     to_exit = _to_exit
     cameraman_mode_manager = _cameraman_mode_manager
     server_image = _server_image
     manual_camera_speeds = _manual_camera_speeds
+    updatable_configuration = _updatable_configuration
     app.run(host='0.0.0.0', port=9000, threaded=True,
             ssl_context=(ssl_certificate, ssl_key))

@@ -35,6 +35,7 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
 from robot_cameraman.ui import ShowSpeedsInStatusBar
+from robot_cameraman.updatable_configuration import UpdatableConfiguration
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -339,5 +340,8 @@ run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
            _server_image=server_image,
            _manual_camera_speeds=manual_camera_speeds,
+           _updatable_configuration=UpdatableConfiguration(
+               detection_engine=detection_engine,
+               configuration_file=args.config),
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)
