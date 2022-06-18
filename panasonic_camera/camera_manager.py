@@ -47,6 +47,9 @@ class PanasonicCameraManager(IntervalThread):
             logger.debug(
                 'Connect to {}: {}'.format(device.friendly_name, hostname))
             self.camera = PanasonicCamera(hostname)
+            # Some cameras like Panasonic DC-FZ80 require registering your
+            # device with the camera first
+            self.camera.register_with_camera()
             # Some cameras like the Panasonic HC-V380 require to get info
             # capability before starting the camera stream
             self.camera.get_info_capability()
