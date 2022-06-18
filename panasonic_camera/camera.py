@@ -93,9 +93,6 @@ class PanasonicCamera:
     def _request_xml(self, *args, **kwargs) -> ET.Element:
         kwargs.setdefault('timeout', 2)
         response = requests.get(self.cam_cgi_url, *args, **kwargs)
-        # If this request is trying to register with the camera,
-        # expect a simple text response, not XML. We'll put it
-        # in an XML tag anyway just to keep things tidy.
         camrply: ET.Element = ET.fromstring(response.text)
         self._validate_camrply(camrply)
         return camrply
@@ -166,7 +163,7 @@ class PanasonicCamera:
             states=find_all_text(camrply, 'getstatelist/getstate'),
             specifications=find_all_text(camrply, 'camspeclist/camspec'))
 
-    def register_with_camera(self, device_name='robot-cameraman'):
+    def register_with_camera(self, identify_as: str):
         # Cameras like the DC-FZ80 keep a list of devices that remote
         # control them. This request adds the current device to the list with
         # a name specified by device_name.
@@ -175,7 +172,7 @@ class PanasonicCamera:
                 'mode': 'accctrl',
                 'type': 'req_acc',
                 'value': '0',
-                'value2': device_name
+                'value2': identify_as
             })
 
     def start_stream(self, port=49199):
