@@ -1,6 +1,8 @@
 # TODO rename parameters to left and right
 def get_delta_angle_clockwise(
         current_angle: float, target_angle: float) -> float:
+    if current_angle <= target_angle:
+        return target_angle - current_angle
     return abs(360 - current_angle) % 360 + target_angle
 
 

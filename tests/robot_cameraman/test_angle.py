@@ -9,6 +9,8 @@ def test_get_delta_angle_clockwise():
         current_angle=6, target_angle=0)
     assert 0 == get_delta_angle_clockwise(
         current_angle=0, target_angle=0)
+    assert 5 == get_delta_angle_clockwise(
+        current_angle=30, target_angle=35)
 
 
 def test_get_delta_angle_counter_clockwise():
@@ -18,3 +20,5 @@ def test_get_delta_angle_counter_clockwise():
         current_angle=6, target_angle=0)
     assert 0 == get_delta_angle_counter_clockwise(
         current_angle=0, target_angle=0)
+    assert 5 == get_delta_angle_counter_clockwise(
+        current_angle=35, target_angle=30)
