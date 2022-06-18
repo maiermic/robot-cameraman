@@ -167,8 +167,12 @@ class PanasonicCamera:
         # control them. This request adds the current device to the list with
         # a name specified by device_name.
         return self._request(
-            params={'mode': 'accctrl', 'type': 'req_acc', 'value': '0', 'value2': device_name}
-        )
+            params={
+                'mode': 'accctrl',
+                'type': 'req_acc',
+                'value': '0',
+                'value2': device_name
+            })
 
     def start_stream(self, port=49199):
         return self._request(
