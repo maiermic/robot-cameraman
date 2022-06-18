@@ -232,10 +232,10 @@ class PointOfMotionTargetSpeedCalculator:
             travel_time: float) -> float:
         if clockwise:
             delta_angle = get_delta_angle_clockwise(
-                current_angle=current_angle, target_angle=target_angle)
+                left=current_angle, right=target_angle)
         else:
             delta_angle = get_delta_angle_counter_clockwise(
-                current_angle=current_angle, target_angle=target_angle)
+                left=current_angle, right=target_angle)
         return delta_angle / travel_time
 
 class PathOfMotionCameraController(ABC):
