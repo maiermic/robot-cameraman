@@ -681,22 +681,6 @@ class TestPointOfMotionTargetSpeedCalculator:
         assert 2 == calculator.get_degree_per_second(
             current_angle=6, target_angle=0, clockwise=False, travel_time=3)
 
-    def test_get_delta_angle_clockwise(self, calculator):
-        assert 6 == calculator.get_delta_angle_clockwise(
-            current_angle=0, target_angle=6)
-        assert 354 == calculator.get_delta_angle_clockwise(
-            current_angle=6, target_angle=0)
-        assert 0 == calculator.get_delta_angle_clockwise(
-            current_angle=0, target_angle=0)
-
-    def test_get_delta_angle_counter_clockwise(self, calculator):
-        assert 354 == calculator.get_delta_angle_counter_clockwise(
-            current_angle=0, target_angle=6)
-        assert 6 == calculator.get_delta_angle_counter_clockwise(
-            current_angle=6, target_angle=0)
-        assert 0 == calculator.get_delta_angle_counter_clockwise(
-            current_angle=0, target_angle=0)
-
     def test_calculate_returns_max_speeds_when_time_is_zero(
             self, calculator, max_pan_speed, max_tilt_speed):
         target_speeds = calculator.calculate(
