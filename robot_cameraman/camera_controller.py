@@ -12,6 +12,8 @@ import serial
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
+from robot_cameraman.angle import get_delta_angle_clockwise, \
+    get_delta_angle_counter_clockwise
 from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
@@ -229,26 +231,12 @@ class PointOfMotionTargetSpeedCalculator:
             clockwise: bool,
             travel_time: float) -> float:
         if clockwise:
-            delta_angle = cls.get_delta_angle_clockwise(
+            delta_angle = get_delta_angle_clockwise(
                 current_angle=current_angle, target_angle=target_angle)
         else:
-            delta_angle = cls.get_delta_angle_counter_clockwise(
+            delta_angle = get_delta_angle_counter_clockwise(
                 current_angle=current_angle, target_angle=target_angle)
         return delta_angle / travel_time
-
-    @classmethod
-    def get_delta_angle_clockwise(
-            cls, current_angle: float, target_angle: float) -> float:
-        return abs(360 - current_angle) % 360 + target_angle
-
-    @classmethod
-    def get_delta_angle_counter_clockwise(
-            cls, current_angle: float, target_angle: float) -> float:
-        if current_angle >= target_angle:
-            return current_angle - target_angle
-        else:
-            return abs(360 - target_angle) + current_angle
-
 
 class PathOfMotionCameraController(ABC):
     def __init__(self):
