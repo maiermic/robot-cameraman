@@ -145,7 +145,7 @@ class PanasonicCamera:
         self._camcmd('wide-fast')
 
     def _get_info(self, info_type: str) -> ET.Element:
-        return self._request(params={'mode': 'getinfo', 'type': info_type})
+        return self._request_xml(params={'mode': 'getinfo', 'type': info_type})
 
     def get_info_capability(self) -> Capability:
         camrply: ET.Element = self._get_info('capability')
@@ -170,7 +170,7 @@ class PanasonicCamera:
         # Cameras like the DC-FZ80 keep a list of devices that remote
         # control them. This request adds the current device to the list with
         # a name specified by device_name.
-        return self._request(
+        return self._request_csv(
             params={
                 'mode': 'accctrl',
                 'type': 'req_acc',
@@ -179,11 +179,11 @@ class PanasonicCamera:
             })
 
     def start_stream(self, port=49199):
-        return self._request(
+        return self._request_xml(
             params={'mode': 'startstream', 'value': port})
 
     def stop_stream(self):
-        return self._request(
+        return self._request_xml(
             params={'mode': 'stopstream'})
 
 
