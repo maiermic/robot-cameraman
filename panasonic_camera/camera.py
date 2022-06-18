@@ -90,20 +90,24 @@ class PanasonicCamera:
             raise CriticalError(result)
         assert result == 'ok', 'unknown result "{}"'.format(result)
 
-    def _request(self, *args, **kwargs) -> ET.Element:
+    def _request_xml(self, *args, **kwargs) -> ET.Element:
         kwargs.setdefault('timeout', 2)
         response = requests.get(self.cam_cgi_url, *args, **kwargs)
         # If this request is trying to register with the camera,
         # expect a simple text response, not XML. We'll put it
         # in an XML tag anyway just to keep things tidy.
-        if kwargs['params']['mode'] == 'accctrl' and response.text.startswith('ok'):
-            return ET.Element('camrply', {'reply': response.text})
         camrply: ET.Element = ET.fromstring(response.text)
         self._validate_camrply(camrply)
         return camrply
 
+    def _request_csv(self, *args, **kwargs) -> List[str]:
+        kwargs.setdefault('timeout', 2)
+        response = requests.get(self.cam_cgi_url, *args, **kwargs)
+        camrply: List[str] = response.text.split(',')
+        return camrply
+
     def get_state(self) -> State:
-        camrply: ET.Element = self._request(params={'mode': 'getstate'})
+        camrply: ET.Element = self._request_xml(params={'mode': 'getstate'})
         state = camrply.find('state')
         return State(
             batt=find_text(state, 'batt'),
@@ -114,7 +118,7 @@ class PanasonicCamera:
             version=find_text(state, 'version'))
 
     def _camcmd(self, value: str) -> None:
-        self._request(params={'mode': 'camcmd', 'value': value})
+        self._request_xml(params={'mode': 'camcmd', 'value': value})
 
     def recmode(self) -> None:
         self._camcmd('recmode')
