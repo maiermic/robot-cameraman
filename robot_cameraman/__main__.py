@@ -60,7 +60,7 @@ class RobotCameramanArguments(Protocol):
     liveView: str
     ip: str
     port: int
-    identifyAs: str
+    identifyToPanasonicCameraAs: str
     targetLabelId: int
     output: Path
     font: Path
@@ -123,7 +123,7 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--port', type=int,
                         default=49199,
                         help="UDP Socket port of Panasonic live view.")
-    parser.add_argument('--identifyAs', type=str,
+    parser.add_argument('--identifyToPanasonicCameraAs', type=str,
                         help="When connecting to the camera for remote control,"
                              " identify ourselves with this name. Required on"
                              "certain cameras including DC-FZ80."
@@ -238,7 +238,8 @@ labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
-camera_manager = PanasonicCameraManager(identify_as=args.identifyAs)
+camera_manager = PanasonicCameraManager(
+    identify_as=args.identifyToPanasonicCameraAs)
 max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
 configurable_tracking_strategy = \
     ConfigurableTrackingStrategy(

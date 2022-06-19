@@ -93,7 +93,7 @@ class PanasonicCameraManager(IntervalThread):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--identifyAs', type=str,
+        '--identifyToCameraAs', type=str,
         help="When connecting to the camera for remote control,"
              " identify ourselves with this name. Required on"
              "certain cameras including DC-FZ80."
@@ -103,7 +103,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    daemon = PanasonicCameraManager(identify_as=args.identifyAs)
+    daemon = PanasonicCameraManager(identify_as=args.identifyToCameraAs)
     daemon.start()
 
     # https://www.g-loaded.eu/2016/11/24/how-to-terminate-running-python-threads-using-signals/
