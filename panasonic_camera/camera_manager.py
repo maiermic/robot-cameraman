@@ -55,8 +55,7 @@ class PanasonicCameraManager(IntervalThread):
             # device (in this case, us) with the camera first.
             if self._identify_as:
                 logger.debug(f'Attempting to identify as {self._identify_as}')
-                self.camera.register_with_camera(
-                    identify_as=self._identify_as)
+                self.camera.register_with_camera(identify_as=self._identify_as)
             # Some cameras like the Panasonic HC-V380 require to get info
             # capability before starting the camera stream
             self.camera.get_info_capability()
