@@ -2,13 +2,11 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import List, Dict, Iterator, Optional
 from urllib.parse import urlparse
-import logging
 
 import requests
 
 from panasonic_camera.discover import discover_panasonic_camera_devices
 
-logger: logging.Logger = logging.getLogger(__name__)
 
 class RejectError(Exception):
     pass
@@ -23,9 +21,13 @@ class CriticalError(Exception):
 
 
 class UnsuitableApp(Exception):
-    logger.error("Camera replied 'unsuitable_app'. If this camera is DC-FZ80 or"
-                 "similar, you probably need to specify the identifyAs "
-                 "parameter so that an accctl request will be sent.")
+    def __init__(self, *args) -> None:
+        self.message = ("Camera replied 'unsuitable_app'. If this camera is"
+                        " DC-FZ80 or similar, you probably need to specify the "
+                        "identifyAs parameter so that an accctl request will be"
+                        " sent.")
+        super().__init__(self.message)
+
 
 @dataclass
 class State:
