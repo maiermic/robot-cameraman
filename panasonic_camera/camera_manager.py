@@ -1,3 +1,4 @@
+import argparse
 import logging
 import signal
 from logging import Logger
@@ -18,10 +19,12 @@ logger: Logger = logging.getLogger(__name__)
 
 class PanasonicCameraManager(IntervalThread):
     camera: Optional[PanasonicCamera]
+    _identify_as: Optional[str]
 
     def __init__(self, interval=10, *_args, **_kwargs) -> None:
         super().__init__(interval, self._ensure_connection, *_args, **_kwargs)
         self.camera = None
+        self._identify_as = _kwargs.get('identify_as')
         self.is_stream_started = False
 
     def _ensure_connection(self):
@@ -47,6 +50,12 @@ class PanasonicCameraManager(IntervalThread):
             logger.debug(
                 'Connect to {}: {}'.format(device.friendly_name, hostname))
             self.camera = PanasonicCamera(hostname)
+            # If we have a _identify_as property, assume this is a camera like
+            # Panasonic DC-FZ80 which requires registering the remote control
+            # device (in this case, us) with the camera first.
+            if self._identify_as:
+                logger.debug(f'Attempting to identify as {self._identify_as}')
+                self.camera.register_with_camera(identify_as=self._identify_as)
             # Some cameras like the Panasonic HC-V380 require to get info
             # capability before starting the camera stream
             self.camera.get_info_capability()
@@ -81,11 +90,19 @@ class PanasonicCameraManager(IntervalThread):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--identifyToCameraAs', type=str,
+        help="When connecting to the camera for remote control,"
+             " identify ourselves with this name. Required on"
+             "certain cameras including DC-FZ80."
+    )
+    args = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG)
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    daemon = PanasonicCameraManager()
+    daemon = PanasonicCameraManager(identify_as=args.identifyToCameraAs)
     daemon.start()
 
     # https://www.g-loaded.eu/2016/11/24/how-to-terminate-running-python-threads-using-signals/
