@@ -1,6 +1,7 @@
 import logging
 from logging import Logger
 from typing import Optional
+import math
 
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController
@@ -23,6 +24,7 @@ class CameramanModeManager:
         self._tracking_strategy = tracking_strategy
         self._search_target_strategy = search_target_strategy
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
+        self._angle_cw_to_north = 0.0
         self.mode_name = 'manual'
         self.is_zoom_enabled = True
 
@@ -98,3 +100,18 @@ class CameramanModeManager:
         from simplebgc.serial_example import control_gimbal
         control_gimbal(yaw_mode=2, yaw_speed=100, yaw_angle=pan_angle,
                        pitch_mode=2, pitch_speed=100, pitch_angle=tilt_angle)
+
+    def relative_coordinates(
+            self, northing: float, easting: float, elevation: float) -> None:
+        self.mode_name = 'angle'
+        from simplebgc.serial_example import control_gimbal
+        yaw_angle = math.degrees(math.atan2(northing, easting))
+        if yaw_angle < 0:
+            yaw_angle += 360
+        yaw_angle -= self._angle_cw_to_north
+        if yaw_angle < 0:
+            yaw_angle += 360
+        distance = math.sqrt(northing ** 2 + easting ** 2 + elevation ** 2)
+        pitch_angle = math.arcsin(elevation / distance)
+        control_gimbal(yaw_mode=2, yaw_speed=100, yaw_angle=yaw_angle,
+                       pitch_mode=2, pitch_speed=100, pitch_angle=pitch_angle)
