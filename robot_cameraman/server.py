@@ -125,6 +125,35 @@ def angle():
     cameraman_mode_manager.angle(pan_angle=pan_angle, tilt_angle=tilt_angle)
     return '', 204
 
+@app.route('/api/relcoords')
+def relative_coordinates():
+    """
+    API route causing the gimbal to point at coordinates specified in meters.
+    """
+    if 'n' not in request.args:
+        return "Missing query parameter 'n'", 400
+    if 'e' not in request.args:
+        return "Missing query parameter 'e'", 400
+    if 'el' not in request.args:
+        return "Missing query parameter 'el'", 400
+    try:
+        northing = float(request.args.get('n'))
+    except ValueError:
+        return "Query parameter 'n' should be a number", 400
+    try:
+        easting = float(request.args.get('e'))
+    except ValueError:
+        return "Query parameter 'e' should be a number", 400
+    try:
+        elevation = float(request.args.get('el'))
+    except ValueError:
+        return "Query parameter 'el' should be a number", 400
+    logger.debug(f'northing={northing} easting={easting} elevation={elevation}')
+    cameraman_mode_manager.relative_coordinates(
+        northing=northing, easting=easting, elevation=elevation
+    )
+    return '', 204
+
 
 @app.route('/api/configuration', methods=['GET'])
 def get_configuration():
