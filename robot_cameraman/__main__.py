@@ -21,7 +21,7 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
     ColorDetectionEngineUI
-from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
+from robot_cameraman.gimbal import DummyGimbal, create_simple_bgc_gimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
@@ -249,7 +249,10 @@ tracking_strategy = StopIfLostTrackingStrategy(
     max_speed_and_acceleration_updater.add(
         configurable_tracking_strategy),
     slow_down_time=1)
-gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
+if args.gimbal == 'SimpleBGC':
+    gimbal = create_simple_bgc_gimbal()
+else:
+    gimbal = DummyGimbal()
 rotate_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.rotationalAccelerationPerSecond))
 tilt_speed_manager = max_speed_and_acceleration_updater.add(

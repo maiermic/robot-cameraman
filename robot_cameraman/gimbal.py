@@ -1,4 +1,6 @@
 from abc import abstractmethod
+
+from serial import Serial
 from typing_extensions import Protocol
 
 import simplebgc.gimbal
@@ -48,10 +50,6 @@ class Gimbal(Protocol):
     @abstractmethod
     def get_angles(self) -> GetAnglesInCmd:
         raise NotImplementedError
-
-
-class SimpleBgcGimbal(simplebgc.gimbal.Gimbal, Gimbal):
-    pass
 
 
 class TiltInvertedGimbal(Gimbal):
@@ -117,3 +115,9 @@ class DummyGimbal(Gimbal):
             imu_angle_3=0,
             target_angle_3=0,
             target_speed_3=0)
+
+
+def create_simple_bgc_gimbal(connection: Serial = None) -> Gimbal:
+    # Tilt direction of simplebgc.gimbal.Gimbal has to be inverted,
+    # since it uses the opposite direction than robot_cameraman.gimbal.Gimbal
+    return TiltInvertedGimbal(simplebgc.gimbal.Gimbal(connection))
