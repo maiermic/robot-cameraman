@@ -21,6 +21,24 @@ class Gimbal(Protocol):
             roll_mode: ControlMode = ControlMode.speed,
             roll_speed: float = 0,
             roll_angle: float = 0) -> None:
+        # TODO add missing parameter documentation
+        """Control the gimbal.
+
+        :param yaw_mode:
+        :param yaw_speed: Speed in degree per second. Positive values mean
+         clockwise, negative values stand for counter clockwise moving
+         direction from the camera's point of view.
+        :param yaw_angle:
+        :param pitch_mode:
+        :param pitch_speed: Speed in degree per second. Positive values mean
+         upwards, negative values stand for downwards moving direction from the
+         camera's point of view.
+        :param pitch_angle:
+        :param roll_mode:
+        :param roll_speed:
+        :param roll_angle:
+        :return:
+        """
         raise NotImplementedError
 
     @abstractmethod
