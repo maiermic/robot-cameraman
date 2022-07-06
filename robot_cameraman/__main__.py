@@ -281,7 +281,8 @@ cameraman_mode_manager = CameramanModeManager(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
     search_target_strategy=max_speed_and_acceleration_updater.add(
-        RotateSearchTargetStrategy(args.rotatingSearchSpeed)))
+        RotateSearchTargetStrategy(args.rotatingSearchSpeed)),
+    gimbal=gimbal)
 
 # noinspection PyListCreation
 user_interfaces = []

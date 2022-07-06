@@ -4,8 +4,10 @@ from typing import Optional
 
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController
+from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
     AlignTrackingStrategy, SearchTargetStrategy, ZoomSpeed
+from simplebgc.gimbal import ControlMode
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -17,11 +19,13 @@ class CameramanModeManager:
             camera_controller: CameraController,
             align_tracking_strategy: AlignTrackingStrategy,
             tracking_strategy: TrackingStrategy,
-            search_target_strategy: SearchTargetStrategy) -> None:
+            search_target_strategy: SearchTargetStrategy,
+            gimbal: Gimbal) -> None:
         self._camera_controller = camera_controller
         self._align_tracking_strategy = align_tracking_strategy
         self._tracking_strategy = tracking_strategy
         self._search_target_strategy = search_target_strategy
+        self._gimbal = gimbal
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self.mode_name = 'manual'
         self.is_zoom_enabled = True
@@ -95,6 +99,7 @@ class CameramanModeManager:
 
     def angle(self, pan_angle: int, tilt_angle: int) -> None:
         self.mode_name = 'angle'
-        from simplebgc.serial_example import control_gimbal
-        control_gimbal(yaw_mode=2, yaw_speed=100, yaw_angle=pan_angle,
-                       pitch_mode=2, pitch_speed=100, pitch_angle=tilt_angle)
+        self._gimbal.control(
+            yaw_mode=ControlMode.angle, yaw_speed=100, yaw_angle=pan_angle,
+            pitch_mode=ControlMode.angle, pitch_speed=100,
+            pitch_angle=tilt_angle)
