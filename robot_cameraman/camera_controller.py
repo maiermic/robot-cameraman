@@ -14,9 +14,10 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.angle import get_delta_angle_clockwise, \
     get_delta_angle_counter_clockwise
+from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
 from simplebgc.commands import GetAnglesInCmd
-from simplebgc.gimbal import Gimbal, ControlMode
+from simplebgc.gimbal import ControlMode
 from simplebgc.units import to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
@@ -541,11 +542,12 @@ def is_angle_between(
 
 def _main():
     from time import sleep
+    from robot_cameraman.gimbal import create_simple_bgc_gimbal
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s %(name)-50s %(levelname)-8s %(message)s')
     controller = BaseCamPathOfMotionCameraController(
-        Gimbal(),
+        create_simple_bgc_gimbal(),
         rotate_speed_manager=SpeedManager(60),
         tilt_speed_manager=SpeedManager(12),
         target_speed_calculator=PointOfMotionTargetSpeedCalculator())
