@@ -55,10 +55,26 @@ class ZoomSpeed(IntEnum):
 @dataclass
 class CameraSpeeds:
     pan_speed: float = 0
-    tilt_speed: float = 0
-    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
+    """Speed in degree per second. Positive values mean clockwise,
+    negative values stand for counter clockwise moving direction from the
+    camera's point of view.
+    """
 
-    def reset(self):
+    tilt_speed: float = 0
+    """Speed in degree per second. Positive values mean upwards,
+    negative values stand for downwards moving direction from the camera's
+    point of view.
+    """
+
+    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
+    """Abstract speed unit, i.e. the actual speed depends on camera model.
+    Positive values mean camera should zoom in (larger values mean that camera
+    should zoom faster), negative values stand for zooming out.
+    """
+
+    def reset(self) -> None:
+        """Stop camera movements.
+        """
         self.pan_speed = 0
         self.tilt_speed = 0
         self.zoom_speed = ZoomSpeed.ZOOM_STOPPED
