@@ -116,8 +116,15 @@ class SimpleTrackingStrategy(TrackingStrategy):
         dx, dy = self._destination.center
         camera_speeds.pan_speed = \
             self._get_speed_by_distance(tx, dx, self._image_size.width)
+        # Tilt speed has to be inverted, since the origin of the coordinate
+        # system of the image is in the top left corner. For example, if the
+        # target is at the top of the image, its y-coordinate is 0.
+        # The y-coordinate of the destination is positive.
+        # _get_speed_by_distance returns a negative speed,
+        # but CameraSpeeds expects a positive tilt speed to move the camera
+        # upwards (to the target). Therefore, the returned speed is inverted.
         camera_speeds.tilt_speed = \
-            self._get_speed_by_distance(ty, dy, self._image_size.height)
+            -self._get_speed_by_distance(ty, dy, self._image_size.height)
         self._update_zoom_speed(camera_speeds, target)
 
     def _update_zoom_speed(self, camera_speeds, target):
