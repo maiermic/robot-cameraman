@@ -55,10 +55,26 @@ class ZoomSpeed(IntEnum):
 @dataclass
 class CameraSpeeds:
     pan_speed: float = 0
-    tilt_speed: float = 0
-    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
+    """Speed in degree per second. Positive values mean clockwise,
+    negative values stand for counter clockwise moving direction from the
+    camera's point of view.
+    """
 
-    def reset(self):
+    tilt_speed: float = 0
+    """Speed in degree per second. Positive values mean upwards,
+    negative values stand for downwards moving direction from the camera's
+    point of view.
+    """
+
+    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
+    """Abstract speed unit, i.e. the actual speed depends on camera model.
+    Positive values mean camera should zoom in (larger values mean that camera
+    should zoom faster), negative values stand for zooming out.
+    """
+
+    def reset(self) -> None:
+        """Stop camera movements.
+        """
         self.pan_speed = 0
         self.tilt_speed = 0
         self.zoom_speed = ZoomSpeed.ZOOM_STOPPED
@@ -100,8 +116,15 @@ class SimpleTrackingStrategy(TrackingStrategy):
         dx, dy = self._destination.center
         camera_speeds.pan_speed = \
             self._get_speed_by_distance(tx, dx, self._image_size.width)
+        # Tilt speed has to be inverted, since the origin of the coordinate
+        # system of the image is in the top left corner. For example, if the
+        # target is at the top of the image, its y-coordinate is 0.
+        # The y-coordinate of the destination is positive.
+        # _get_speed_by_distance returns a negative speed,
+        # but CameraSpeeds expects a positive tilt speed to move the camera
+        # upwards (to the target). Therefore, the returned speed is inverted.
         camera_speeds.tilt_speed = \
-            self._get_speed_by_distance(ty, dy, self._image_size.height)
+            -self._get_speed_by_distance(ty, dy, self._image_size.height)
         self._update_zoom_speed(camera_speeds, target)
 
     def _update_zoom_speed(self, camera_speeds, target):

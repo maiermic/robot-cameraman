@@ -70,7 +70,7 @@ def manually_rotate_right():
 def manually_tilt_up():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually tilt up')
-    cameraman_mode_manager.manual_tilt(-manual_camera_speeds.tilt_speed)
+    cameraman_mode_manager.manual_tilt(manual_camera_speeds.tilt_speed)
     return '', 204
 
 
@@ -78,7 +78,7 @@ def manually_tilt_up():
 def manually_tilt_down():
     cameraman_mode_manager.manual_mode()
     logger.debug('manually tilt down')
-    cameraman_mode_manager.manual_tilt(manual_camera_speeds.tilt_speed)
+    cameraman_mode_manager.manual_tilt(-manual_camera_speeds.tilt_speed)
     return '', 204
 
 

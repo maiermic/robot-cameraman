@@ -182,12 +182,12 @@ class Cameraman:
             logger.debug('manually tilt up')
             self._mode_manager.manual_mode()
             self._mode_manager.manual_tilt(
-                -self._manual_camera_speeds.tilt_speed)
+                self._manual_camera_speeds.tilt_speed)
         elif key == ord('k'):
             logger.debug('manually tilt down')
             self._mode_manager.manual_mode()
             self._mode_manager.manual_tilt(
-                self._manual_camera_speeds.tilt_speed)
+                -self._manual_camera_speeds.tilt_speed)
         elif key == ord('j'):
             logger.debug('manually rotate left')
             self._mode_manager.manual_mode()

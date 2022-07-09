@@ -21,7 +21,8 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
     ColorDetectionEngineUI
-from robot_cameraman.gimbal import SimpleBgcGimbal, DummyGimbal
+from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
+    create_simple_bgc_gimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
@@ -57,6 +58,7 @@ class RobotCameramanArguments(Protocol):
     maxObjects: int
     confidence: float
     gimbal: str
+    gimbalTiltInverted: bool
     liveView: str
     ip: str
     port: int
@@ -113,6 +115,13 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--gimbal', type=str,
                         default='SimpleBGC',
                         help="The gimbal to use. Either 'SimpleBGC' or 'Dummy'")
+    parser.add_argument(
+        '--gimbalTiltInverted',
+        action='store_true',
+        help="Invert tilting direction of gimbal."
+             " Should be used if the camera is mounted on the gimbal in the"
+             " opposite direction (rotated 180 degree),"
+             " the tilt speed and angle has to be inverted.")
     parser.add_argument('--liveView', type=str,
                         default='Panasonic',
                         help="The live view (camera) to use."
@@ -249,7 +258,12 @@ tracking_strategy = StopIfLostTrackingStrategy(
     max_speed_and_acceleration_updater.add(
         configurable_tracking_strategy),
     slow_down_time=1)
-gimbal = SimpleBgcGimbal() if args.gimbal == 'SimpleBGC' else DummyGimbal()
+if args.gimbal == 'SimpleBGC':
+    gimbal = create_simple_bgc_gimbal()
+else:
+    gimbal = DummyGimbal()
+if args.gimbalTiltInverted:
+    gimbal = TiltInvertedGimbal(gimbal)
 rotate_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.rotationalAccelerationPerSecond))
 tilt_speed_manager = max_speed_and_acceleration_updater.add(
@@ -267,7 +281,8 @@ cameraman_mode_manager = CameramanModeManager(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
     search_target_strategy=max_speed_and_acceleration_updater.add(
-        RotateSearchTargetStrategy(args.rotatingSearchSpeed)))
+        RotateSearchTargetStrategy(args.rotatingSearchSpeed)),
+    gimbal=gimbal)
 
 # noinspection PyListCreation
 user_interfaces = []
