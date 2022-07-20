@@ -18,7 +18,7 @@ from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import ControlMode
-from simplebgc.units import to_degree, to_degree_per_sec
+from simplebgc.units import to_degree, to_degree_per_sec, to_360_degree
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -181,6 +181,105 @@ class SmoothCameraController(CameraController):
     def stop(self, camera_speeds: CameraSpeeds) -> None:
         while self.is_camera_moving():
             self.update(camera_speeds)
+
+
+class CameraAngleLimitController:
+    min_pan_angle: Optional[float]
+    max_pan_angle: Optional[float]
+    min_tilt_angle: Optional[float]
+    max_tilt_angle: Optional[float]
+
+    def __init__(self, gimbal: Gimbal) -> None:
+        super().__init__()
+        self._gimbal = gimbal
+        self.min_pan_angle = None
+        self.max_pan_angle = None
+        self.min_tilt_angle = None
+        self.max_tilt_angle = None
+        # TODO keep None as default, i.e. remove the following lines
+        # self.min_pan_angle = 2.0
+        # self.max_pan_angle = 40.0
+        # self.min_tilt_angle = 350.0
+        # self.max_tilt_angle = 5.0
+
+    # TODO remove if not used
+    def _get_angle_limits(self):
+        return (
+            self.min_pan_angle,
+            self.max_pan_angle,
+            self.min_tilt_angle,
+            self.max_tilt_angle,
+        )
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        # TODO uncomment
+        # if all(map(lambda a: a is None, self._get_angle_limits())):
+        #     return
+        # TODO get angles in main loop to only request them once from gimbal
+        #   and not in every controller/component that requires them
+        angles = self._gimbal.get_angles()
+        pan_360_angle = to_360_degree(angles.target_angle_3)
+        tilt_360_angle = to_360_degree(angles.target_angle_2)
+        logger.debug(', '.join((
+            f"pan angle: {pan_360_angle:4.1f}",
+            f"tilt angle: {tilt_360_angle:4.1f}",
+        )))
+
+        # Since camera might rotate full circle, a single limit could be
+        # reached rotating clockwise or counter clockwise. It is unrealistic
+        # that the exact limit is reached and kept. Thereby, the camera might
+        # pass over the limit. If there is only one limit,
+        # the camera may continue to move after it passed the limit,
+        # since the limit is in the opposite rotating direction than the camera
+        # is moving.
+        #
+        # Minimum and maximum have to be defined both.
+        # They define a range, in which the camera stops,
+        # i.e. the camera stops after a limit is passed.
+        # The camera may only move to the closer limit to exit this range.
+        if (self.min_pan_angle is not None
+                and self.max_pan_angle is not None
+                and is_angle_between(
+                    left=self.min_pan_angle,
+                    angle=pan_360_angle,
+                    right=self.max_pan_angle,
+                    clockwise=False)):
+            min_pan_delta = get_delta_angle_clockwise(
+                left=pan_360_angle, right=self.min_pan_angle)
+            max_pan_delta = get_delta_angle_counter_clockwise(
+                left=pan_360_angle, right=self.max_pan_angle)
+            if min_pan_delta < max_pan_delta:
+                if camera_speeds.pan_speed < 0:
+                    logger.debug(
+                        'min pan angle reached, pan speed is set to 0')
+                    camera_speeds.pan_speed = 0
+            else:
+                if camera_speeds.pan_speed > 0:
+                    logger.debug(
+                        'max pan angle reached, pan speed is set to 0')
+                    camera_speeds.pan_speed = 0
+
+        if (self.min_tilt_angle is not None
+                and self.max_tilt_angle is not None
+                and is_angle_between(
+                    left=self.min_tilt_angle,
+                    angle=tilt_360_angle,
+                    right=self.max_tilt_angle,
+                    clockwise=False)):
+            min_tilt_delta = get_delta_angle_clockwise(
+                left=tilt_360_angle, right=self.min_tilt_angle)
+            max_tilt_delta = get_delta_angle_counter_clockwise(
+                left=tilt_360_angle, right=self.max_tilt_angle)
+            if min_tilt_delta < max_tilt_delta:
+                if camera_speeds.tilt_speed < 0:
+                    logger.debug(
+                        'min tilt angle reached, tilt speed is set to 0')
+                    camera_speeds.tilt_speed = 0
+            else:
+                if camera_speeds.tilt_speed > 0:
+                    logger.debug(
+                        'max tilt angle reached, tilt speed is set to 0')
+                    camera_speeds.tilt_speed = 0
 
 
 @dataclass()
