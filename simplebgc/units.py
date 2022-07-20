@@ -12,6 +12,10 @@ def to_degree(angle: float) -> float:
     return angle * degree_factor
 
 
+def to_360_degree(angle: float) -> float:
+    return to_degree(angle) % 360
+
+
 def from_degree_per_sec(degree_per_sec: float) -> int:
     return int(degree_per_sec / degree_per_sec_factor)
 
