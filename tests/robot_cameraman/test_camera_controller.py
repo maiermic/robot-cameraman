@@ -12,8 +12,8 @@ from simplebgc.gimbal import Gimbal, ControlMode
 from simplebgc.units import from_degree, from_degree_per_sec
 
 
-def get_angles_in_cmd(pan_angle: int, pan_speed: int,
-                      tilt_angle: int, tilt_speed: int):
+def get_angles_in_cmd(pan_angle: float, pan_speed: float,
+                      tilt_angle: float, tilt_speed: float):
     return GetAnglesInCmd(
         imu_angle_1=0,
         target_angle_1=0,
