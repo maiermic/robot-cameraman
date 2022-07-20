@@ -13,7 +13,7 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
-    SpeedManager
+    SpeedManager, CameraAngleLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
@@ -277,6 +277,7 @@ cameraman_mode_manager = CameramanModeManager(
         camera_manager,
         rotate_speed_manager=rotate_speed_manager,
         tilt_speed_manager=tilt_speed_manager),
+    camera_angle_limit_controller=CameraAngleLimitController(gimbal=gimbal),
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,

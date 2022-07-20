@@ -3,7 +3,8 @@ from logging import Logger
 from typing import Optional
 
 from robot_cameraman.box import Box
-from robot_cameraman.camera_controller import CameraController
+from robot_cameraman.camera_controller import CameraController, \
+    CameraAngleLimitController
 from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
     AlignTrackingStrategy, SearchTargetStrategy, ZoomSpeed
@@ -17,11 +18,13 @@ class CameramanModeManager:
     def __init__(
             self,
             camera_controller: CameraController,
+            camera_angle_limit_controller: CameraAngleLimitController,
             align_tracking_strategy: AlignTrackingStrategy,
             tracking_strategy: TrackingStrategy,
             search_target_strategy: SearchTargetStrategy,
             gimbal: Gimbal) -> None:
         self._camera_controller = camera_controller
+        self._camera_angle_limit_controller = camera_angle_limit_controller
         self._align_tracking_strategy = align_tracking_strategy
         self._tracking_strategy = tracking_strategy
         self._search_target_strategy = search_target_strategy
@@ -52,6 +55,10 @@ class CameramanModeManager:
         if self.mode_name != 'angle':
             if not self.is_zoom_enabled and self.mode_name != 'manual':
                 self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+            # TODO add option to enable limit in manual mode
+            # if self.mode_name != 'manual':
+            self._camera_angle_limit_controller.update(self._camera_speeds)
+            # TODO limit zoom
             self._camera_controller.update(self._camera_speeds)
 
     def start(self):
