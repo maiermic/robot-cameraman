@@ -145,6 +145,8 @@ def update_configuration():
             if 'max_hsv' in color:
                 updatable_configuration.update_tracking_color(
                     max_hsv=color['max_hsv'])
+    if 'limits' in request.json:
+        updatable_configuration.update_limits(request.json['limits'])
     return '', 200
 
 
