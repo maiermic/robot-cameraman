@@ -271,13 +271,14 @@ tilt_speed_manager = max_speed_and_acceleration_updater.add(
 configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
+camera_angle_limit_controller = CameraAngleLimitController(gimbal=gimbal)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
         camera_manager,
         rotate_speed_manager=rotate_speed_manager,
         tilt_speed_manager=tilt_speed_manager),
-    camera_angle_limit_controller=CameraAngleLimitController(gimbal=gimbal),
+    camera_angle_limit_controller=camera_angle_limit_controller,
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
@@ -365,6 +366,7 @@ run_server(_to_exit=to_exit,
            _manual_camera_speeds=manual_camera_speeds,
            _updatable_configuration=UpdatableConfiguration(
                detection_engine=detection_engine,
+               camera_angle_limit_controller=camera_angle_limit_controller,
                configuration_file=args.config),
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)
