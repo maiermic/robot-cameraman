@@ -148,6 +148,7 @@
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <script type="module" src="color-picker.js" async></script>
     <script type="module" src="color-tracking-menu.js" async></script>
+    <script type="module" src="limits-menu.js" async></script>
 </head>
 <body>
     <div class="live-view-container">
@@ -187,6 +188,11 @@
                  onpointerup="menu.navigateToSubMenu('overlay')">
                 <i class="menu__button__icon bi bi-layers"></i>
                 overlay
+            </div>
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('limits')">
+                <i class="menu__button__icon bi bi-bricks"></i>
+                limits
             </div>
         </template>
 
@@ -261,6 +267,10 @@
 
         <template data-menu-name="color tracking">
             <x-color-tracking-menu>...loading</x-color-tracking-menu>
+        </template>
+
+        <template data-menu-name="limits">
+            <x-limits-menu>...loading</x-limits-menu>
         </template>
 
         <script>
