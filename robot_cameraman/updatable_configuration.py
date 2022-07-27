@@ -21,11 +21,15 @@ class UpdatableConfiguration:
         self.configuration_file = configuration_file
         self.configuration = read_configuration_file(configuration_file)
         if 'limits' not in self.configuration:
+            min_pan = self.camera_angle_limit_controller.min_pan_angle
+            max_pan = self.camera_angle_limit_controller.max_pan_angle
+            min_tilt = self.camera_angle_limit_controller.min_tilt_angle
+            max_tilt = self.camera_angle_limit_controller.max_tilt_angle
             self.configuration['limits'] = {
                 'areLimitsAppliedInManualMode':
                     cameraman_mode_manager.are_limits_applied_in_manual_mode,
-                'pan': None,
-                'tilt': None,
+                'pan': None if min_pan is None else [min_pan, max_pan],
+                'tilt': None if min_tilt is None else [min_tilt, max_tilt],
             }
 
     def update_tracking_color(
