@@ -366,6 +366,7 @@ run_server(_to_exit=to_exit,
            _manual_camera_speeds=manual_camera_speeds,
            _updatable_configuration=UpdatableConfiguration(
                detection_engine=detection_engine,
+               cameraman_mode_manager=cameraman_mode_manager,
                camera_angle_limit_controller=camera_angle_limit_controller,
                configuration_file=args.config),
            ssl_certificate=args.ssl_certificate,

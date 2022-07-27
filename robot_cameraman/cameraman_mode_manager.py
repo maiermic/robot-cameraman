@@ -32,6 +32,7 @@ class CameramanModeManager:
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
         self.mode_name = 'manual'
         self.is_zoom_enabled = True
+        self.are_limits_applied_in_manual_mode = False
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists
@@ -55,9 +56,9 @@ class CameramanModeManager:
         if self.mode_name != 'angle':
             if not self.is_zoom_enabled and self.mode_name != 'manual':
                 self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
-            # TODO add option to enable limit in manual mode
-            # if self.mode_name != 'manual':
-            self._camera_angle_limit_controller.update(self._camera_speeds)
+            if (self.mode_name != 'manual'
+                    or self.are_limits_applied_in_manual_mode):
+                self._camera_angle_limit_controller.update(self._camera_speeds)
             # TODO limit zoom
             self._camera_controller.update(self._camera_speeds)
 

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, List
 
 from robot_cameraman.camera_controller import CameraAngleLimitController
+from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
 from robot_cameraman.image_detection import DetectionEngine
@@ -11,14 +12,18 @@ class UpdatableConfiguration:
     def __init__(
             self,
             detection_engine: DetectionEngine,
+            cameraman_mode_manager: CameramanModeManager,
             camera_angle_limit_controller: CameraAngleLimitController,
             configuration_file: Optional[Path] = None):
         self.detection_engine = detection_engine
+        self.cameraman_mode_manager = cameraman_mode_manager
         self.camera_angle_limit_controller = camera_angle_limit_controller
         self.configuration_file = configuration_file
         self.configuration = read_configuration_file(configuration_file)
         if 'limits' not in self.configuration:
             self.configuration['limits'] = {
+                'areLimitsAppliedInManualMode':
+                    cameraman_mode_manager.are_limits_applied_in_manual_mode,
                 'pan': None,
                 'tilt': None,
             }
@@ -36,6 +41,12 @@ class UpdatableConfiguration:
                 self.configuration['tracking']['color']['max_hsv'] = max_hsv
 
     def update_limits(self, limits):
+        if 'areLimitsAppliedInManualMode' in limits:
+            applied_in_manual_mode = limits['areLimitsAppliedInManualMode']
+            self.cameraman_mode_manager.are_limits_applied_in_manual_mode = \
+                applied_in_manual_mode
+            self.configuration['limits']['areLimitsAppliedInManualMode'] = \
+                applied_in_manual_mode
         if 'pan' in limits:
             pan_limit = limits['pan']
             minimum, maximum = (None, None) if pan_limit is None else pan_limit

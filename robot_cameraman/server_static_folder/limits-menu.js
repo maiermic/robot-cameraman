@@ -17,6 +17,10 @@ template.innerHTML = `
     }
 </style>
 <div class="angle-limits">
+  <label class="partial-input">
+      <span>Apply Limits In Manual Mode</span>
+      <input class="are-limits-applied-in-manual-mode" type="checkbox">
+  </label>
   <details open class="pan-limit">
       <summary>
           <label>Pan</label>
@@ -110,6 +114,7 @@ class LimitsMenu extends HTMLElement {
   async connectedCallback() {
     const {
       limits: {
+        areLimitsAppliedInManualMode,
         pan,
         tilt,
       }
@@ -127,6 +132,24 @@ class LimitsMenu extends HTMLElement {
       value: tilt,
       configurationKey: 'tilt',
     })
+    /**
+     * @param e {InputEvent}
+     * @private
+     */
+    this._areLimitsAppliedInManualModeListener = e => {
+      configurationRequestQueue.add({
+        limits: {
+          areLimitsAppliedInManualMode: e.target.checked,
+        }
+      })
+    }
+    /** @type {HTMLInputElement} */
+    const areLimitsAppliedInManualModeElement =
+      node.querySelector('.are-limits-applied-in-manual-mode');
+    areLimitsAppliedInManualModeElement.checked =
+      Boolean(areLimitsAppliedInManualMode)
+    areLimitsAppliedInManualModeElement
+      .addEventListener('input', this._areLimitsAppliedInManualModeListener)
     this.shadowRoot.append(node)
   }
 
@@ -181,6 +204,11 @@ class LimitsMenu extends HTMLElement {
       this.shadowRoot.querySelector('.tilt-limit')
         .removeEventListener('input', this._tiltListener)
       this._tiltListener = null
+    }
+    if (this._areLimitsAppliedInManualModeListener) {
+      this.shadowRoot.querySelector('.are-limits-applied-in-manual-mode')
+        .removeEventListener('input', this._areLimitsAppliedInManualModeListener)
+      this._areLimitsAppliedInManualModeListener = null
     }
   }
 }
