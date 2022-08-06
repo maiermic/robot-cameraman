@@ -160,19 +160,21 @@ class LimitsMenu extends HTMLElement {
    * @private
    */
   _setValueAndListener({parent, value, configurationKey}) {
-    const [minimum, maximum] = value || [0, 0]
     /** @type {HTMLInputElement} */
     const minimumRangeElement = parent.querySelector('.minimum-range');
-    minimumRangeElement.value = String(minimum)
     /** @type {HTMLInputElement} */
     const minimumNumberElement = parent.querySelector('.minimum-number');
-    minimumNumberElement.value = String(minimum)
     /** @type {HTMLInputElement} */
     const maximumRangeElement = parent.querySelector('.maximum-range');
-    maximumRangeElement.value = String(maximum)
     /** @type {HTMLInputElement} */
     const maximumNumberElement = parent.querySelector('.maximum-number');
-    maximumNumberElement.value = String(maximum)
+    if (value) {
+      const [minimum, maximum] = value
+      minimumRangeElement.value = String(minimum)
+      minimumNumberElement.value = String(minimum)
+      maximumRangeElement.value = String(maximum)
+      maximumNumberElement.value = String(maximum)
+    }
     /** @type {HTMLInputElement} */
     const activeElement = parent.querySelector('.active');
     activeElement.checked = Boolean(value)
