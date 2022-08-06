@@ -13,7 +13,7 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
-    SpeedManager, CameraAngleLimitController
+    SpeedManager, CameraAngleLimitController, CameraZoomLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
@@ -271,6 +271,7 @@ tilt_speed_manager = max_speed_and_acceleration_updater.add(
 configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
+camera_zoom_limit_controller = CameraZoomLimitController()
 camera_angle_limit_controller = CameraAngleLimitController(gimbal=gimbal)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
@@ -278,6 +279,7 @@ cameraman_mode_manager = CameramanModeManager(
         camera_manager,
         rotate_speed_manager=rotate_speed_manager,
         tilt_speed_manager=tilt_speed_manager),
+    camera_zoom_limit_controller=camera_zoom_limit_controller,
     camera_angle_limit_controller=camera_angle_limit_controller,
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         configurable_align_tracking_strategy),
@@ -329,6 +331,10 @@ elif args.liveView == 'Panasonic':
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,
         max_speed_and_acceleration_updater.on_zoom_ratio)
+    camera_observable.add_listener(
+        ObservableCameraProperty.ZOOM_RATIO,
+        lambda zoom_ratio: setattr(
+            camera_zoom_limit_controller, 'zoom_ratio', zoom_ratio))
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
@@ -367,6 +373,7 @@ run_server(_to_exit=to_exit,
            _updatable_configuration=UpdatableConfiguration(
                detection_engine=detection_engine,
                cameraman_mode_manager=cameraman_mode_manager,
+               camera_zoom_limit_controller=camera_zoom_limit_controller,
                camera_angle_limit_controller=camera_angle_limit_controller,
                configuration_file=args.config),
            ssl_certificate=args.ssl_certificate,
