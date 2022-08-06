@@ -185,8 +185,8 @@ class LimitsMenu extends HTMLElement {
           [configurationKey]:
             activeElement.checked
               ? [
-                Number.parseInt(minimumRangeElement.value),
-                Number.parseInt(maximumRangeElement.value),
+                Number.parseFloat(minimumRangeElement.value),
+                Number.parseFloat(maximumRangeElement.value),
               ]
               : null,
         }
