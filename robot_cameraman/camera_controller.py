@@ -368,6 +368,7 @@ class PointOfMotionTargetSpeedCalculator:
                 left=current_angle, right=target_angle)
         return delta_angle / travel_time
 
+
 class PathOfMotionCameraController(ABC):
     def __init__(self):
         self._path: List[PointOfMotion] = []
