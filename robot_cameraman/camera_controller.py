@@ -183,6 +183,36 @@ class SmoothCameraController(CameraController):
             self.update(camera_speeds)
 
 
+class CameraZoomLimitController:
+    zoom_ratio: Optional[float]
+    min_zoom_ratio: Optional[float]
+    max_zoom_ratio: Optional[float]
+
+    def __init__(self) -> None:
+        self.zoom_ratio = None
+        self.min_zoom_ratio = None
+        self.max_zoom_ratio = None
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        if self.zoom_ratio is None:
+            return
+        logger.debug(
+            f'check if current zoom ratio {self.zoom_ratio} reached limit')
+        # TODO zoom has to be stopped before the limit is reached
+        #   Otherwise, the camera exceeds the zoom limit and stops not until
+        #   the next zoom step
+        if (self.min_zoom_ratio is not None
+                and self.zoom_ratio <= self.min_zoom_ratio
+                and camera_speeds.zoom_speed < 0):
+            logger.debug('min zoom ratio reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if (self.max_zoom_ratio is not None
+                and self.zoom_ratio >= self.max_zoom_ratio
+                and camera_speeds.zoom_speed > 0):
+            logger.debug('max zoom ratio reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+
 class CameraAngleLimitController:
     min_pan_angle: Optional[float]
     max_pan_angle: Optional[float]
