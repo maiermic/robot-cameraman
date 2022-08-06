@@ -59,7 +59,8 @@ class UpdatableConfiguration:
             self.configuration['limits']['pan'] = pan_limit
         if 'tilt' in limits:
             tilt_limit = limits['tilt']
-            minimum, maximum = (None, None) if tilt_limit is None else tilt_limit
+            minimum, maximum = (
+                None, None) if tilt_limit is None else tilt_limit
             self.camera_angle_limit_controller.min_tilt_angle = minimum
             self.camera_angle_limit_controller.max_tilt_angle = maximum
             self.configuration['limits']['tilt'] = tilt_limit
