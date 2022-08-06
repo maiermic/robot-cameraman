@@ -103,6 +103,51 @@ template.innerHTML = `
           <span>°</span>
       </label>
   </details>
+  <details open class="zoom-limit">
+      <summary>
+          <label>Zoom Ratio</label>
+      </summary>
+      <label class="partial-input">
+          <span>Active</span>
+          <input class="active" type="checkbox">
+      </label>
+      <label class="partial-input angle-limit">
+          <span>Minimum</span>
+          <input class="minimum-range"
+                 type="range"
+                 min="1"
+                 max="14.3"
+                 value="1"
+                 step="0.1"
+                 oninput="this.nextElementSibling.value = this.value">
+          <input class="minimum-number"
+                 type="number"
+                 min="1"
+                 max="14.3"
+                 value="1"
+                 step="0.1"
+                 oninput="this.previousElementSibling.value = this.value">
+          <span>x</span>
+      </label>
+      <label class="partial-input angle-limit">
+          <span>Maximum</span>
+          <input class="maximum-range"
+                 type="range"
+                 min="1"
+                 max="14.3"
+                 value="7.1"
+                 step="0.1"
+                 oninput="this.nextElementSibling.value = this.value">
+          <input class="maximum-number"
+                 type="number"
+                 min="1"
+                 max="14.3"
+                 value="7.1"
+                 step="0.1"
+                 oninput="this.previousElementSibling.value = this.value">
+          <span>x</span>
+      </label>
+  </details>
 </div>
 `
 
@@ -117,6 +162,7 @@ class LimitsMenu extends HTMLElement {
         areLimitsAppliedInManualMode,
         pan,
         tilt,
+        zoom,
       }
     } = await getJson('/api/configuration');
     const node =
@@ -131,6 +177,11 @@ class LimitsMenu extends HTMLElement {
       parent: node.querySelector('.tilt-limit'),
       value: tilt,
       configurationKey: 'tilt',
+    })
+    this._zoomListener = this._setValueAndListener({
+      parent: node.querySelector('.zoom-limit'),
+      value: zoom,
+      configurationKey: 'zoom',
     })
     /**
      * @param e {InputEvent}
