@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Optional, List
 
-from robot_cameraman.camera_controller import CameraAngleLimitController
+from robot_cameraman.camera_controller import CameraAngleLimitController, \
+    CameraZoomLimitController
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
@@ -13,10 +14,12 @@ class UpdatableConfiguration:
             self,
             detection_engine: DetectionEngine,
             cameraman_mode_manager: CameramanModeManager,
+            camera_zoom_limit_controller: CameraZoomLimitController,
             camera_angle_limit_controller: CameraAngleLimitController,
             configuration_file: Optional[Path] = None):
         self.detection_engine = detection_engine
         self.cameraman_mode_manager = cameraman_mode_manager
+        self.camera_zoom_limit_controller = camera_zoom_limit_controller
         self.camera_angle_limit_controller = camera_angle_limit_controller
         self.configuration_file = configuration_file
         self.configuration = read_configuration_file(configuration_file)
@@ -25,11 +28,14 @@ class UpdatableConfiguration:
             max_pan = self.camera_angle_limit_controller.max_pan_angle
             min_tilt = self.camera_angle_limit_controller.min_tilt_angle
             max_tilt = self.camera_angle_limit_controller.max_tilt_angle
+            min_zoom = self.camera_zoom_limit_controller.min_zoom_ratio
+            max_zoom = self.camera_zoom_limit_controller.max_zoom_ratio
             self.configuration['limits'] = {
                 'areLimitsAppliedInManualMode':
                     cameraman_mode_manager.are_limits_applied_in_manual_mode,
                 'pan': None if min_pan is None else [min_pan, max_pan],
                 'tilt': None if min_tilt is None else [min_tilt, max_tilt],
+                'zoom': None if min_zoom is None else [min_zoom, max_zoom],
             }
 
     def update_tracking_color(
@@ -64,3 +70,10 @@ class UpdatableConfiguration:
             self.camera_angle_limit_controller.min_tilt_angle = minimum
             self.camera_angle_limit_controller.max_tilt_angle = maximum
             self.configuration['limits']['tilt'] = tilt_limit
+        if 'zoom' in limits:
+            zoom_limit = limits['zoom']
+            minimum, maximum = (
+                None, None) if zoom_limit is None else zoom_limit
+            self.camera_zoom_limit_controller.min_zoom_ratio = minimum
+            self.camera_zoom_limit_controller.max_zoom_ratio = maximum
+            self.configuration['limits']['zoom'] = zoom_limit
