@@ -2,16 +2,19 @@ import argparse
 import logging
 import signal
 import threading
+from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 # noinspection Mypy
 import time
+from more_itertools import first_true
 from typing_extensions import Protocol
 
 from panasonic_camera.camera import PanasonicCamera
 from panasonic_camera.camera_manager import PanasonicCameraManager
+from robot_cameraman.camera_controller import ElapsedTime
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.live_view import PanasonicLiveView
@@ -93,6 +96,13 @@ def configure_logging():
     logging.getLogger('').addHandler(console)
 
 
+@dataclass()
+class ZoomStep:
+    zoom_ratio: float
+    zoom_in_time: float
+    zoom_out_time: float
+
+
 class ZoomAnalyzerCameraController:
     class _State(Enum):
         ANALYZE_SLOW = auto()
@@ -102,7 +112,8 @@ class ZoomAnalyzerCameraController:
     _state: _State
     _camera_manager: PanasonicCameraManager
     _max_zoom_ratio: float
-    zoom_ratios: List[float]
+    _previous_zoom_ratio: Optional[float]
+    zoom_steps: List[ZoomStep]
 
     # noinspection PyShadowingNames
     def __init__(
@@ -112,21 +123,26 @@ class ZoomAnalyzerCameraController:
         self._max_zoom_ratio = max_zoom_ratio
         self._state = self._State.STOPPED
         self._camera_manager = camera_manager
-        self.zoom_ratios = []
+        self._elapsed_time = ElapsedTime()
+        self._previous_zoom_ratio = None
+        self.zoom_steps = []
 
     def start(self):
         assert self._state == self._State.STOPPED
-        assert not self.zoom_ratios
+        assert not self.zoom_steps
         self._state = self._State.ANALYZE_SLOW
         print('waiting for camera connection')
         while self._camera_manager.camera is None:
             time.sleep(1)
             print('...')
         print('successfully connected to camera')
+        print('waiting 3 second for camera to get ready')
+        time.sleep(3)
         print('start analysis with slow zoom speed')
         # noinspection PyTypeChecker
         camera: PanasonicCamera = self._camera_manager.camera
         camera.zoom_in_slow()
+        self._elapsed_time.reset()
 
     def is_stopped(self):
         return self._state == self._State.STOPPED
@@ -135,14 +151,37 @@ class ZoomAnalyzerCameraController:
         if self._state == self._State.ZOOM_OUT:
             if zoom_ratio == 1:
                 self._state = self._State.STOPPED
-        elif not self.zoom_ratios or self.zoom_ratios[-1] != zoom_ratio:
-            self.zoom_ratios.append(zoom_ratio)
+                self.update_zoom_out_time(zoom_ratio)
+        elif self._previous_zoom_ratio != zoom_ratio:
+            zoom_in_time = 0 if zoom_ratio == 1 else self._elapsed_time.update()
+            self.zoom_steps.append(
+                ZoomStep(zoom_ratio=zoom_ratio,
+                         zoom_in_time=zoom_in_time,
+                         zoom_out_time=0))
             print(zoom_ratio)
         if zoom_ratio == self._max_zoom_ratio:
             print('zoom out')
-            self._camera_manager.camera.zoom_out_fast()
+            self._camera_manager.camera.zoom_out_slow()
             self._state = self._State.ZOOM_OUT
+            self._elapsed_time.reset()
+        elif (self._state == self._State.ZOOM_OUT
+              and self._previous_zoom_ratio != zoom_ratio):
+            self.update_zoom_out_time(zoom_ratio)
+        self._previous_zoom_ratio = zoom_ratio
         # TODO analyze with zoom in fast
+
+    def update_zoom_out_time(self, zoom_ratio):
+        zoom_step = self._get_zoom_step_of_ratio(zoom_ratio)
+        assert zoom_step is not None, (
+            f"could not find ZoomStep of zoom ratio {zoom_ratio}"
+            f"when zooming out from {self._previous_zoom_ratio}")
+        zoom_step.zoom_out_time = self._elapsed_time.update()
+
+    def _get_zoom_step_of_ratio(self, zoom_ratio: float):
+        return first_true(
+            self.zoom_steps,
+            None,
+            lambda zoom_step: zoom_step.zoom_ratio == zoom_ratio)
 
 
 args = parse_arguments()
@@ -175,6 +214,7 @@ try:
     while not zoom_analyzer_camera_controller.is_stopped():
         # noinspection PyUnboundLocalVariable
         image = live_view.image()
+    print(zoom_analyzer_camera_controller.zoom_steps)
     # TODO write result (zoom_analyzer_camera_controller.zoom_ratios)
     #  to args.output
 finally:
