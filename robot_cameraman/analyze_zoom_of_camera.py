@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 import signal
 import threading
@@ -100,6 +101,14 @@ class ZoomStep:
     zoom_ratio: float
     zoom_in_time: float
     zoom_out_time: float
+
+
+class ZoomStepJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ZoomStep):
+            return obj.__dict__
+        # Base class default() raises TypeError:
+        return json.JSONEncoder.default(self, obj)
 
 
 class ZoomSpeed(Enum):
@@ -241,14 +250,23 @@ try:
     while not zoom_analyzer_camera_controller.is_stopped():
         # noinspection PyUnboundLocalVariable
         image = live_view.image()
-    print(zoom_analyzer_camera_controller.zoom_steps)
+    slow_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
+    print(slow_zoom_steps)
     zoom_analyzer_camera_controller.zoom_speed = ZoomSpeed.FAST
     zoom_analyzer_camera_controller.start()
     while not zoom_analyzer_camera_controller.is_stopped():
         # noinspection PyUnboundLocalVariable
         image = live_view.image()
-    print(zoom_analyzer_camera_controller.zoom_steps)
-    # TODO write result (zoom_analyzer_camera_controller.zoom_ratios)
-    #  to args.output
+    fast_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
+    print(fast_zoom_steps)
+    if args.output is not None:
+        args.output.write_text(
+            json.dumps(
+                {
+                    'slow': slow_zoom_steps,
+                    'fast': fast_zoom_steps,
+                },
+                cls=ZoomStepJsonEncoder,
+                indent=2))
 finally:
     quit()
