@@ -103,12 +103,18 @@ class ZoomStep:
     zoom_out_time: float
 
 
+class ZoomSpeed(Enum):
+    SLOW = auto()
+    FAST = auto()
+
+
 class ZoomAnalyzerCameraController:
     class _State(Enum):
         ANALYZE_SLOW = auto()
         ZOOM_OUT = auto()
         STOPPED = auto()
 
+    zoom_speed: ZoomSpeed
     _state: _State
     _camera_manager: PanasonicCameraManager
     _max_zoom_ratio: float
@@ -119,7 +125,9 @@ class ZoomAnalyzerCameraController:
     def __init__(
             self,
             camera_manager: PanasonicCameraManager,
-            max_zoom_ratio: float):
+            max_zoom_ratio: float,
+            zoom_speed: ZoomSpeed):
+        self.zoom_speed = zoom_speed
         self._max_zoom_ratio = max_zoom_ratio
         self._state = self._State.STOPPED
         self._camera_manager = camera_manager
@@ -129,7 +137,8 @@ class ZoomAnalyzerCameraController:
 
     def start(self):
         assert self._state == self._State.STOPPED
-        assert not self.zoom_steps
+        self._previous_zoom_ratio = None
+        self.zoom_steps = []
         self._state = self._State.ANALYZE_SLOW
         print('waiting for camera connection')
         while self._camera_manager.camera is None:
@@ -138,14 +147,32 @@ class ZoomAnalyzerCameraController:
         print('successfully connected to camera')
         print('waiting 3 second for camera to get ready')
         time.sleep(3)
-        print('start analysis with slow zoom speed')
-        # noinspection PyTypeChecker
-        camera: PanasonicCamera = self._camera_manager.camera
-        camera.zoom_in_slow()
+        print(f"start analysis")
+        self._zoom_in()
         self._elapsed_time.reset()
 
     def is_stopped(self):
         return self._state == self._State.STOPPED
+
+    def _zoom_in(self):
+        if self.zoom_speed == ZoomSpeed.SLOW:
+            print(f"zoom in slow")
+            self._camera_manager.camera.zoom_in_slow()
+        elif self.zoom_speed == ZoomSpeed.FAST:
+            print(f"zoom in fast")
+            self._camera_manager.camera.zoom_in_fast()
+        else:
+            raise Exception(f"unknown zoom speed {self.zoom_speed}")
+
+    def _zoom_out(self):
+        if self.zoom_speed == ZoomSpeed.SLOW:
+            print(f"zoom out slow")
+            self._camera_manager.camera.zoom_out_slow()
+        elif self.zoom_speed == ZoomSpeed.FAST:
+            print(f"zoom out fast")
+            self._camera_manager.camera.zoom_out_fast()
+        else:
+            raise Exception(f"unknown zoom speed {self.zoom_speed}")
 
     def on_zoom_ratio(self, zoom_ratio: float):
         if self._state == self._State.ZOOM_OUT:
@@ -160,8 +187,7 @@ class ZoomAnalyzerCameraController:
                          zoom_out_time=0))
             print(zoom_ratio)
         if zoom_ratio == self._max_zoom_ratio:
-            print('zoom out')
-            self._camera_manager.camera.zoom_out_slow()
+            self._zoom_out()
             self._state = self._State.ZOOM_OUT
             self._elapsed_time.reset()
         elif (self._state == self._State.ZOOM_OUT
@@ -171,6 +197,7 @@ class ZoomAnalyzerCameraController:
         # TODO analyze with zoom in fast
 
     def update_zoom_out_time(self, zoom_ratio):
+        print(zoom_ratio)
         zoom_step = self._get_zoom_step_of_ratio(zoom_ratio)
         assert zoom_step is not None, (
             f"could not find ZoomStep of zoom ratio {zoom_ratio}"
@@ -190,7 +217,8 @@ camera_manager = PanasonicCameraManager(
     identify_as=args.identifyToPanasonicCameraAs)
 zoom_analyzer_camera_controller = ZoomAnalyzerCameraController(
     camera_manager=camera_manager,
-    max_zoom_ratio=args.maxZoomRatio)
+    max_zoom_ratio=args.maxZoomRatio,
+    zoom_speed=ZoomSpeed.SLOW)
 
 if args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
@@ -210,6 +238,12 @@ signal.signal(signal.SIGTERM, quit)
 camera_manager.start()
 
 try:
+    zoom_analyzer_camera_controller.start()
+    while not zoom_analyzer_camera_controller.is_stopped():
+        # noinspection PyUnboundLocalVariable
+        image = live_view.image()
+    print(zoom_analyzer_camera_controller.zoom_steps)
+    zoom_analyzer_camera_controller.zoom_speed = ZoomSpeed.FAST
     zoom_analyzer_camera_controller.start()
     while not zoom_analyzer_camera_controller.is_stopped():
         # noinspection PyUnboundLocalVariable
