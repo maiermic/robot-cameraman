@@ -12,7 +12,6 @@ import time
 from more_itertools import first_true
 from typing_extensions import Protocol
 
-from panasonic_camera.camera import PanasonicCamera
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.camera_controller import ElapsedTime
 from robot_cameraman.camera_observable import \
