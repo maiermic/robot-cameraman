@@ -137,6 +137,9 @@ class PanasonicCamera:
     def video_recstart(self) -> None:
         self._camcmd('video_recstart')
 
+    def video_recstop(self) -> None:
+        self._camcmd('video_recstop')
+
     def zoom_stop(self) -> None:
         self._camcmd('zoomstop')
 
