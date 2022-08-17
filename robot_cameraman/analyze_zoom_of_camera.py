@@ -207,7 +207,6 @@ class ZoomAnalyzerCameraController:
               and self._previous_zoom_ratio != zoom_ratio):
             self.update_zoom_out_time(zoom_ratio)
         self._previous_zoom_ratio = zoom_ratio
-        # TODO analyze with zoom in fast
 
     def update_zoom_out_time(self, zoom_ratio):
         print(zoom_ratio)
