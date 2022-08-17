@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import List, Optional
 
 # noinspection Mypy
-import time
+import sys
+from time import time, sleep
 from more_itertools import first_true
 from typing_extensions import Protocol
 
@@ -100,6 +101,7 @@ def configure_logging():
 class ZoomStep:
     zoom_ratio: float
     zoom_in_time: float
+    stop_zoom_in_time: float
     zoom_out_time: float
 
 
@@ -150,11 +152,11 @@ class ZoomAnalyzerCameraController:
         self._state = self._State.ANALYZE_SLOW
         print('waiting for camera connection')
         while self._camera_manager.camera is None:
-            time.sleep(1)
+            sleep(1)
             print('...')
         print('successfully connected to camera')
         print('waiting 3 second for camera to get ready')
-        time.sleep(3)
+        sleep(3)
         print(f"start analysis")
         self._zoom_in()
         self._elapsed_time.reset()
@@ -183,6 +185,8 @@ class ZoomAnalyzerCameraController:
             raise Exception(f"unknown zoom speed {self.zoom_speed}")
 
     def on_zoom_ratio(self, zoom_ratio: float):
+        if self._state == self._State.STOPPED:
+            return
         if self._state == self._State.ZOOM_OUT:
             if zoom_ratio == 1:
                 self._state = self._State.STOPPED
@@ -192,6 +196,7 @@ class ZoomAnalyzerCameraController:
             self.zoom_steps.append(
                 ZoomStep(zoom_ratio=zoom_ratio,
                          zoom_in_time=zoom_in_time,
+                         stop_zoom_in_time=0,
                          zoom_out_time=0))
             print(zoom_ratio)
         if zoom_ratio == self._max_zoom_ratio:
@@ -217,6 +222,130 @@ class ZoomAnalyzerCameraController:
             self.zoom_steps,
             None,
             lambda zoom_step: zoom_step.zoom_ratio == zoom_ratio)
+
+
+class ZoomStepByStepCameraController:
+    zoom_speed: ZoomSpeed
+    zoom_steps: List[ZoomStep]
+    live_view: PanasonicLiveView
+    _current_zoom_ratio: Optional[float]
+
+    # noinspection PyShadowingNames
+    def __init__(
+            self,
+            camera_manager: PanasonicCameraManager,
+            zoom_steps: List[ZoomStep],
+            zoom_speed: ZoomSpeed,
+            live_view: PanasonicLiveView):
+        self._camera_manager = camera_manager
+        self.zoom_steps = zoom_steps
+        self.zoom_speed = zoom_speed
+        self.live_view = live_view
+        self._current_zoom_ratio = None
+
+    def start(self):
+        self._current_zoom_ratio = None
+        print('waiting for camera connection')
+        while self._camera_manager.camera is None:
+            sleep(1)
+            print('...')
+        print('successfully connected to camera')
+        print('waiting 3 second for camera to get ready')
+        sleep(3)
+        # self._camera_manager.camera.zoom_out_fast()
+        # return
+        print(f"evaluate zoom steps")
+        self._zoom_step_by_step()
+
+    def _zoom_step_by_step(self):
+        for zoom_step in self.zoom_steps:
+            if zoom_step.zoom_in_time == 0:
+                print(f'skip zoom ratio {zoom_step.zoom_ratio},'
+                      f' since it should be reachable in 0 seconds')
+                continue
+            self._zoom_in()
+            print(f"zoom ratio {zoom_step.zoom_ratio} is expected to be reached"
+                  f" in {zoom_step.zoom_in_time} seconds")
+            # TODO find wait factors instead of using magic numbers that only
+            #   fit one camera model (Panasonic DMC LF1)
+            # time_till_zoom_is_stopped = zoom_step.zoom_in_time / 2
+            # time_till_zoom_is_stopped = zoom_step.zoom_in_time
+            # wait_factor = 0.96 if zoom_step.zoom_ratio < 8 else 0.5
+            if zoom_step.zoom_ratio <= 6.0:
+                wait_factor = 0.96
+            elif zoom_step.zoom_ratio <= 7.1:
+                wait_factor = 0.9
+            elif zoom_step.zoom_ratio <= 8.0:
+                # wait_factor = 0.3
+                wait_factor = 0.25
+            elif zoom_step.zoom_ratio <= 10.0:
+                # wait_factor = 0.4
+                wait_factor = 0.5
+            elif zoom_step.zoom_ratio <= 11.0:
+                wait_factor = 0.9
+            elif zoom_step.zoom_ratio <= 12.0:
+                wait_factor = 0.9
+            else:
+                wait_factor = 0.9
+            time_till_zoom_is_stopped = zoom_step.zoom_in_time * wait_factor
+            print(f"wait {time_till_zoom_is_stopped} seconds"
+                  f" (factor {wait_factor})")
+            sleep(time_till_zoom_is_stopped)
+            print('stop zoom')
+            self._camera_manager.camera.zoom_stop()
+            print(f'wait for zoom ratio {zoom_step.zoom_ratio} to be reached')
+            start_time = time()
+            while (self._current_zoom_ratio is None
+                   or self._current_zoom_ratio < zoom_step.zoom_ratio):
+                self.live_view.image()
+                print(f"... current zoom ratio is {self._current_zoom_ratio}")
+                elapsed_time = time() - start_time
+                if elapsed_time > zoom_step.zoom_in_time * 2:
+                    print(f'timeout waiting for zoom ratio'
+                          f' {zoom_step.zoom_ratio} to be reached')
+                    break
+            if self._current_zoom_ratio == zoom_step.zoom_ratio:
+                time_till_zoom_ratio_is_checked = \
+                    max(1.0, zoom_step.zoom_in_time * 2)
+                print(f'wait {time_till_zoom_ratio_is_checked} seconds'
+                      f' for zoom ratio to change again')
+                sleep(3)
+                self.live_view.image()
+            if self._current_zoom_ratio == zoom_step.zoom_ratio:
+                print(f'reached zoom ratio {zoom_step.zoom_ratio} successfully')
+                zoom_step.stop_zoom_in_time = time_till_zoom_is_stopped
+            else:
+                print(
+                    f'tried to stop zoom at ratio {zoom_step.zoom_ratio},'
+                    f' but stopped at ratio {self._current_zoom_ratio}',
+                    file=sys.stderr)
+                break
+        print('zoom out fast to reset zoom ratio to 1.0')
+        self._camera_manager.camera.zoom_out_fast()
+
+    # TODO extract to base class shared with ZoomAnalyzerCameraController
+    def _zoom_in(self):
+        if self.zoom_speed == ZoomSpeed.SLOW:
+            print(f"zoom in slow")
+            self._camera_manager.camera.zoom_in_slow()
+        elif self.zoom_speed == ZoomSpeed.FAST:
+            print(f"zoom in fast")
+            self._camera_manager.camera.zoom_in_fast()
+        else:
+            raise Exception(f"unknown zoom speed {self.zoom_speed}")
+
+    def _zoom_out(self):
+        if self.zoom_speed == ZoomSpeed.SLOW:
+            print(f"zoom out slow")
+            self._camera_manager.camera.zoom_out_slow()
+        elif self.zoom_speed == ZoomSpeed.FAST:
+            print(f"zoom out fast")
+            self._camera_manager.camera.zoom_out_fast()
+        else:
+            raise Exception(f"unknown zoom speed {self.zoom_speed}")
+
+    def on_zoom_ratio(self, zoom_ratio: float):
+        self._current_zoom_ratio = zoom_ratio
 
 
 args = parse_arguments()
@@ -252,6 +381,7 @@ try:
         image = live_view.image()
     slow_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
     print(slow_zoom_steps)
+
     zoom_analyzer_camera_controller.zoom_speed = ZoomSpeed.FAST
     zoom_analyzer_camera_controller.start()
     while not zoom_analyzer_camera_controller.is_stopped():
@@ -259,6 +389,63 @@ try:
         image = live_view.image()
     fast_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
     print(fast_zoom_steps)
+
+    # TODO remove uncommented precalculated values of slow_zoom_steps
+    # slow_zoom_steps = [
+    #     ZoomStep(zoom_ratio=1.0, stop_zoom_in_time=0, zoom_in_time=0,
+    #              zoom_out_time=1.0003037452697754),
+    #     ZoomStep(zoom_ratio=2.0, stop_zoom_in_time=0,
+    #              zoom_in_time=2.9514217376708984,
+    #              zoom_out_time=0.7093634605407715),
+    #     ZoomStep(zoom_ratio=3.0, stop_zoom_in_time=0,
+    #              zoom_in_time=1.0997443199157715,
+    #              zoom_out_time=0.4926338195800781),
+    #     ZoomStep(zoom_ratio=4.0, stop_zoom_in_time=0,
+    #              zoom_in_time=0.6136748790740967,
+    #              zoom_out_time=0.4096393585205078),
+    #     ZoomStep(zoom_ratio=5.0, stop_zoom_in_time=0,
+    #              zoom_in_time=0.4909799098968506,
+    #              zoom_out_time=0.6945595741271973),
+    #     ZoomStep(zoom_ratio=6.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.40047478675842285,
+    #              zoom_out_time=0.7033517360687256),
+    #     ZoomStep(zoom_ratio=7.1, stop_zoom_in_time=0,
+    #              zoom_in_time=0.7125728130340576,
+    #              zoom_out_time=0.2920267581939697),
+    #     ZoomStep(zoom_ratio=8.0, stop_zoom_in_time=0,
+    #              zoom_in_time=0.9895591735839844,
+    #              zoom_out_time=0.19847440719604492),
+    #     ZoomStep(zoom_ratio=9.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.40214109420776367,
+    #              zoom_out_time=0.20867395401000977),
+    #     ZoomStep(zoom_ratio=10.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.10116839408874512,
+    #              zoom_out_time=0.19977283477783203),
+    #     ZoomStep(zoom_ratio=11.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.2007291316986084,
+    #              zoom_out_time=0.20025086402893066),
+    #     ZoomStep(zoom_ratio=12.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.20136809349060059,
+    #              zoom_out_time=0.19693303108215332),
+    #     ZoomStep(zoom_ratio=13.0,
+    #              stop_zoom_in_time=0, zoom_in_time=0.19879579544067383,
+    #              zoom_out_time=0.09151411056518555),
+    #     ZoomStep(zoom_ratio=14.3,
+    #              stop_zoom_in_time=0, zoom_in_time=0.19693827629089355,
+    #              zoom_out_time=0)]
+
+    # noinspection PyUnboundLocalVariable
+    zoom_step_by_step_camera_controller = ZoomStepByStepCameraController(
+        camera_manager=camera_manager,
+        zoom_steps=slow_zoom_steps,
+        zoom_speed=ZoomSpeed.SLOW,
+        live_view=live_view)
+    # noinspection PyUnboundLocalVariable
+    camera_observable.add_listener(
+        ObservableCameraProperty.ZOOM_RATIO,
+        zoom_step_by_step_camera_controller.on_zoom_ratio)
+    zoom_step_by_step_camera_controller.start()
+
     if args.output is not None:
         args.output.write_text(
             json.dumps(
