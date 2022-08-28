@@ -292,24 +292,7 @@ class ZoomStepByStepCameraController:
             sleep(time_till_zoom_is_stopped)
             print('stop zoom')
             self._camera_manager.camera.zoom_stop()
-            print(f'wait for zoom ratio {zoom_step.zoom_ratio} to be reached')
-            start_time = time()
-            while (self._current_zoom_ratio is None
-                   or self._current_zoom_ratio < zoom_step.zoom_ratio):
-                self.live_view.image()
-                print(f"... current zoom ratio is {self._current_zoom_ratio}")
-                elapsed_time = time() - start_time
-                if elapsed_time > zoom_step.zoom_in_time * 2:
-                    print(f'timeout waiting for zoom ratio'
-                          f' {zoom_step.zoom_ratio} to be reached')
-                    break
-            if self._current_zoom_ratio == zoom_step.zoom_ratio:
-                time_till_zoom_ratio_is_checked = \
-                    max(1.0, zoom_step.zoom_in_time * 2)
-                print(f'wait {time_till_zoom_ratio_is_checked} seconds'
-                      f' for zoom ratio to change again')
-                sleep(3)
-                self.live_view.image()
+            self._wait_for_zoom_step_to_be_reached(zoom_step)
             if self._current_zoom_ratio == zoom_step.zoom_ratio:
                 print(f'reached zoom ratio {zoom_step.zoom_ratio} successfully')
                 zoom_step.stop_zoom_in_time = time_till_zoom_is_stopped
@@ -321,6 +304,26 @@ class ZoomStepByStepCameraController:
                 break
         print('zoom out fast to reset zoom ratio to 1.0')
         self._camera_manager.camera.zoom_out_fast()
+
+    def _wait_for_zoom_step_to_be_reached(self, zoom_step):
+        print(f'wait for zoom ratio {zoom_step.zoom_ratio} to be reached')
+        start_time = time()
+        while (self._current_zoom_ratio is None
+               or self._current_zoom_ratio < zoom_step.zoom_ratio):
+            self.live_view.image()
+            print(f"... current zoom ratio is {self._current_zoom_ratio}")
+            elapsed_time = time() - start_time
+            if elapsed_time > zoom_step.zoom_in_time * 2:
+                print(f'timeout waiting for zoom ratio'
+                      f' {zoom_step.zoom_ratio} to be reached')
+                break
+        if self._current_zoom_ratio == zoom_step.zoom_ratio:
+            time_till_zoom_ratio_is_checked = \
+                max(1.0, zoom_step.zoom_in_time * 2)
+            print(f'wait {time_till_zoom_ratio_is_checked} seconds'
+                  f' for zoom ratio to change again')
+            sleep(3)
+            self.live_view.image()
 
     # TODO extract to base class shared with ZoomAnalyzerCameraController
     def _zoom_in(self):
