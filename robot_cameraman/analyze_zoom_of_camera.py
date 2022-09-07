@@ -3,6 +3,7 @@ import json
 import logging
 import signal
 import threading
+import traceback
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
@@ -457,5 +458,15 @@ try:
                 },
                 cls=ZoomStepJsonEncoder,
                 indent=2))
-finally:
-    quit()
+except Exception:
+    # noinspection PyBroadException
+    try:
+        print(f'\n\ntry to zoom out camera (completely)')
+        camera_manager.camera.zoom_out_fast()
+    except Exception:
+        print(f'failed to zoom out camera: {traceback.format_exc()}',
+              file=sys.stderr)
+    print(f'analysis failed: {traceback.format_exc()}',
+          file=sys.stderr)
+    quit(1)
+quit()
