@@ -76,7 +76,7 @@ def quit(sig=None, frame=None, exit_code=0):
         print('wait for camera manager thread')
         camera_manager.cancel()
         camera_manager.join()
-    exit(exit_code)
+        exit(exit_code)
 
 
 def configure_logging():
