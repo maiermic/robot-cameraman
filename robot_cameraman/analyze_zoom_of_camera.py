@@ -213,7 +213,7 @@ class ZoomAnalyzerCameraController:
         zoom_step = self._get_zoom_step_of_ratio(zoom_ratio)
         assert zoom_step is not None, (
             f"could not find ZoomStep of zoom ratio {zoom_ratio}"
-            f"when zooming out from {self._previous_zoom_ratio}")
+            f" when zooming out from {self._previous_zoom_ratio}")
         zoom_step.zoom_out_time = self._elapsed_time.update()
 
     def _get_zoom_step_of_ratio(self, zoom_ratio: float):
