@@ -69,14 +69,14 @@ def parse_arguments() -> Arguments:
     return parser.parse_args()
 
 
-def quit(sig=None, frame=None):
+def quit(sig=None, frame=None, exit_code=0):
     global camera_manager
     print("Exiting...")
     if threading.current_thread() != camera_manager:
         print('wait for camera manager thread')
         camera_manager.cancel()
         camera_manager.join()
-    exit(0)
+    exit(exit_code)
 
 
 def configure_logging():
