@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import List, Optional
 
 # noinspection Mypy
+import numpy
 import sys
 from time import time, sleep
-from more_itertools import first_true
+from more_itertools import first_true, pairwise
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
@@ -102,8 +103,25 @@ def configure_logging():
 class ZoomStep:
     zoom_ratio: float
     zoom_in_time: float
-    stop_zoom_in_time: float
-    zoom_out_time: float
+    stop_zoom_in_time: Optional[float]
+    min_stop_zoom_in_time: Optional[float]
+    max_stop_zoom_in_time: Optional[float]
+    zoom_out_time: Optional[float]
+
+    def __init__(
+            self,
+            zoom_ratio: float,
+            zoom_in_time: float,
+            stop_zoom_in_time: Optional[float] = None,
+            min_stop_zoom_in_time: Optional[float] = None,
+            max_stop_zoom_in_time: Optional[float] = None,
+            zoom_out_time: Optional[float] = None) -> None:
+        self.zoom_ratio = zoom_ratio
+        self.zoom_in_time = zoom_in_time
+        self.stop_zoom_in_time = stop_zoom_in_time
+        self.min_stop_zoom_in_time = min_stop_zoom_in_time
+        self.max_stop_zoom_in_time = max_stop_zoom_in_time
+        self.zoom_out_time = zoom_out_time
 
 
 class ZoomStepJsonEncoder(json.JSONEncoder):
@@ -196,11 +214,10 @@ class ZoomAnalyzerCameraController:
             zoom_in_time = 0 if zoom_ratio == 1 else self._elapsed_time.update()
             self.zoom_steps.append(
                 ZoomStep(zoom_ratio=zoom_ratio,
-                         zoom_in_time=zoom_in_time,
-                         stop_zoom_in_time=0,
-                         zoom_out_time=0))
+                         zoom_in_time=zoom_in_time))
             print(zoom_ratio)
         if zoom_ratio == self._max_zoom_ratio:
+            self._get_zoom_step_of_ratio(zoom_ratio).zoom_out_time = 0
             self._zoom_out()
             self._state = self._State.ZOOM_OUT
             self._elapsed_time.reset()
@@ -222,6 +239,33 @@ class ZoomAnalyzerCameraController:
             self.zoom_steps,
             None,
             lambda zoom_step: zoom_step.zoom_ratio == zoom_ratio)
+
+
+class ZoomToStepException(Exception):
+    def __init__(
+            self,
+            expected_zoom_ratio: float,
+            actual_zoom_ratio: float,
+            time_after_zoom_has_been_stopped: float) -> None:
+        super().__init__(
+            f'measurement of zoom steps is not reliable:'
+            f' tried to stop zoom at ratio {expected_zoom_ratio},'
+            f' after {time_after_zoom_has_been_stopped} seconds'
+            f' but stopped at ratio {actual_zoom_ratio}')
+        self.expected_zoom_ratio = expected_zoom_ratio
+        self.actual_zoom_ratio = actual_zoom_ratio
+        self.time_after_zoom_has_been_stopped = time_after_zoom_has_been_stopped
+
+
+def golden_ratio(min_value: float, max_value: float, inverted: bool = False):
+    assert min_value <= max_value, f'{min_value} <= {max_value}'
+    # constants of golden ratio are used in the following
+    major = 0.618033988749895
+    minor = 0.3819660112501051
+    if inverted:
+        return (min_value * minor) + (max_value * major)
+    else:
+        return (min_value * major) + (max_value * minor)
 
 
 class ZoomStepByStepCameraController:
@@ -254,57 +298,152 @@ class ZoomStepByStepCameraController:
         sleep(3)
         # self._camera_manager.camera.zoom_out_fast()
         # return
-        print(f"evaluate zoom steps")
+        print(f"evaluate zoom steps\n")
         self._zoom_step_by_step()
 
     def _zoom_step_by_step(self):
-        for zoom_step in self.zoom_steps:
+        is_previous_zoom_step_precalculated = False
+        for previous_zoom_step, zoom_step in pairwise(self.zoom_steps):
             if zoom_step.zoom_in_time == 0:
                 print(f'skip zoom ratio {zoom_step.zoom_ratio},'
                       f' since it should be reachable in 0 seconds')
                 continue
+            if zoom_step.stop_zoom_in_time is not None:
+                print(f'skip measurement of zoom ratio {zoom_step.zoom_ratio},'
+                      f' since (pre-calculated) time is given')
+                is_previous_zoom_step_precalculated = True
+                continue
+            if is_previous_zoom_step_precalculated:
+                print(f'zoom to previous zoom ratio {zoom_step.zoom_ratio},'
+                      f' since it has been skipped')
+                self._zoom_to_step(previous_zoom_step)
+                print('')
+            self._measure_zoom_step_stop_time(
+                zoom_step=zoom_step, previous_zoom_step=previous_zoom_step)
+            is_previous_zoom_step_precalculated = False
+        print('zoom out fast to reset zoom ratio to 1.0')
+        self._camera_manager.camera.zoom_out_fast()
+
+    def _measure_zoom_step_stop_time(
+            self,
+            zoom_step: ZoomStep,
+            previous_zoom_step: ZoomStep):
+        wait_step = 0.05
+        print(f"measure stop times (min and max)"
+              f" of zoom ratio {zoom_step.zoom_ratio}")
+        print("=" * 72)
+        print(f"check if previous zoom ratio {previous_zoom_step.zoom_ratio}"
+              f" is stable")
+        self._wait_for_zoom_ratio_to_change_again(previous_zoom_step)
+        if self._current_zoom_ratio != previous_zoom_step.zoom_ratio:
+            raise Exception(f"previous zoom ratio is unstable or invalid:"
+                            f" expected {previous_zoom_step.zoom_ratio},"
+                            f" but got {self._current_zoom_ratio}")
+        else:
+            print(f"previous zoom ratio {previous_zoom_step.zoom_ratio}"
+                  f" is stable")
+        for time_till_zoom_is_stopped in numpy.arange(zoom_step.zoom_in_time,
+                                                      0.0, -wait_step):
             self._zoom_in()
             print(f"zoom ratio {zoom_step.zoom_ratio} is expected to be reached"
-                  f" in {zoom_step.zoom_in_time} seconds")
-            # TODO find wait factors instead of using magic numbers that only
-            #   fit one camera model (Panasonic DMC LF1)
-            # time_till_zoom_is_stopped = zoom_step.zoom_in_time / 2
-            # time_till_zoom_is_stopped = zoom_step.zoom_in_time
-            # wait_factor = 0.96 if zoom_step.zoom_ratio < 8 else 0.5
-            if zoom_step.zoom_ratio <= 6.0:
-                wait_factor = 0.96
-            elif zoom_step.zoom_ratio <= 7.1:
-                wait_factor = 0.9
-            elif zoom_step.zoom_ratio <= 8.0:
-                # wait_factor = 0.3
-                wait_factor = 0.25
-            elif zoom_step.zoom_ratio <= 10.0:
-                # wait_factor = 0.4
-                wait_factor = 0.5
-            elif zoom_step.zoom_ratio <= 11.0:
-                wait_factor = 0.9
-            elif zoom_step.zoom_ratio <= 12.0:
-                wait_factor = 0.9
-            else:
-                wait_factor = 0.9
-            time_till_zoom_is_stopped = zoom_step.zoom_in_time * wait_factor
-            print(f"wait {time_till_zoom_is_stopped} seconds"
-                  f" (factor {wait_factor})")
+                  f" in {zoom_step.zoom_in_time} seconds at the latest")
+            print(f"wait {time_till_zoom_is_stopped} seconds")
             sleep(time_till_zoom_is_stopped)
             print('stop zoom')
             self._camera_manager.camera.zoom_stop()
             self._wait_for_zoom_step_to_be_reached(zoom_step)
             if self._current_zoom_ratio == zoom_step.zoom_ratio:
                 print(f'reached zoom ratio {zoom_step.zoom_ratio} successfully')
-                zoom_step.stop_zoom_in_time = time_till_zoom_is_stopped
+                if zoom_step.max_stop_zoom_in_time is None:
+                    print(f'max stop zoom-in time: {time_till_zoom_is_stopped}')
+                    zoom_step.max_stop_zoom_in_time = time_till_zoom_is_stopped
+                zoom_step.min_stop_zoom_in_time = time_till_zoom_is_stopped
             else:
-                print(
-                    f'tried to stop zoom at ratio {zoom_step.zoom_ratio},'
-                    f' but stopped at ratio {self._current_zoom_ratio}',
-                    file=sys.stderr)
-                break
-        print('zoom out fast to reset zoom ratio to 1.0')
-        self._camera_manager.camera.zoom_out_fast()
+                print(f'tried to stop zoom at ratio {zoom_step.zoom_ratio},'
+                      f" after {time_till_zoom_is_stopped} seconds"
+                      f' but stopped at ratio {self._current_zoom_ratio}')
+                if (zoom_step.min_stop_zoom_in_time is not None
+                        and zoom_step.max_stop_zoom_in_time is not None):
+                    break
+            print(f'zoom back to zoom ratio'
+                  f' {previous_zoom_step.zoom_ratio}')
+            self._zoom_to_step(previous_zoom_step)
+            print("-" * 72)
+        if (zoom_step.min_stop_zoom_in_time is None
+                or zoom_step.max_stop_zoom_in_time is None):
+            raise Exception(f"Could not determine stop times of zoom ratio"
+                            f" {zoom_step.zoom_ratio}")
+        print(f'min stop zoom-in time:'
+              f' {zoom_step.min_stop_zoom_in_time}')
+
+        self._find_stable_stop_zoom_in_time(zoom_step)
+        print('')
+
+    def _find_stable_stop_zoom_in_time(self, zoom_step):
+        zoom_step.stop_zoom_in_time = golden_ratio(
+            zoom_step.min_stop_zoom_in_time, zoom_step.max_stop_zoom_in_time)
+        try:
+            print(f'use stop zoom-in time (golden ratio):'
+                  f' {zoom_step.stop_zoom_in_time}')
+            print(f'zoom to zoom ratio {zoom_step.zoom_ratio}'
+                  f' to check if measurements are reliable')
+            self._zoom_to_step(zoom_step)
+        except ZoomToStepException as current_exception:
+            def adjust_and_retry(e: ZoomToStepException):
+                if e.actual_zoom_ratio < e.expected_zoom_ratio:
+                    zoom_step.stop_zoom_in_time = golden_ratio(
+                        zoom_step.stop_zoom_in_time,
+                        zoom_step.max_stop_zoom_in_time,
+                        inverted=True)
+                    print(f'adjust stop zoom-in time to'
+                          f' {zoom_step.stop_zoom_in_time},'
+                          f' since zoom has been stopped too soon previously')
+                else:
+                    zoom_step.stop_zoom_in_time = golden_ratio(
+                        zoom_step.min_stop_zoom_in_time,
+                        zoom_step.stop_zoom_in_time)
+                    print(f'adjust stop zoom-in time to'
+                          f' {zoom_step.stop_zoom_in_time},'
+                          f' since zoom has been stopped too late previously')
+                print(f'zoom to zoom ratio {zoom_step.zoom_ratio}'
+                      f' to check if measurements are reliable')
+                self._zoom_to_step(zoom_step)
+
+            for _try in range(3):
+                try:
+                    adjust_and_retry(current_exception)
+                    return
+                except ZoomToStepException as adjusted_exception:
+                    current_exception = adjusted_exception
+
+            if (current_exception.actual_zoom_ratio
+                    > current_exception.expected_zoom_ratio):
+                raise current_exception
+
+            extrema = (
+                (zoom_step.max_stop_zoom_in_time, 'max_stop_zoom_in_time'),
+                (golden_ratio(zoom_step.max_stop_zoom_in_time,
+                              zoom_step.zoom_in_time),
+                 'golden_ratio(max_stop_zoom_in_time, zoom_in_time)'),
+                (golden_ratio(zoom_step.max_stop_zoom_in_time,
+                              zoom_step.zoom_in_time,
+                              inverted=True),
+                 'inverted golden_ratio(max_stop_zoom_in_time, zoom_in_time)'),
+                (zoom_step.zoom_in_time, 'zoom_in_time'),
+            )
+            print('none of the expected stop times worked, try extrema')
+            for stop_zoom_in_time, description in extrema:
+                try:
+                    zoom_step.stop_zoom_in_time = stop_zoom_in_time
+                    print(f'try {description} as stop time:'
+                          f' {zoom_step.stop_zoom_in_time}')
+                    print(f'zoom to zoom ratio {zoom_step.zoom_ratio}'
+                          f' to check if measurements are reliable')
+                    self._zoom_to_step(zoom_step)
+                    return
+                except ZoomToStepException as adjusted_exception:
+                    current_exception = adjusted_exception
+            raise current_exception
 
     def _wait_for_zoom_step_to_be_reached(self, zoom_step):
         print(f'wait for zoom ratio {zoom_step.zoom_ratio} to be reached')
@@ -319,12 +458,15 @@ class ZoomStepByStepCameraController:
                       f' {zoom_step.zoom_ratio} to be reached')
                 break
         if self._current_zoom_ratio == zoom_step.zoom_ratio:
-            time_till_zoom_ratio_is_checked = \
-                max(1.0, zoom_step.zoom_in_time * 2)
-            print(f'wait {time_till_zoom_ratio_is_checked} seconds'
-                  f' for zoom ratio to change again')
-            sleep(3)
-            self.live_view.image()
+            self._wait_for_zoom_ratio_to_change_again(zoom_step)
+
+    def _wait_for_zoom_ratio_to_change_again(self, zoom_step: ZoomStep):
+        time_till_zoom_ratio_is_checked = \
+            max(3.0, zoom_step.zoom_in_time * 2)
+        print(f'wait {time_till_zoom_ratio_is_checked} seconds'
+              f' for zoom ratio to change again')
+        sleep(time_till_zoom_ratio_is_checked)
+        self.live_view.image()
 
     # TODO extract to base class shared with ZoomAnalyzerCameraController
     def _zoom_in(self):
@@ -349,6 +491,48 @@ class ZoomStepByStepCameraController:
 
     def on_zoom_ratio(self, zoom_ratio: float):
         self._current_zoom_ratio = zoom_ratio
+
+    def _zoom_to_step(self, zoom_step: ZoomStep):
+        self._zoom_out_completely()
+        sleep(3)
+        if zoom_step.zoom_ratio == 1.0:
+            # TODO check if really necessary: it seems that my camera zooms in
+            #   faster if motor is still active (zooming out)
+            self._wait_for_zoom_step_to_be_reached(zoom_step)
+            return
+        print(f"_zoom_to_step({zoom_step}),"
+              f" where zoom_steps are {self.zoom_steps}")
+        time_till_previous_zoom_step_is_reached = sum([
+            s.zoom_in_time for s in self.zoom_steps
+            if s.zoom_ratio < zoom_step.zoom_ratio])
+        time_till_zoom_is_stopped = (zoom_step.stop_zoom_in_time
+                                     + time_till_previous_zoom_step_is_reached)
+        self._zoom_in()
+        print(f"zoom ratio {zoom_step.zoom_ratio} is expected to be reached"
+              f" in {time_till_zoom_is_stopped} seconds"
+              f" starting from zoom ratio 1.0"
+              f" ({time_till_previous_zoom_step_is_reached} seconds till"
+              f" previous zoom ratio is reached"
+              f" + {zoom_step.stop_zoom_in_time} seconds till zoom ratio"
+              f" {zoom_step.zoom_ratio} is reached next")
+        sleep(time_till_zoom_is_stopped)
+        print('stop zoom')
+        self._camera_manager.camera.zoom_stop()
+        self._wait_for_zoom_step_to_be_reached(zoom_step)
+        if self._current_zoom_ratio == zoom_step.zoom_ratio:
+            print(f'reached zoom ratio {zoom_step.zoom_ratio} successfully')
+        else:
+            raise ZoomToStepException(
+                expected_zoom_ratio=zoom_step.zoom_ratio,
+                actual_zoom_ratio=self._current_zoom_ratio,
+                time_after_zoom_has_been_stopped=time_till_zoom_is_stopped)
+
+    def _zoom_out_completely(self):
+        print("zoom out completely")
+        self._camera_manager.camera.zoom_out_fast()
+        while self._current_zoom_ratio != 1.0:
+            self.live_view.image()
+            print(f"... current zoom ratio is {self._current_zoom_ratio}")
 
 
 args = parse_arguments()
