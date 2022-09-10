@@ -561,20 +561,22 @@ signal.signal(signal.SIGTERM, quit)
 
 camera_manager.start()
 
-try:
+
+def analyze_zoom_steps(zoom_speed: ZoomSpeed):
+    global zoom_analyzer_camera_controller, live_view
+    zoom_analyzer_camera_controller.zoom_speed = zoom_speed
     zoom_analyzer_camera_controller.start()
     while not zoom_analyzer_camera_controller.is_stopped():
         # noinspection PyUnboundLocalVariable
-        image = live_view.image()
-    slow_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
+        live_view.image()  # read zoom ratio
+    return zoom_analyzer_camera_controller.zoom_steps
+
+# noinspection PyBroadException
+try:
+    slow_zoom_steps = analyze_zoom_steps(ZoomSpeed.SLOW)
     print(slow_zoom_steps)
 
-    zoom_analyzer_camera_controller.zoom_speed = ZoomSpeed.FAST
-    zoom_analyzer_camera_controller.start()
-    while not zoom_analyzer_camera_controller.is_stopped():
-        # noinspection PyUnboundLocalVariable
-        image = live_view.image()
-    fast_zoom_steps = zoom_analyzer_camera_controller.zoom_steps
+    fast_zoom_steps = analyze_zoom_steps(ZoomSpeed.FAST)
     print(fast_zoom_steps)
 
     # TODO remove uncommented precalculated values of slow_zoom_steps
