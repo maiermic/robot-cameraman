@@ -754,6 +754,21 @@ def sample_zoom_steps(
     return multi_slow_zoom_steps
 
 
+def print_zoom_steps_as_tsv(zoom_steps: List[ZoomStep]):
+    columns = (
+        'zoom_ratio',
+        'zoom_in_time',
+        'total_zoom_in_time',
+        'stop_zoom_in_time',
+        'min_stop_zoom_in_time',
+        'max_stop_zoom_in_time',
+        'zoom_out_time',
+    )
+    print('\t'.join(columns))
+    for s in zoom_steps:
+        print('\t'.join(map(lambda prop: str(getattr(s, prop)), columns)))
+
+
 # noinspection PyBroadException
 try:
     if slow_zoom_steps is None:
@@ -770,6 +785,10 @@ try:
         print(f'slow_zoom_steps: {slow_zoom_steps}')
         print('\nfinished sampling zoom steps with slow speed')
         print('\n' * 2)
+
+    print('\n')
+    print_zoom_steps_as_tsv(slow_zoom_steps)
+    print('\n')
 
     if fast_zoom_steps is None:
         print('=' * 33)
