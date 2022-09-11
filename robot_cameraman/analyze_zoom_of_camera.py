@@ -145,6 +145,7 @@ class ZoomAnalyzerCameraController:
         ANALYZE_SLOW = auto()
         ZOOM_OUT = auto()
         STOPPED = auto()
+        CANCELED = auto()
 
     zoom_speed: ZoomSpeed
     _state: _State
@@ -192,6 +193,7 @@ class ZoomAnalyzerCameraController:
         self._elapsed_time.reset()
 
     def cancel(self):
+        self._state = self._State.CANCELED
         print(f'cancel zoom analyzer')
         self._zoom_out_completely()
         self._state = self._State.STOPPED
@@ -230,7 +232,7 @@ class ZoomAnalyzerCameraController:
 
     def on_zoom_ratio(self, zoom_ratio: float):
         self._current_zoom_ratio = zoom_ratio
-        if self._state == self._State.STOPPED:
+        if self._state in (self._State.STOPPED, self._State.CANCELED):
             return
         if self._state == self._State.ZOOM_OUT:
             if zoom_ratio == 1:
