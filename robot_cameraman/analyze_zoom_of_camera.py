@@ -711,7 +711,6 @@ def sample_zoom_steps(
                   file=sys.stderr)
             # noinspection PyBroadException
             try:
-                print('cancel zoom analyzer')
                 zoom_analyzer_camera_controller.cancel()
                 print('wait for camera to get ready')
                 sleep(3)
