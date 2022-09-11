@@ -394,9 +394,7 @@ class ZoomStepByStepCameraController:
                 if (zoom_step.min_stop_zoom_in_time is not None
                         and zoom_step.max_stop_zoom_in_time is not None):
                     break
-            print(f'zoom back to zoom ratio'
-                  f' {previous_zoom_step.zoom_ratio}')
-            self._zoom_to_step(previous_zoom_step)
+            self._zoom_back_to(previous_zoom_step)
             print("-" * 72)
         if (zoom_step.min_stop_zoom_in_time is None
                 or zoom_step.max_stop_zoom_in_time is None):
@@ -407,6 +405,26 @@ class ZoomStepByStepCameraController:
 
         self._find_stable_stop_zoom_in_time(zoom_step)
         print('')
+
+    def _zoom_back_to(self, previous_zoom_step):
+        last_zoom_to_step_exception = None
+        for try_count in range(3):
+            try:
+                print(f'{"" if try_count == 0 else "retry to "}zoom back'
+                      f' to zoom ratio {previous_zoom_step.zoom_ratio}')
+                self._zoom_to_step(previous_zoom_step)
+            except ZoomToStepException as e:
+                last_zoom_to_step_exception = e
+                print(f'failed to zoom back to zoom ratio'
+                      f' {previous_zoom_step.zoom_ratio} due to error:'
+                      f'{traceback.format_exc()}',
+                      file=sys.stderr)
+                continue
+            else:
+                break
+        else:
+            if last_zoom_to_step_exception is not None:
+                raise last_zoom_to_step_exception
 
     def _find_stable_stop_zoom_in_time(self, zoom_step):
         zoom_step.stop_zoom_in_time = golden_ratio(
