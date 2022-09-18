@@ -35,7 +35,7 @@ from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
-from robot_cameraman.ui import ShowSpeedsInStatusBar
+from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 
 to_exit: threading.Event
@@ -296,11 +296,10 @@ user_interfaces.append(
         tracking_strategy=configurable_tracking_strategy,
         align_strategy=configurable_align_tracking_strategy))
 # noinspection PyProtectedMember
-user_interfaces.append(
-    ShowSpeedsInStatusBar(
-        pan_speed_manager=rotate_speed_manager,
-        tilt_speed_manager=tilt_speed_manager,
-        camera_speeds=cameraman_mode_manager._camera_speeds))
+status_bar = StatusBar(pan_speed_manager=rotate_speed_manager,
+                       tilt_speed_manager=tilt_speed_manager,
+                       camera_speeds=cameraman_mode_manager._camera_speeds)
+user_interfaces.append(status_bar)
 
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()

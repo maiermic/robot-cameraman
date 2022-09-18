@@ -44,7 +44,7 @@ def create_attribute_checkbox(button_name: str, obj, attribute_name):
         1 if getattr(obj, attribute_name) else 0)
 
 
-class ShowSpeedsInStatusBar(UserInterface):
+class StatusBar(UserInterface):
     _pan_speed_manager: SpeedManager
     _tilt_speed_manager: SpeedManager
     _camera_speeds: CameraSpeeds
