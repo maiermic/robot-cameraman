@@ -196,6 +196,9 @@ class CameraZoomLimitController:
         self.min_zoom_ratio = None
         self.max_zoom_ratio = None
 
+    def update_zoom_ratio(self, zoom_ratio: float):
+        self.zoom_ratio = zoom_ratio
+
     def update(self, camera_speeds: CameraSpeeds) -> None:
         if self.zoom_ratio is None:
             return
