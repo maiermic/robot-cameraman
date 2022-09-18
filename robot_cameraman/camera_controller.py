@@ -83,6 +83,9 @@ class ElapsedTime:
         self._last_update_time = current_time
         return elapsed_time
 
+    def get(self) -> float:
+        return time() - self._last_update_time
+
 
 class SpeedManager:
     def __init__(self, acceleration_per_second: float = 400,
