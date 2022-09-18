@@ -332,8 +332,10 @@ elif args.liveView == 'Panasonic':
         max_speed_and_acceleration_updater.on_zoom_ratio)
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,
-        lambda zoom_ratio: setattr(
-            camera_zoom_limit_controller, 'zoom_ratio', zoom_ratio))
+        status_bar.update_zoom_ratio)
+    camera_observable.add_listener(
+        ObservableCameraProperty.ZOOM_RATIO,
+        camera_zoom_limit_controller.update_zoom_ratio)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)

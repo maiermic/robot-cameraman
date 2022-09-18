@@ -1,5 +1,6 @@
 import logging
 from logging import Logger
+from typing import Optional
 
 import cv2
 from typing_extensions import Protocol
@@ -48,6 +49,7 @@ class StatusBar(UserInterface):
     _pan_speed_manager: SpeedManager
     _tilt_speed_manager: SpeedManager
     _camera_speeds: CameraSpeeds
+    _zoom_ratio: Optional[float]
 
     def __init__(
             self,
@@ -57,9 +59,13 @@ class StatusBar(UserInterface):
         self._pan_speed_manager = pan_speed_manager
         self._tilt_speed_manager = tilt_speed_manager
         self._camera_speeds = camera_speeds
+        self._zoom_ratio = None
 
     def open(self) -> None:
         pass
+
+    def update_zoom_ratio(self, zoom_ratio: float):
+        self._zoom_ratio = zoom_ratio
 
     def update(self) -> None:
         pan_speed = float(self._pan_speed_manager.current_speed)
@@ -71,8 +77,11 @@ class StatusBar(UserInterface):
             ZoomSpeed.ZOOM_OUT_SLOW: 'zoom out slow',
             ZoomSpeed.ZOOM_OUT_FAST: 'zoom out fast',
         }[self._camera_speeds.zoom_speed]
+        zoom_ratio = ('?' if self._zoom_ratio is None
+                      else f'{self._zoom_ratio:4.1f}')
         cv2.displayStatusBar(
             'Robot Cameraman',
             f"pan: {pan_speed :3.2}, "
             f"tilt: {tilt_speed :3.2}, "
+            f"zoom-ratio: {zoom_ratio}, "
             f"{zoom_speed_str}")
