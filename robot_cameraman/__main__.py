@@ -327,6 +327,11 @@ elif args.liveView == 'Panasonic':
     camera_observable = PanasonicCameraObservable(
         min_focal_length=args.cameraMinFocalLength)
     live_view.add_ex_header_listener(camera_observable.on_ex_header)
+    # TODO add CLI argument to enable ExHeaderToCsvWriter
+    # noinspection PyUnreachableCode
+    if False:
+        from robot_cameraman.camera_observable import ExHeaderToCsvWriter
+        live_view.add_ex_header_listener(ExHeaderToCsvWriter().on_ex_header)
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,
         max_speed_and_acceleration_updater.on_zoom_ratio)
