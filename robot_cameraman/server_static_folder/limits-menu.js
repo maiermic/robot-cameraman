@@ -6,7 +6,7 @@ template.innerHTML = `
     .partial-input {
         font-size: 0.8em;
     }
-    .angle-limit {
+    .range-limit {
         display: grid;
         grid-template-columns: 9ch 1fr auto 2ch;
         white-space: nowrap;
@@ -29,7 +29,7 @@ template.innerHTML = `
           <span>Active</span>
           <input class="active" type="checkbox">
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Minimum</span>
           <input class="minimum-range"
                  type="range"
@@ -45,7 +45,7 @@ template.innerHTML = `
                  oninput="this.previousElementSibling.value = this.value">
           <span>°</span>
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Maximum</span>
           <input class="maximum-range"
                  type="range"
@@ -70,7 +70,7 @@ template.innerHTML = `
           <span>Active</span>
           <input class="active" type="checkbox">
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Minimum</span>
           <input class="minimum-range"
                  type="range"
@@ -86,7 +86,7 @@ template.innerHTML = `
                  oninput="this.previousElementSibling.value = this.value">
           <span>°</span>
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Maximum</span>
           <input class="maximum-range"
                  type="range"
@@ -111,7 +111,7 @@ template.innerHTML = `
           <span>Active</span>
           <input class="active" type="checkbox">
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Minimum</span>
           <input class="minimum-range"
                  type="range"
@@ -129,7 +129,7 @@ template.innerHTML = `
                  oninput="this.previousElementSibling.value = this.value">
           <span>x</span>
       </label>
-      <label class="partial-input angle-limit">
+      <label class="partial-input range-limit">
           <span>Maximum</span>
           <input class="maximum-range"
                  type="range"
