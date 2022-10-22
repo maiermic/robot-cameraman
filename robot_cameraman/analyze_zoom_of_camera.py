@@ -2,17 +2,16 @@ import argparse
 import json
 import logging
 import signal
+import sys
 import threading
 import traceback
-from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
+from time import time, sleep
 from typing import List, Optional
 
 # noinspection Mypy
 import numpy
-import sys
-from time import time, sleep
 from more_itertools import first_true, pairwise
 from typing_extensions import Protocol
 
