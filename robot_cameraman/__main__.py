@@ -4,6 +4,7 @@ import signal
 import threading
 # noinspection Mypy
 from pathlib import Path
+from typing import Optional
 
 import PIL.Image
 import PIL.ImageFont
@@ -13,7 +14,8 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
-    SpeedManager, CameraAngleLimitController, CameraZoomLimitController
+    SpeedManager, CameraAngleLimitController, \
+    PredictiveCameraZoomLimitController, CameraZoomLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
@@ -37,6 +39,7 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
+from robot_cameraman.zoom import parse_zoom_steps
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -76,6 +79,7 @@ class RobotCameramanArguments(Protocol):
     liveViewHeight: int
     cameraMinFocalLength: float
     cameraMaxFocalLength: float
+    camera_zoom_steps: Optional[Path]
     ssl_key: Path
     ssl_certificate: Path
 
@@ -188,6 +192,16 @@ def parse_arguments() -> RobotCameramanArguments:
                              "of the used camera. The actual focal length"
                              "and not the 35mm equivalent is expected.")
     parser.add_argument(
+        '--camera-zoom-steps',
+        type=Path,
+        default=None,
+        help="Path to file that contains the configuration of the camera's"
+             " zoom-steps (see"
+             " robot_cameraman/tools/analyze_zoom_of_camera.py)."
+             " If this argument is given,"
+             " the PredictiveCameraZoomLimitController is used to limit the"
+             " zoom of the camera.")
+    parser.add_argument(
         '--ssl-key',
         type=Path,
         default=resources / 'server.key',
@@ -271,7 +285,13 @@ tilt_speed_manager = max_speed_and_acceleration_updater.add(
 configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
-camera_zoom_limit_controller = CameraZoomLimitController()
+
+if args.camera_zoom_steps is not None:
+    camera_zoom_limit_controller = PredictiveCameraZoomLimitController(
+        zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
+else:
+    camera_zoom_limit_controller = CameraZoomLimitController()
+
 camera_angle_limit_controller = CameraAngleLimitController(gimbal=gimbal)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
