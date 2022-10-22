@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import more_itertools
 
@@ -68,3 +68,31 @@ def parse_zoom_steps(file: Path) -> ZoomSteps:
                  max_stop_zoom_in_time=data['max_stop_zoom_in_time'],
                  zoom_out_time=data['zoom_out_time'])
         for data in config['slow']])
+
+
+@dataclass()
+class ZoomRatioIndexRange:
+    zoom_ratio: float
+    min_index: int
+    max_index: int
+
+    @property
+    def index_count(self) -> int:
+        return self.max_index - self.min_index + 1
+
+
+class ZoomRatioIndexRangesBuilder:
+    zoom_ratio_to_range: Dict[float, ZoomRatioIndexRange]
+
+    def __init__(self) -> None:
+        self.zoom_ratio_to_range = {}
+
+    def add(self, zoom_index: int, zoom_ratio: float):
+        if zoom_ratio not in self.zoom_ratio_to_range:
+            self.zoom_ratio_to_range[zoom_ratio] = \
+                ZoomRatioIndexRange(
+                    zoom_ratio=zoom_ratio,
+                    min_index=zoom_index,
+                    max_index=zoom_index)
+        else:
+            self.zoom_ratio_to_range[zoom_ratio].max_index = zoom_index
