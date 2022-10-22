@@ -72,23 +72,23 @@ class ExHeaderToCsvWriter:
         root = Path(__file__).parent.parent
         now = datetime.datetime.today()
         prefix = f'ex-header_{now.strftime("%d-%m-%Y_%H%M%S")}'
-        self._csv_writer_1 = csv.writer(open(root / f'{prefix}_1.csv', 'w'))
-        self._ex_header_1_attribute_names = [
+        self._csv_writer = csv.writer(open(root / f'{prefix}.csv', 'w'))
+        self._ex_header_attribute_names = [
             field.name for field in fields(ExHeader8)]
-        # self._ex_header_1_attribute_names = [
+        # self._ex_header_attribute_names = [
         #     'zoomRatio',
         #     'b',
         #     'u',
         #     'A']
-        self._csv_writer_1.writerow(self._ex_header_1_attribute_names)
-        self._previous_header = None
+        self._csv_writer.writerow(self._ex_header_attribute_names)
+        self._previous_row = None
 
     def on_ex_header(self, ex_header: ExHeader):
         if isinstance(ex_header, ExHeader8):
-            if self._previous_header != ex_header:
-                self._previous_header = ex_header
-                self._csv_writer_1.writerow(
-                    [getattr(ex_header, attribute_name)
-                     for attribute_name in self._ex_header_1_attribute_names])
+            row = [getattr(ex_header, attribute_name)
+                   for attribute_name in self._ex_header_attribute_names]
+            if self._previous_row != row:
+                self._previous_row = row
+                self._csv_writer.writerow(row)
         else:
             logger.error(f'unexpected header type: {ex_header}')
