@@ -204,19 +204,26 @@ class CameraZoomLimitController:
             return
         logger.debug(
             f'check if current zoom ratio {self.zoom_ratio} reached limit')
-        # TODO zoom has to be stopped before the limit is reached
-        #   Otherwise, the camera exceeds the zoom limit and stops not until
-        #   the next zoom step
-        if (self.min_zoom_ratio is not None
-                and self.zoom_ratio <= self.min_zoom_ratio
-                and camera_speeds.zoom_speed < 0):
+        if (self._is_heading_towards_min(camera_speeds.zoom_speed)
+                and self._is_min_reached()):
             logger.debug('min zoom ratio reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
-        if (self.max_zoom_ratio is not None
-                and self.zoom_ratio >= self.max_zoom_ratio
-                and camera_speeds.zoom_speed > 0):
+        if (self._is_heading_towards_max(camera_speeds.zoom_speed)
+                and self._is_max_reached()):
             logger.debug('max zoom ratio reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+    def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
+        return self.min_zoom_ratio is not None and zoom_speed < 0
+
+    def _is_min_reached(self):
+        return self.zoom_ratio <= self.min_zoom_ratio
+
+    def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
+        return self.max_zoom_ratio is not None and zoom_speed > 0
+
+    def _is_max_reached(self):
+        return self.zoom_ratio >= self.max_zoom_ratio
 
 
 class CameraAngleLimitController:
