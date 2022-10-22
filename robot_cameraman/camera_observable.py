@@ -70,7 +70,7 @@ class PanasonicCameraObservable(CameraObservable):
 class ExHeaderToCsvWriter:
     def __init__(self) -> None:
         root = Path(__file__).parent.parent
-        now = datetime.date.today()
+        now = datetime.datetime.today()
         prefix = f'ex-header_{now.strftime("%d-%m-%Y_%H%M%S")}'
         self._csv_writer_1 = csv.writer(open(root / f'{prefix}_1.csv', 'w'))
         self._ex_header_1_attribute_names = [
