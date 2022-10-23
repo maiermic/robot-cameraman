@@ -1,4 +1,5 @@
 import {configurationRequestQueue, getJson} from "./api.js";
+import {range} from "./util.js";
 
 const template = document.createElement('template')
 template.innerHTML = `
@@ -9,6 +10,11 @@ template.innerHTML = `
     .range-limit {
         display: grid;
         grid-template-columns: 9ch 1fr auto 2ch;
+        white-space: nowrap;
+    }
+    .dropdown {
+        display: grid;
+        grid-template-columns: 9ch 1fr auto;
         white-space: nowrap;
     }
 
@@ -163,6 +169,11 @@ class LimitsMenu extends HTMLElement {
         pan,
         tilt,
         zoom,
+        zoomIndex,
+      },
+      camera: {
+        /** @type {{zoom_ratio: number, min_index: number, max_index: number}[]} */
+        zoomRatioIndexRanges,
       }
     } = await getJson('/api/configuration');
     const node =
@@ -178,11 +189,27 @@ class LimitsMenu extends HTMLElement {
       value: tilt,
       configurationKey: 'tilt',
     })
-    this._zoomListener = this._setValueAndListener({
-      parent: node.querySelector('.zoom-limit'),
-      value: zoom,
-      configurationKey: 'zoom',
-    })
+    const $zoomLimit = node.querySelector('.zoom-limit');
+    if (zoomRatioIndexRanges) {
+      $zoomLimit.querySelectorAll('.range-limit').forEach(e => e.remove())
+      $zoomLimit.querySelector('summary label').innerText = 'Zoom Index'
+      this._zoomListener = this._createZoomIndexLimitDropdown({
+        parent: $zoomLimit,
+        value: zoomIndex,
+        values: zoomRatioIndexRanges
+          .flatMap(r =>
+            Array.from(range(r.min_index, r.max_index + 1))
+              .map(index => ({ratio: r.zoom_ratio, index}))
+          ),
+        configurationKey: 'zoomIndex',
+      })
+    } else {
+      this._zoomListener = this._setValueAndListener({
+        parent: $zoomLimit,
+        value: zoom,
+        configurationKey: 'zoom',
+      })
+    }
     /**
      * @param e {InputEvent}
      * @private
@@ -206,7 +233,7 @@ class LimitsMenu extends HTMLElement {
 
   /**
    * @param parent {Element}
-   * @param value {number}
+   * @param value {[number, number] | null}
    * @param configurationKey {string}
    * @private
    */
@@ -247,6 +274,68 @@ class LimitsMenu extends HTMLElement {
     return inputListener;
   }
 
+  /**
+   * @param parent {Element}
+   * @param value {[number, number] | null}
+   * @param values {{index: number, ratio: number}[]}
+   * @param configurationKey {string}
+   * @private
+   */
+  _createZoomIndexLimitDropdown({parent, value, values, configurationKey}) {
+    /**
+     * @param labelText {string}
+     * @param selected {number}
+     * @return {HTMLSelectElement}
+     */
+    const createDropdown = ({labelText, selected}) => {
+      const $label = document.createElement('label');
+      $label.classList.add('partial-input', 'dropdown')
+      const $title = document.createElement('span');
+      $title.innerText = labelText
+      $label.appendChild($title)
+      const $select = document.createElement('select');
+      for (const {index, ratio} of values) {
+        const $option = document.createElement('option');
+        $option.value = String(index)
+        $option.innerText = `${index} (${ratio.toFixed(1)}x)`
+        if (index === selected) {
+          $option.selected = true
+        }
+        $select.appendChild($option)
+      }
+      $label.appendChild($select)
+      parent.appendChild($label)
+      return $select
+    }
+    const $minimum = createDropdown({
+      labelText: 'Minimum',
+      selected: value ? value.at(0) : values.at(0).index
+    })
+    const $maximum = createDropdown({
+      labelText: 'Maximum',
+      selected: value ? value.at(-1) : values.at(-1).index
+    })
+    /** @type {HTMLInputElement} */
+    const activeElement = parent.querySelector('.active');
+    activeElement.checked = Boolean(value)
+    const inputListener = () => {
+      // noinspection JSIgnoredPromiseFromCall
+      configurationRequestQueue.add({
+        limits: {
+          [configurationKey]:
+            activeElement.checked
+              ? [
+                Number.parseInt($minimum.value),
+                Number.parseInt($maximum.value),
+              ]
+              : null,
+        }
+      });
+    };
+    parent.addEventListener('input', inputListener)
+    return inputListener;
+  }
+
   disconnectedCallback() {
     if (this._panListener) {
       this.shadowRoot.querySelector('.pan-limit')
@@ -263,6 +352,7 @@ class LimitsMenu extends HTMLElement {
         .removeEventListener('input', this._areLimitsAppliedInManualModeListener)
       this._areLimitsAppliedInManualModeListener = null
     }
+    // TODO remove this._zoomListener
   }
 }
 
