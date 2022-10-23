@@ -356,8 +356,8 @@ elif args.liveView == 'Panasonic':
         ObservableCameraProperty.ZOOM_RATIO,
         max_speed_and_acceleration_updater.on_zoom_ratio)
     camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_RATIO,
-        status_bar.update_zoom_ratio)
+        ObservableCameraProperty.ZOOM_INDEX,
+        status_bar.update_zoom_index)
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,
         camera_zoom_limit_controller.update_zoom_ratio)
