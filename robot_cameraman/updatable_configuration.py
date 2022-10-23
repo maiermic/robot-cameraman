@@ -7,6 +7,7 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
 from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.zoom import ZoomRatioIndexRange
 
 
 class UpdatableConfiguration:
@@ -16,7 +17,8 @@ class UpdatableConfiguration:
             cameraman_mode_manager: CameramanModeManager,
             camera_zoom_limit_controller: CameraZoomLimitController,
             camera_angle_limit_controller: CameraAngleLimitController,
-            configuration_file: Optional[Path] = None):
+            configuration_file: Optional[Path],
+            camera_zoom_ratio_index_ranges: List[ZoomRatioIndexRange]):
         self.detection_engine = detection_engine
         self.cameraman_mode_manager = cameraman_mode_manager
         self.camera_zoom_limit_controller = camera_zoom_limit_controller
@@ -28,15 +30,31 @@ class UpdatableConfiguration:
             max_pan = self.camera_angle_limit_controller.max_pan_angle
             min_tilt = self.camera_angle_limit_controller.min_tilt_angle
             max_tilt = self.camera_angle_limit_controller.max_tilt_angle
-            min_zoom = self.camera_zoom_limit_controller.min_zoom_ratio
-            max_zoom = self.camera_zoom_limit_controller.max_zoom_ratio
+            min_zoom_ratio = getattr(self.camera_zoom_limit_controller,
+                                     'min_zoom_ratio',
+                                     None)
+            max_zoom_ratio = getattr(self.camera_zoom_limit_controller,
+                                     'max_zoom_ratio',
+                                     None)
+            min_zoom_index = getattr(self.camera_zoom_limit_controller,
+                                     'min_zoom_index',
+                                     None)
+            max_zoom_index = getattr(self.camera_zoom_limit_controller,
+                                     'max_zoom_index',
+                                     None)
             self.configuration['limits'] = {
                 'areLimitsAppliedInManualMode':
                     cameraman_mode_manager.are_limits_applied_in_manual_mode,
                 'pan': None if min_pan is None else [min_pan, max_pan],
                 'tilt': None if min_tilt is None else [min_tilt, max_tilt],
-                'zoom': None if min_zoom is None else [min_zoom, max_zoom],
+                'zoom': (None if min_zoom_ratio is None
+                         else [min_zoom_ratio, max_zoom_ratio]),
+                'zoomIndex': (None if min_zoom_index is None
+                              else [min_zoom_index, max_zoom_index]),
             }
+        self.configuration['camera'] = {
+            'zoomRatioIndexRanges': camera_zoom_ratio_index_ranges,
+        }
 
     def update_tracking_color(
             self,
@@ -77,3 +95,10 @@ class UpdatableConfiguration:
             self.camera_zoom_limit_controller.min_zoom_ratio = minimum
             self.camera_zoom_limit_controller.max_zoom_ratio = maximum
             self.configuration['limits']['zoom'] = zoom_limit
+        if 'zoomIndex' in limits:
+            zoom_limit = limits['zoomIndex']
+            minimum, maximum = (
+                None, None) if zoom_limit is None else zoom_limit
+            self.camera_zoom_limit_controller.min_zoom_index = minimum
+            self.camera_zoom_limit_controller.max_zoom_index = maximum
+            self.configuration['limits']['zoomIndex'] = zoom_limit

@@ -40,7 +40,7 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
-from robot_cameraman.zoom import parse_zoom_steps
+from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -416,6 +416,9 @@ camera_manager.start()
 cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
 cameraman_thread.start()
 print('Open https://localhost:9000/index.html in your browser')
+camera_zoom_ratio_index_ranges = (
+    None if args.camera_zoom_ratio_index_ranges is None
+    else parse_zoom_ratio_index_ranges(args.camera_zoom_ratio_index_ranges))
 run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
            _server_image=server_image,
@@ -425,6 +428,7 @@ run_server(_to_exit=to_exit,
                cameraman_mode_manager=cameraman_mode_manager,
                camera_zoom_limit_controller=camera_zoom_limit_controller,
                camera_angle_limit_controller=camera_angle_limit_controller,
-               configuration_file=args.config),
+               configuration_file=args.config,
+               camera_zoom_ratio_index_ranges=camera_zoom_ratio_index_ranges),
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)
