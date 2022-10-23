@@ -15,6 +15,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 class ObservableCameraProperty(Enum):
     FOCAL_LENGTH = auto()
     ZOOM_RATIO = auto()
+    ZOOM_INDEX = auto()
 
 
 CameraObservableListener = Callable
@@ -54,6 +55,10 @@ class PanasonicCameraObservable(CameraObservable):
     def on_ex_header(self, ex_header: ExHeader):
         if (isinstance(ex_header, ExHeader1)
                 or isinstance(ex_header, ExHeader2)):
+            zoom_index = ex_header.b
+            logger.debug(f"zoom index {zoom_index}")
+            self._notify_listeners(
+                ObservableCameraProperty.ZOOM_INDEX, zoom_index)
             # Zoom ratio is encoded as integer,
             # e.g 1.5x is encoded as 15.
             # Convert it to float:
