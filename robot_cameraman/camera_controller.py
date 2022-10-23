@@ -187,7 +187,7 @@ class SmoothCameraController(CameraController):
             self.update(camera_speeds)
 
 
-class CameraZoomLimitController:
+class CameraZoomRatioLimitController:
     zoom_ratio: Optional[float]
     min_zoom_ratio: Optional[float]
     max_zoom_ratio: Optional[float]
@@ -227,7 +227,7 @@ class CameraZoomLimitController:
         return self.zoom_ratio >= self.max_zoom_ratio
 
 
-class PredictiveCameraZoomLimitController(CameraZoomLimitController):
+class PredictiveCameraZoomRatioLimitController(CameraZoomRatioLimitController):
     _zoom_steps: ZoomSteps
     _previous_zoom_speed: Optional[ZoomSpeed]
     _previous_zoom_ratio: Optional[float]

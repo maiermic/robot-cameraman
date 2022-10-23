@@ -15,7 +15,7 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager, CameraAngleLimitController, \
-    PredictiveCameraZoomLimitController, CameraZoomLimitController, \
+    PredictiveCameraZoomRatioLimitController, CameraZoomRatioLimitController, \
     CameraZoomIndexLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
@@ -201,7 +201,7 @@ def parse_arguments() -> RobotCameramanArguments:
              " zoom-steps (see"
              " robot_cameraman/tools/analyze_zoom_of_camera.py)."
              " If this argument is given,"
-             " the PredictiveCameraZoomLimitController is used to limit the"
+             " the PredictiveCameraZoomRatioLimitController is used to limit the"
              " zoom of the camera.")
     parser.add_argument(
         '--camera-zoom-ratio-index-ranges',
@@ -303,10 +303,10 @@ configurable_align_tracking_strategy = \
 if args.camera_zoom_ratio_index_ranges is not None:
     camera_zoom_limit_controller = CameraZoomIndexLimitController()
 elif args.camera_zoom_steps is not None:
-    camera_zoom_limit_controller = PredictiveCameraZoomLimitController(
+    camera_zoom_limit_controller = PredictiveCameraZoomRatioLimitController(
         zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
 else:
-    camera_zoom_limit_controller = CameraZoomLimitController()
+    camera_zoom_limit_controller = CameraZoomRatioLimitController()
 
 camera_angle_limit_controller = CameraAngleLimitController(gimbal=gimbal)
 cameraman_mode_manager = CameramanModeManager(

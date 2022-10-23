@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional, List
 
 from robot_cameraman.camera_controller import CameraAngleLimitController, \
-    CameraZoomLimitController
+    CameraZoomRatioLimitController
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
@@ -15,7 +15,7 @@ class UpdatableConfiguration:
             self,
             detection_engine: DetectionEngine,
             cameraman_mode_manager: CameramanModeManager,
-            camera_zoom_limit_controller: CameraZoomLimitController,
+            camera_zoom_limit_controller: CameraZoomRatioLimitController,
             camera_angle_limit_controller: CameraAngleLimitController,
             configuration_file: Optional[Path],
             camera_zoom_ratio_index_ranges: List[ZoomRatioIndexRange]):
