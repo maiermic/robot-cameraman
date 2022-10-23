@@ -430,5 +430,6 @@ run_server(_to_exit=to_exit,
                camera_angle_limit_controller=camera_angle_limit_controller,
                configuration_file=args.config,
                camera_zoom_ratio_index_ranges=camera_zoom_ratio_index_ranges),
+           _status_bar=status_bar,
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)

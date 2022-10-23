@@ -21,19 +21,23 @@
             grid-column-end: end;
         }
 
-        #angles {
+        #angles, #statusBar {
             margin: 0.1em 0 0.1em 1.5em;
         }
 
         @media (orientation: landscape) {
             body {
-                /* subtract height of #debugLog #angles */
-                grid-template-rows: calc(100vh - 1.2em) 1.2em;
+                /* The second row is the height of the #debugLog (status bar) */
+                grid-template-rows: min-content 1fr;
             }
 
             .live-view {
-                /* subtract height of #debugLog #angles */
-                height: calc(100vh - 1.2em);
+                /* subtract height of #debugLog (status bar) */
+                /* Due to unknown reason, additional 0.1em have to be */
+                /* subtracted to fit the content to the display. */
+                /* Otherwise, the margin of the debugLog (status bar) */
+                /* is cut off. */
+                height: calc(100vh - 1.2em - 0.1em);
                 /* TODO should depend on live view height */
                 max-height: 480px;
             }
@@ -142,6 +146,10 @@
 
         .live-view-container {
             position: relative;
+            /* Required to fill the available height of the row */
+            /* of the parent's grid layout. */
+            /* The container gets to high with `display: block` */
+            display: inherit;
         }
     </style>
     <link rel="stylesheet"
@@ -380,6 +388,7 @@
     </div>
     <div id="debugLog">
         <p id="angles"></p>
+        <p id="statusBar"></p>
     </div>
     <script>
       let isOrientationEnabled = false;
@@ -436,6 +445,29 @@
           document.documentElement.requestFullscreen();
         }
       }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      ;(async () => {
+        const $statusBar = document.getElementById('statusBar');
+        const updateStatusBar = async () => {
+          const newStatusBarText = await (await fetch('api/status-bar')).text();
+          if ($statusBar.innerText !== newStatusBarText) {
+            $statusBar.innerText = newStatusBarText;
+          }
+        }
+        // noinspection InfiniteLoopJS
+        while (true) {
+          const start = new Date();
+          await updateStatusBar();
+          const finished = new Date();
+          // Start the next request at least one second after the last request
+          // was started.
+          await sleep(1000 - (finished - start));
+        }
+      })();
     </script>
 </body>
 </html>

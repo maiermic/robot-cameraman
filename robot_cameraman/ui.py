@@ -46,6 +46,7 @@ def create_attribute_checkbox(button_name: str, obj, attribute_name):
 
 
 class StatusBar(UserInterface):
+    text: str
     _pan_speed_manager: SpeedManager
     _tilt_speed_manager: SpeedManager
     _camera_speeds: CameraSpeeds
@@ -57,6 +58,7 @@ class StatusBar(UserInterface):
             pan_speed_manager: SpeedManager,
             tilt_speed_manager: SpeedManager,
             camera_speeds: CameraSpeeds):
+        self.text = ''
         self._pan_speed_manager = pan_speed_manager
         self._tilt_speed_manager = tilt_speed_manager
         self._camera_speeds = camera_speeds
@@ -86,10 +88,9 @@ class StatusBar(UserInterface):
                       else f'{self._zoom_ratio:4.1f}')
         zoom_index = ('?' if self._zoom_index is None
                       else f'{self._zoom_index:2}')
-        cv2.displayStatusBar(
-            'Robot Cameraman',
-            f"pan: {pan_speed :3.2}, "
-            f"tilt: {tilt_speed :3.2}, "
-            f"zoom-ratio: {zoom_ratio}, "
-            f"zoom-index: {zoom_index}, "
-            f"{zoom_speed_str}")
+        self.text = f"pan: {pan_speed :3.2}, " \
+                    f"tilt: {tilt_speed :3.2}, " \
+                    f"zoom-ratio: {zoom_ratio}, " \
+                    f"zoom-index: {zoom_index}, " \
+                    f"{zoom_speed_str}"
+        cv2.displayStatusBar('Robot Cameraman', self.text)
