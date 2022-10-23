@@ -4,7 +4,7 @@ from typing import Optional
 
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController, \
-    CameraAngleLimitController, CameraZoomRatioLimitController
+    CameraAngleLimitController, CameraZoomLimitController
 from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
     AlignTrackingStrategy, SearchTargetStrategy, ZoomSpeed
@@ -18,7 +18,7 @@ class CameramanModeManager:
     def __init__(
             self,
             camera_controller: CameraController,
-            camera_zoom_limit_controller: CameraZoomRatioLimitController,
+            camera_zoom_limit_controller: CameraZoomLimitController,
             camera_angle_limit_controller: CameraAngleLimitController,
             align_tracking_strategy: AlignTrackingStrategy,
             tracking_strategy: TrackingStrategy,

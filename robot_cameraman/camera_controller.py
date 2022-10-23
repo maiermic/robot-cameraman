@@ -187,7 +187,13 @@ class SmoothCameraController(CameraController):
             self.update(camera_speeds)
 
 
-class CameraZoomRatioLimitController:
+class CameraZoomLimitController(Protocol):
+    @abstractmethod
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        raise NotImplementedError
+
+
+class CameraZoomRatioLimitController(CameraZoomLimitController):
     zoom_ratio: Optional[float]
     min_zoom_ratio: Optional[float]
     max_zoom_ratio: Optional[float]
@@ -294,7 +300,7 @@ class PredictiveCameraZoomRatioLimitController(CameraZoomRatioLimitController):
         self._previous_zoom_speed = camera_speeds.zoom_speed
 
 
-class CameraZoomIndexLimitController:
+class CameraZoomIndexLimitController(CameraZoomLimitController):
     zoom_index: Optional[int]
     min_zoom_index: Optional[int]
     max_zoom_index: Optional[int]
