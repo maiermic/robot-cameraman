@@ -1,0 +1,238 @@
+{
+  "slow": [
+    {
+      "zoom_ratio": 1.0,
+      "zoom_in_time": 0,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.996065616607666
+    },
+    {
+      "zoom_ratio": 2.0,
+      "zoom_in_time": 2.9880118370056152,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.7072327136993408
+    },
+    {
+      "zoom_ratio": 3.0,
+      "zoom_in_time": 0.9978241920471191,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.49849772453308105
+    },
+    {
+      "zoom_ratio": 4.0,
+      "zoom_in_time": 0.7262253761291504,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.40708327293395996
+    },
+    {
+      "zoom_ratio": 5.0,
+      "zoom_in_time": 0.47733306884765625,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.6915946006774902
+    },
+    {
+      "zoom_ratio": 6.0,
+      "zoom_in_time": 0.402484655380249,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.7095446586608887
+    },
+    {
+      "zoom_ratio": 7.1,
+      "zoom_in_time": 0.7080821990966797,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.29915928840637207
+    },
+    {
+      "zoom_ratio": 8.0,
+      "zoom_in_time": 0.9975647926330566,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.2003188133239746
+    },
+    {
+      "zoom_ratio": 9.0,
+      "zoom_in_time": 0.3010835647583008,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.19610142707824707
+    },
+    {
+      "zoom_ratio": 10.0,
+      "zoom_in_time": 0.19753384590148926,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.19475150108337402
+    },
+    {
+      "zoom_ratio": 11.0,
+      "zoom_in_time": 0.19884061813354492,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.17920684814453125
+    },
+    {
+      "zoom_ratio": 12.0,
+      "zoom_in_time": 0.203416109085083,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.22479486465454102
+    },
+    {
+      "zoom_ratio": 13.0,
+      "zoom_in_time": 0.09731554985046387,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.08452630043029785
+    },
+    {
+      "zoom_ratio": 14.0,
+      "zoom_in_time": 0.2070786952972412,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 14.3,
+      "zoom_in_time": 0.09448790550231934,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0
+    }
+  ],
+  "fast": [
+    {
+      "zoom_ratio": 1.0,
+      "zoom_in_time": 0,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.4028346538543701
+    },
+    {
+      "zoom_ratio": 2.0,
+      "zoom_in_time": 0.9558322429656982,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.2989780902862549
+    },
+    {
+      "zoom_ratio": 3.0,
+      "zoom_in_time": 0.46300721168518066,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.1951303482055664
+    },
+    {
+      "zoom_ratio": 4.0,
+      "zoom_in_time": 0.3047447204589844,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.20256471633911133
+    },
+    {
+      "zoom_ratio": 5.0,
+      "zoom_in_time": 0.21254253387451172,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.3007469177246094
+    },
+    {
+      "zoom_ratio": 6.0,
+      "zoom_in_time": 0.1899411678314209,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.5040314197540283
+    },
+    {
+      "zoom_ratio": 7.1,
+      "zoom_in_time": 0.305086612701416,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.09878277778625488
+    },
+    {
+      "zoom_ratio": 8.0,
+      "zoom_in_time": 0.7027206420898438,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.09912109375
+    },
+    {
+      "zoom_ratio": 9.0,
+      "zoom_in_time": 0.2079792022705078,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.10423874855041504
+    },
+    {
+      "zoom_ratio": 10.0,
+      "zoom_in_time": 0.08558177947998047,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.09506082534790039
+    },
+    {
+      "zoom_ratio": 11.0,
+      "zoom_in_time": 0.10806083679199219,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.09174227714538574
+    },
+    {
+      "zoom_ratio": 12.0,
+      "zoom_in_time": 0.09445428848266602,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.09932327270507812
+    },
+    {
+      "zoom_ratio": 13.0,
+      "zoom_in_time": 0.10051155090332031,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0.08471250534057617
+    },
+    {
+      "zoom_ratio": 14.3,
+      "zoom_in_time": 0.10225439071655273,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": 0
+    }
+  ]
+}

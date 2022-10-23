@@ -1,0 +1,140 @@
+{
+  "slow": [
+    {
+      "zoom_ratio": 1.0,
+      "zoom_in_time": 0,
+      "total_zoom_in_time": 0,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 2.0,
+      "zoom_in_time": 2.823500394821167,
+      "total_zoom_in_time": 2.823500394821167,
+      "stop_zoom_in_time": 2.6689918976336937,
+      "min_stop_zoom_in_time": 2.573500394821168,
+      "max_stop_zoom_in_time": 2.823500394821167,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 3.0,
+      "zoom_in_time": 1.0622138977050781,
+      "total_zoom_in_time": 3.885714292526245,
+      "stop_zoom_in_time": 0.9386070999550991,
+      "min_stop_zoom_in_time": 0.862213897705078,
+      "max_stop_zoom_in_time": 1.0622138977050781,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 4.0,
+      "zoom_in_time": 0.638343095779419,
+      "total_zoom_in_time": 4.524057388305664,
+      "stop_zoom_in_time": 0.5456379974669346,
+      "min_stop_zoom_in_time": 0.4883430957794188,
+      "max_stop_zoom_in_time": 0.638343095779419,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 5.0,
+      "zoom_in_time": 0.4987514019012451,
+      "total_zoom_in_time": 5.022808790206909,
+      "stop_zoom_in_time": 0.4678497024637504,
+      "min_stop_zoom_in_time": 0.44875140190124513,
+      "max_stop_zoom_in_time": 0.4987514019012451,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 6.0,
+      "zoom_in_time": 0.3996083736419678,
+      "total_zoom_in_time": 5.422417163848877,
+      "stop_zoom_in_time": 0.33780497476697835,
+      "min_stop_zoom_in_time": 0.2996083736419678,
+      "max_stop_zoom_in_time": 0.3996083736419678,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 7.1,
+      "zoom_in_time": 0.7504034042358398,
+      "total_zoom_in_time": 6.172820568084717,
+      "stop_zoom_in_time": 0.44138640986089217,
+      "min_stop_zoom_in_time": 0.2504034042358394,
+      "max_stop_zoom_in_time": 0.7504034042358398,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 8.0,
+      "zoom_in_time": 0.9845309257507324,
+      "total_zoom_in_time": 7.157351493835449,
+      "stop_zoom_in_time": 0.9845309257507324,
+      "min_stop_zoom_in_time": 0.03453092575073158,
+      "max_stop_zoom_in_time": 0.33453092575073184,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 9.0,
+      "zoom_in_time": 0.3310544490814209,
+      "total_zoom_in_time": 7.48840594291687,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 10.0,
+      "zoom_in_time": 0.14770150184631348,
+      "total_zoom_in_time": 7.636107444763184,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 11.0,
+      "zoom_in_time": 0.20540070533752441,
+      "total_zoom_in_time": 7.841508150100708,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 12.0,
+      "zoom_in_time": 0.19363021850585938,
+      "total_zoom_in_time": 8.035138368606567,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 13.0,
+      "zoom_in_time": 0.09578442573547363,
+      "total_zoom_in_time": 8.130922794342041,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 14.0,
+      "zoom_in_time": 0.2041490077972412,
+      "total_zoom_in_time": 8.335071802139282,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    },
+    {
+      "zoom_ratio": 14.3,
+      "zoom_in_time": 0.0951683521270752,
+      "total_zoom_in_time": 8.430240154266357,
+      "stop_zoom_in_time": null,
+      "min_stop_zoom_in_time": null,
+      "max_stop_zoom_in_time": null,
+      "zoom_out_time": null
+    }
+  ],
+  "fast": []
+}
