@@ -15,7 +15,8 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager, CameraAngleLimitController, \
-    PredictiveCameraZoomLimitController, CameraZoomLimitController
+    PredictiveCameraZoomLimitController, CameraZoomLimitController, \
+    CameraZoomIndexLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
 from robot_cameraman.cameraman import Cameraman
@@ -80,6 +81,7 @@ class RobotCameramanArguments(Protocol):
     cameraMinFocalLength: float
     cameraMaxFocalLength: float
     camera_zoom_steps: Optional[Path]
+    camera_zoom_ratio_index_ranges: Optional[Path]
     ssl_key: Path
     ssl_certificate: Path
 
@@ -202,6 +204,18 @@ def parse_arguments() -> RobotCameramanArguments:
              " the PredictiveCameraZoomLimitController is used to limit the"
              " zoom of the camera.")
     parser.add_argument(
+        '--camera-zoom-ratio-index-ranges',
+        type=Path,
+        default=None,
+        help="Path to file that contains the configuration of the camera's"
+             " zoom-ratio-index-ranges (see"
+             " analyze_zoom_indices_of_panasonic_camera.py and"
+             " analyze_zoom_indices_of_panasonic_camera_interactively.py"
+             " in directory robot_cameraman/tools)."
+             " If this argument is given,"
+             " the CameraZoomIndexLimitController is used to limit the"
+             " zoom of the camera.")
+    parser.add_argument(
         '--ssl-key',
         type=Path,
         default=resources / 'server.key',
@@ -286,7 +300,9 @@ configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
 
-if args.camera_zoom_steps is not None:
+if args.camera_zoom_ratio_index_ranges is not None:
+    camera_zoom_limit_controller = CameraZoomIndexLimitController()
+elif args.camera_zoom_steps is not None:
     camera_zoom_limit_controller = PredictiveCameraZoomLimitController(
         zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
 else:
@@ -360,7 +376,15 @@ elif args.liveView == 'Panasonic':
         status_bar.update_zoom_index)
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,
-        camera_zoom_limit_controller.update_zoom_ratio)
+        status_bar.update_zoom_ratio)
+    if hasattr(camera_zoom_limit_controller, 'update_zoom_ratio'):
+        camera_observable.add_listener(
+            ObservableCameraProperty.ZOOM_RATIO,
+            camera_zoom_limit_controller.update_zoom_ratio)
+    if hasattr(camera_zoom_limit_controller, 'update_zoom_index'):
+        camera_observable.add_listener(
+            ObservableCameraProperty.ZOOM_INDEX,
+            camera_zoom_limit_controller.update_zoom_index)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
