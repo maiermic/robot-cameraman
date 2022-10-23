@@ -96,3 +96,14 @@ class ZoomRatioIndexRangesBuilder:
                     max_index=zoom_index)
         else:
             self.zoom_ratio_to_range[zoom_ratio].max_index = zoom_index
+
+
+def parse_zoom_ratio_index_ranges(file: Path) -> List[ZoomRatioIndexRange]:
+    def parse_zoom_ratio_index_range(data: Dict):
+        return ZoomRatioIndexRange(zoom_ratio=data['zoom_ratio'],
+                                   min_index=data['min_index'],
+                                   max_index=data['max_index'])
+
+    with open(file) as file_descriptor:
+        return json.load(file_descriptor,
+                         object_hook=parse_zoom_ratio_index_range)
