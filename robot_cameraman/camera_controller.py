@@ -294,6 +294,46 @@ class PredictiveCameraZoomLimitController(CameraZoomLimitController):
         self._previous_zoom_speed = camera_speeds.zoom_speed
 
 
+class CameraZoomIndexLimitController:
+    zoom_index: Optional[int]
+    min_zoom_index: Optional[int]
+    max_zoom_index: Optional[int]
+
+    def __init__(self) -> None:
+        self.zoom_index = None
+        self.min_zoom_index = None
+        self.max_zoom_index = None
+
+    def update_zoom_index(self, zoom_index: int):
+        self.zoom_index = zoom_index
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        if self.zoom_index is None:
+            return
+        logger.debug(
+            f'check if current zoom index {self.zoom_index} reached limit')
+        if (self._is_heading_towards_min(camera_speeds.zoom_speed)
+                and self._is_min_reached()):
+            logger.debug('min zoom index reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if (self._is_heading_towards_max(camera_speeds.zoom_speed)
+                and self._is_max_reached()):
+            logger.debug('max zoom index reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+    def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
+        return self.min_zoom_index is not None and zoom_speed < 0
+
+    def _is_min_reached(self):
+        return self.zoom_index <= self.min_zoom_index
+
+    def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
+        return self.max_zoom_index is not None and zoom_speed > 0
+
+    def _is_max_reached(self):
+        return self.zoom_index >= self.max_zoom_index
+
+
 class CameraAngleLimitController:
     min_pan_angle: Optional[float]
     max_pan_angle: Optional[float]
