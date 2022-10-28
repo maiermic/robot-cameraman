@@ -12,6 +12,11 @@ class ZoomSpeed(IntEnum):
 
 @dataclass
 class CameraSpeeds:
+    # TODO add angles and zoom ratio rename dataclass to CameraState
+    # TODO use protocols to separate concerns (minimize interfaces),
+    #   e.g. AngleSpeeds, Angles
+
+    # TODO should be named target speed
     pan_speed: float = 0
     """Speed in degree per second. Positive values mean clockwise,
     negative values stand for counter clockwise moving direction from the
