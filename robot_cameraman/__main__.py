@@ -36,8 +36,9 @@ from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
-    RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
-    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
+    RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
+    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges

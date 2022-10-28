@@ -6,7 +6,7 @@ from robot_cameraman.camera_controller import \
     BaseCamPathOfMotionCameraController, PointOfMotion, SpeedManager, \
     ElapsedTime, CameraState, PointOfMotionTargetSpeedCalculator, \
     is_current_point_reached, is_angle_between, CameraAngleLimitController
-from robot_cameraman.tracking import CameraSpeeds
+from robot_cameraman.camera_speeds import CameraSpeeds
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
 from simplebgc.units import from_degree, from_degree_per_sec

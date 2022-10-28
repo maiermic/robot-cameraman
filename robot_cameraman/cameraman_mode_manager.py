@@ -6,8 +6,8 @@ from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController, \
     CameraAngleLimitController, CameraZoomLimitController
 from robot_cameraman.gimbal import Gimbal
-from robot_cameraman.tracking import TrackingStrategy, CameraSpeeds, \
-    AlignTrackingStrategy, SearchTargetStrategy, ZoomSpeed
+from robot_cameraman.tracking import TrackingStrategy, AlignTrackingStrategy, SearchTargetStrategy
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from simplebgc.gimbal import ControlMode
 
 logger: Logger = logging.getLogger(__name__)

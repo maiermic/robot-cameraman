@@ -15,7 +15,7 @@ from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.angle import get_delta_angle_clockwise, \
     get_delta_angle_counter_clockwise
 from robot_cameraman.gimbal import Gimbal
-from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.zoom import ZoomSteps, ZoomStep
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import ControlMode

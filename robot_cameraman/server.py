@@ -10,7 +10,7 @@ import PIL.Image
 from flask import Flask, Response, request, redirect, jsonify
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
-from robot_cameraman.tracking import ZoomSpeed, CameraSpeeds
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 

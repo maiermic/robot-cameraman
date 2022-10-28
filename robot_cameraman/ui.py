@@ -6,7 +6,7 @@ import cv2
 from typing_extensions import Protocol
 
 from robot_cameraman.camera_controller import SpeedManager
-from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 
 logger: Logger = logging.getLogger(__name__)
 

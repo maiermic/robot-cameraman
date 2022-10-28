@@ -3,7 +3,8 @@ from typing import Tuple, List, TypeVar
 
 from robot_cameraman.camera_controller import SpeedManager
 from robot_cameraman.tracking import SimpleTrackingStrategy, \
-    RotateSearchTargetStrategy, CameraSpeeds
+    RotateSearchTargetStrategy
+from robot_cameraman.camera_speeds import CameraSpeeds
 
 Updatable = TypeVar(
     'Updatable',
