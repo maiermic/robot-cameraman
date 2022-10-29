@@ -5,8 +5,10 @@ from typing import Optional
 from robot_cameraman.box import Box
 from robot_cameraman.camera_controller import CameraController, \
     CameraAngleLimitController, CameraZoomLimitController
-from robot_cameraman.gimbal import Gimbal
-from robot_cameraman.tracking import TrackingStrategy, AlignTrackingStrategy, SearchTargetStrategy
+from robot_cameraman.events import Event, EventEmitter
+from robot_cameraman.gimbal import Gimbal, convert_simple_bgc_angles
+from robot_cameraman.tracking import TrackingStrategy, AlignTrackingStrategy, \
+    SearchTargetStrategy
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from simplebgc.gimbal import ControlMode
 
@@ -23,7 +25,9 @@ class CameramanModeManager:
             align_tracking_strategy: AlignTrackingStrategy,
             tracking_strategy: TrackingStrategy,
             search_target_strategy: SearchTargetStrategy,
-            gimbal: Gimbal) -> None:
+            gimbal: Gimbal,
+            event_emitter: EventEmitter) -> None:
+        self._event_emitter = event_emitter
         self._camera_controller = camera_controller
         self._camera_zoom_limit_controller = camera_zoom_limit_controller
         self._camera_angle_limit_controller = camera_angle_limit_controller
@@ -39,6 +43,7 @@ class CameramanModeManager:
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists
         assert target is not None or is_target_lost
+        self._read_gimbal_angles()
         if self.mode_name not in ['manual', 'angle']:
             if target is None and is_target_lost:
                 if self.mode_name == 'aligning':
@@ -63,6 +68,12 @@ class CameramanModeManager:
                 self._camera_zoom_limit_controller.update(self._camera_speeds)
                 self._camera_angle_limit_controller.update(self._camera_speeds)
             self._camera_controller.update(self._camera_speeds)
+
+    def _read_gimbal_angles(self):
+        # TODO convert angles in gimbal
+        self._event_emitter.emit(
+            Event.ANGLES,
+            convert_simple_bgc_angles(self._gimbal.get_angles()))
 
     def start(self):
         self._camera_controller.start()

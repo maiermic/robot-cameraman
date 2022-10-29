@@ -7,6 +7,7 @@ from robot_cameraman.camera_controller import \
     ElapsedTime, CameraState, PointOfMotionTargetSpeedCalculator, \
     is_current_point_reached, is_angle_between, CameraAngleLimitController
 from robot_cameraman.camera_speeds import CameraSpeeds
+from robot_cameraman.gimbal import Angles
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import Gimbal, ControlMode
 from simplebgc.units import from_degree, from_degree_per_sec
@@ -843,19 +844,14 @@ class TestIsAngleBetween:
 
 class TestCameraAngleLimitController:
     @pytest.fixture()
-    def gimbal(self):
-        # mock serial connection to avoid error, because port can not be opened
-        return Mock(spec=Gimbal(Mock()))
-
-    @pytest.fixture()
-    def controller(self, gimbal):
-        return CameraAngleLimitController(gimbal)
+    def controller(self):
+        return CameraAngleLimitController()
 
     def test_stop_panning_forward_when_max_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=15.1, pan_speed=42,
-                                           tilt_angle=0, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=15.1, pan_speed=42,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=42)
         controller.min_pan_angle = 0
         controller.max_pan_angle = 15.0
@@ -863,10 +859,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.pan_speed == 0
 
     def test_allow_panning_back_when_max_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=15.1, pan_speed=0,
-                                           tilt_angle=0, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=15.1, pan_speed=0,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=-42)
         controller.min_pan_angle = 0
         controller.max_pan_angle = 15.0
@@ -874,10 +870,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.pan_speed == -42
 
     def test_stop_panning_forward_when_min_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=344.9, pan_speed=-42,
-                                           tilt_angle=0, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=344.9, pan_speed=-42,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=-42)
         controller.min_pan_angle = 345.0
         controller.max_pan_angle = 0
@@ -885,10 +881,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.pan_speed == 0
 
     def test_allow_panning_back_when_min_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=344.9, pan_speed=0,
-                                           tilt_angle=0, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=344.9, pan_speed=0,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=42)
         controller.min_pan_angle = 345.0
         controller.max_pan_angle = 0
@@ -896,18 +892,18 @@ class TestCameraAngleLimitController:
         assert camera_speeds.pan_speed == 42
 
     def test_allow_panning_when_no_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=350, pan_speed=30,
-                                           tilt_angle=0, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=350, pan_speed=30,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=42)
         controller.min_pan_angle = 345.0
         controller.max_pan_angle = 0
         controller.update(camera_speeds)
         assert camera_speeds.pan_speed == 42
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=350, pan_speed=-30,
-                                           tilt_angle=0, tilt_speed=0))
+        controller.update_current_angles(
+            Angles(pan_angle=350, pan_speed=-30,
+                   tilt_angle=0, tilt_speed=0))
         camera_speeds = CameraSpeeds(pan_speed=-42)
         controller.min_pan_angle = 345.0
         controller.max_pan_angle = 0
@@ -915,10 +911,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.pan_speed == -42
 
     def test_stop_tilting_forward_when_max_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=5.1, tilt_speed=42))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=5.1, tilt_speed=42))
         camera_speeds = CameraSpeeds(tilt_speed=42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
@@ -926,10 +922,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.tilt_speed == 0
 
     def test_allow_tilting_back_when_max_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=5.1, tilt_speed=0))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=5.1, tilt_speed=0))
         camera_speeds = CameraSpeeds(tilt_speed=-42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
@@ -937,10 +933,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.tilt_speed == -42
 
     def test_stop_tilting_forward_when_min_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=349.9, tilt_speed=-42))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=349.9, tilt_speed=-42))
         camera_speeds = CameraSpeeds(tilt_speed=-42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
@@ -948,10 +944,10 @@ class TestCameraAngleLimitController:
         assert camera_speeds.tilt_speed == 0
 
     def test_allow_tilting_back_when_min_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=349.9, tilt_speed=42))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=349.9, tilt_speed=42))
         camera_speeds = CameraSpeeds(tilt_speed=42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
@@ -959,21 +955,20 @@ class TestCameraAngleLimitController:
         assert camera_speeds.tilt_speed == 42
 
     def test_allow_tilting_when_no_limit_is_reached(
-            self, controller, gimbal):
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=1.0, tilt_speed=42))
+            self, controller: CameraAngleLimitController):
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=1.0, tilt_speed=42))
         camera_speeds = CameraSpeeds(tilt_speed=42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
         controller.update(camera_speeds)
         assert camera_speeds.tilt_speed == 42
-        gimbal.get_angles = Mock(
-            return_value=get_angles_in_cmd(pan_angle=0, pan_speed=0,
-                                           tilt_angle=1.0, tilt_speed=-30))
+        controller.update_current_angles(
+            Angles(pan_angle=0, pan_speed=0,
+                   tilt_angle=1.0, tilt_speed=-30))
         camera_speeds = CameraSpeeds(tilt_speed=-42)
         controller.min_tilt_angle = 350.0
         controller.max_tilt_angle = 5.0
         controller.update(camera_speeds)
         assert camera_speeds.tilt_speed == -42
-

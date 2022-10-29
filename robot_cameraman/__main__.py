@@ -24,6 +24,7 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
     ColorDetectionEngineUI
+from robot_cameraman.events import EventEmitter, Event
 from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
     create_simple_bgc_gimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
@@ -53,6 +54,14 @@ def create_video_writer(output_file: Path, image_size: ImageSize):
         cv2.VideoWriter_fourcc(*'MJPG'),
         15,
         image_size)
+
+
+def create_angle_limit_controller(
+        event_emitter: EventEmitter) -> CameraAngleLimitController:
+    controller = CameraAngleLimitController()
+    event_emitter.add_listener(Event.ANGLES,
+                               controller.update_current_angles)
+    return controller
 
 
 class RobotCameramanArguments(Protocol):
@@ -272,6 +281,7 @@ def configure_logging():
 args = parse_arguments()
 configure_logging()
 configuration = read_configuration_file(args.config)
+event_emitter = EventEmitter()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
@@ -309,7 +319,7 @@ elif args.camera_zoom_steps is not None:
 else:
     camera_zoom_limit_controller = CameraZoomRatioLimitController()
 
-camera_angle_limit_controller = CameraAngleLimitController(gimbal=gimbal)
+camera_angle_limit_controller = create_angle_limit_controller(event_emitter)
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
@@ -323,7 +333,8 @@ cameraman_mode_manager = CameramanModeManager(
     tracking_strategy=tracking_strategy,
     search_target_strategy=max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed)),
-    gimbal=gimbal)
+    gimbal=gimbal,
+    event_emitter=event_emitter)
 
 # noinspection PyListCreation
 user_interfaces = []

@@ -14,12 +14,12 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.angle import get_delta_angle_clockwise, \
     get_delta_angle_counter_clockwise
-from robot_cameraman.gimbal import Gimbal
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.gimbal import Gimbal, Angles
 from robot_cameraman.zoom import ZoomSteps, ZoomStep
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import ControlMode
-from simplebgc.units import to_degree, to_degree_per_sec, to_360_degree
+from simplebgc.units import to_degree, to_degree_per_sec
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -345,10 +345,11 @@ class CameraAngleLimitController:
     max_pan_angle: Optional[float]
     min_tilt_angle: Optional[float]
     max_tilt_angle: Optional[float]
+    _current_pan_angle: Optional[float]
+    _current_tilt_angle: Optional[float]
 
-    def __init__(self, gimbal: Gimbal) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._gimbal = gimbal
         self.min_pan_angle = None
         self.max_pan_angle = None
         self.min_tilt_angle = None
@@ -358,6 +359,12 @@ class CameraAngleLimitController:
         # self.max_pan_angle = 40.0
         # self.min_tilt_angle = 350.0
         # self.max_tilt_angle = 5.0
+        self._current_pan_angle = None
+        self._current_tilt_angle = None
+
+    def update_current_angles(self, angles: Angles):
+        self._current_pan_angle = angles.pan_angle
+        self._current_tilt_angle = angles.tilt_angle
 
     # TODO remove if not used
     def _get_angle_limits(self):
@@ -369,17 +376,16 @@ class CameraAngleLimitController:
         )
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
+        if (self._current_pan_angle is None
+                or self._current_tilt_angle is None):
+            logger.debug('current angles are not set yet')
+            return
         # TODO uncomment
         # if all(map(lambda a: a is None, self._get_angle_limits())):
         #     return
-        # TODO get angles in main loop to only request them once from gimbal
-        #   and not in every controller/component that requires them
-        angles = self._gimbal.get_angles()
-        pan_360_angle = to_360_degree(angles.target_angle_3)
-        tilt_360_angle = to_360_degree(angles.target_angle_2)
         logger.debug(', '.join((
-            f"pan angle: {pan_360_angle:4.1f}",
-            f"tilt angle: {tilt_360_angle:4.1f}",
+            f"pan angle: {self._current_pan_angle:4.1f}",
+            f"tilt angle: {self._current_tilt_angle:4.1f}",
         )))
 
         # Since camera might rotate full circle, a single limit could be
@@ -398,13 +404,13 @@ class CameraAngleLimitController:
                 and self.max_pan_angle is not None
                 and is_angle_between(
                     left=self.min_pan_angle,
-                    angle=pan_360_angle,
+                    angle=self._current_pan_angle,
                     right=self.max_pan_angle,
                     clockwise=False)):
             min_pan_delta = get_delta_angle_clockwise(
-                left=pan_360_angle, right=self.min_pan_angle)
+                left=self._current_pan_angle, right=self.min_pan_angle)
             max_pan_delta = get_delta_angle_counter_clockwise(
-                left=pan_360_angle, right=self.max_pan_angle)
+                left=self._current_pan_angle, right=self.max_pan_angle)
             if min_pan_delta < max_pan_delta:
                 if camera_speeds.pan_speed < 0:
                     logger.debug(
@@ -420,13 +426,13 @@ class CameraAngleLimitController:
                 and self.max_tilt_angle is not None
                 and is_angle_between(
                     left=self.min_tilt_angle,
-                    angle=tilt_360_angle,
+                    angle=self._current_tilt_angle,
                     right=self.max_tilt_angle,
                     clockwise=False)):
             min_tilt_delta = get_delta_angle_clockwise(
-                left=tilt_360_angle, right=self.min_tilt_angle)
+                left=self._current_tilt_angle, right=self.min_tilt_angle)
             max_tilt_delta = get_delta_angle_counter_clockwise(
-                left=tilt_360_angle, right=self.max_tilt_angle)
+                left=self._current_tilt_angle, right=self.max_tilt_angle)
             if min_tilt_delta < max_tilt_delta:
                 if camera_speeds.tilt_speed < 0:
                     logger.debug(
