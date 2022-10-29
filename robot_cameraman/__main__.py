@@ -343,10 +343,12 @@ user_interfaces.append(
     ConfigurableTrackingStrategyUi(
         tracking_strategy=configurable_tracking_strategy,
         align_strategy=configurable_align_tracking_strategy))
+
 # noinspection PyProtectedMember
 status_bar = StatusBar(pan_speed_manager=rotate_speed_manager,
                        tilt_speed_manager=tilt_speed_manager,
                        camera_speeds=cameraman_mode_manager._camera_speeds)
+event_emitter.add_listener(Event.ANGLES, status_bar.update_current_angles)
 user_interfaces.append(status_bar)
 
 if args.detectionEngine == 'Dummy':
