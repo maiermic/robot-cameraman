@@ -17,8 +17,8 @@ from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.camera_controller import ElapsedTime
-from robot_cameraman.camera_observable import \
-    PanasonicCameraObservable, ObservableCameraProperty
+from robot_cameraman.camera_observable import PanasonicCameraObservable
+from robot_cameraman.events import Event, EventEmitter
 from robot_cameraman.live_view import PanasonicLiveView
 from robot_cameraman.zoom import ZoomStep
 
@@ -556,13 +556,15 @@ class ZoomStepByStepCameraController:
 
 args = parse_arguments()
 configure_logging()
+event_emitter = EventEmitter()
 camera_manager = PanasonicCameraManager(
     identify_as=args.identifyToPanasonicCameraAs)
 
 if args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
     camera_observable = PanasonicCameraObservable(
-        min_focal_length=args.cameraMinFocalLength)
+        min_focal_length=args.cameraMinFocalLength,
+        event_emitter=event_emitter)
     live_view.add_ex_header_listener(camera_observable.on_ex_header)
 else:
     print(f"Unsupported live view {args.liveView}")
@@ -575,8 +577,8 @@ zoom_analyzer_camera_controller = ZoomAnalyzerCameraController(
     zoom_speed=ZoomSpeed.SLOW,
     live_view=live_view)
 # noinspection PyUnboundLocalVariable
-camera_observable.add_listener(
-    ObservableCameraProperty.ZOOM_RATIO,
+event_emitter.add_listener(
+    Event.ZOOM_RATIO,
     zoom_analyzer_camera_controller.on_zoom_ratio)
 
 signal.signal(signal.SIGINT, quit)
@@ -840,8 +842,8 @@ try:
         zoom_speed=ZoomSpeed.SLOW,
         live_view=live_view)
     # noinspection PyUnboundLocalVariable
-    camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_RATIO,
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO,
         zoom_step_by_step_camera_controller.on_zoom_ratio)
     zoom_step_by_step_camera_controller.start()
 

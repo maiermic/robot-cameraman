@@ -6,6 +6,9 @@ from typing import Callable, List, Dict
 class Event(Enum):
     ANGLES = auto()
     """Current angles are emitted after they have been read."""
+    FOCAL_LENGTH = auto()
+    ZOOM_RATIO = auto()
+    ZOOM_INDEX = auto()
 
 
 Listener = Callable

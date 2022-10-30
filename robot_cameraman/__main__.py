@@ -17,8 +17,7 @@ from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager, CameraAngleLimitController, \
     PredictiveCameraZoomRatioLimitController, CameraZoomRatioLimitController, \
     CameraZoomIndexLimitController
-from robot_cameraman.camera_observable import \
-    PanasonicCameraObservable, ObservableCameraProperty
+from robot_cameraman.camera_observable import PanasonicCameraObservable
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
@@ -412,7 +411,8 @@ if args.liveView == 'Webcam':
 elif args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
     camera_observable = PanasonicCameraObservable(
-        min_focal_length=args.cameraMinFocalLength)
+        min_focal_length=args.cameraMinFocalLength,
+        event_emitter=event_emitter)
     live_view.add_ex_header_listener(camera_observable.on_ex_header)
     # TODO add CLI argument to enable ExHeaderToCsvWriter
     # noinspection PyUnreachableCode
@@ -420,22 +420,22 @@ elif args.liveView == 'Panasonic':
         from robot_cameraman.camera_observable import ExHeaderToCsvWriter
 
         live_view.add_ex_header_listener(ExHeaderToCsvWriter().on_ex_header)
-    camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_RATIO,
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO,
         max_speed_and_acceleration_updater.on_zoom_ratio)
-    camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_INDEX,
+    event_emitter.add_listener(
+        Event.ZOOM_INDEX,
         status_bar.update_zoom_index)
-    camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_RATIO,
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO,
         status_bar.update_zoom_ratio)
     if hasattr(camera_zoom_limit_controller, 'update_zoom_ratio'):
-        camera_observable.add_listener(
-            ObservableCameraProperty.ZOOM_RATIO,
+        event_emitter.add_listener(
+            Event.ZOOM_RATIO,
             camera_zoom_limit_controller.update_zoom_ratio)
     if hasattr(camera_zoom_limit_controller, 'update_zoom_index'):
-        camera_observable.add_listener(
-            ObservableCameraProperty.ZOOM_INDEX,
+        event_emitter.add_listener(
+            Event.ZOOM_INDEX,
             camera_zoom_limit_controller.update_zoom_index)
 else:
     print(f"Unknown live view {args.liveView}")
