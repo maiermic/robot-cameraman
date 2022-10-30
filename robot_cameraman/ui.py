@@ -97,7 +97,9 @@ class StatusBar(UserInterface):
                       else f'{self._zoom_ratio:4.1f}')
         zoom_index = (' ?' if self._zoom_index is None
                       else f'{self._zoom_index:2}')
-        # TODO ° is prepended with an unexpected character in native UI
+        # TODO ° is displayed as Â° using cv2.displayStatusBar
+        #   in the current version opencv-python==4.1.0.25,
+        #   but it is fixed in at least opencv-python=4.6.0.66
         self.text = \
             f"pan: {self._current_pan_angle :6.2f}° {pan_speed :6.2f}°/s, " \
             f"tilt: {self._current_tilt_angle :6.2f}° {tilt_speed :6.2f}°/s, " \
