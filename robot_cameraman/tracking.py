@@ -375,6 +375,8 @@ class RotateSearchTargetStrategy(SearchTargetStrategy):
 
 
 class StaticSearchTargetStrategy(SearchTargetStrategy):
+    _camera_zoom_limit_controller: CameraZoomLimitController
+    _camera_angle_limit_controller: CameraAngleLimitController
     _target_pan_angle: Optional[float]
     _target_tilt_angle: Optional[float]
     _target_zoom_index: Optional[int]
