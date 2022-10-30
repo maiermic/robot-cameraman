@@ -1,5 +1,6 @@
 import logging
 from logging import Logger
+from threading import RLock
 from typing import Optional
 
 from robot_cameraman.box import Box
@@ -8,7 +9,7 @@ from robot_cameraman.camera_controller import CameraController, \
 from robot_cameraman.events import Event, EventEmitter
 from robot_cameraman.gimbal import Gimbal, convert_simple_bgc_angles
 from robot_cameraman.tracking import TrackingStrategy, AlignTrackingStrategy, \
-    SearchTargetStrategy
+    SearchTargetStrategy, StaticSearchTargetStrategy
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from simplebgc.gimbal import ControlMode
 
@@ -36,9 +37,35 @@ class CameramanModeManager:
         self._search_target_strategy = search_target_strategy
         self._gimbal = gimbal
         self._camera_speeds: CameraSpeeds = CameraSpeeds()
+        self._mode_name_lock = RLock()
+        self._mode_name = None
         self.mode_name = 'manual'
+        # TODO searching does not start if used as initial mode, since current
+        #  angles have not been set on StaticSearchTargetStrategy yet
+        # self.mode_name = 'searching'
         self.is_zoom_enabled = True
         self.are_limits_applied_in_manual_mode = False
+
+    @property
+    def mode_name(self) -> str:
+        with self._mode_name_lock:
+            return self._mode_name
+
+    @mode_name.setter
+    def mode_name(self, new_mode_name: str):
+        with self._mode_name_lock:
+            previous_mode_name = self._mode_name
+            self._mode_name = new_mode_name
+            # TODO decouple: introduce listeners to changes
+            #   CameramanModeManager should not need to know that
+            #   StaticSearchTargetStrategy is called.
+            if (previous_mode_name != new_mode_name
+                    and isinstance(self._search_target_strategy,
+                                   StaticSearchTargetStrategy)):
+                if new_mode_name == 'searching':
+                    self._search_target_strategy.start()
+                if previous_mode_name == 'searching':
+                    self._search_target_strategy.stop()
 
     def update(self, target: Optional[Box], is_target_lost: bool) -> None:
         # check calling convention: target can not be lost if it exists

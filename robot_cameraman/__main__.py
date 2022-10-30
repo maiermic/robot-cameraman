@@ -19,6 +19,7 @@ from robot_cameraman.camera_controller import SmoothCameraController, \
     CameraZoomIndexLimitController
 from robot_cameraman.camera_observable import \
     PanasonicCameraObservable, ObservableCameraProperty
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
@@ -38,8 +39,8 @@ from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
-    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi
-from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
+    StaticSearchTargetStrategy
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
@@ -82,6 +83,7 @@ class RobotCameramanArguments(Protocol):
     font: Path
     fontSize: int
     debug: bool
+    search_strategy: str
     rotatingSearchSpeed: int
     rotationalAccelerationPerSecond: int
     tiltingAccelerationPerSecond: int
@@ -171,6 +173,19 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--debug',
                         action='store_true',
                         help="Enable debug logging")
+    parser.add_argument('--search-strategy',
+                        type=str, default='rotate',
+                        help="If target is lost,"
+                             " the camera searches for a new target."
+                             " If the strategy 'rotate' (default) is used,"
+                             " the gimbal pans clockwise at constant speed"
+                             " (given by argument --rotatingSearchSpeed)."
+                             " If the strategy 'static' is used,"
+                             " the gimbal moves (pans, tilts and zooms)"
+                             " with constant speed"
+                             " (given by argument --rotatingSearchSpeed)"
+                             " to a certain position"
+                             " (can be configured in the web UI).")
     parser.add_argument('--rotatingSearchSpeed',
                         type=int, default=0,
                         help="If target is lost, search for new target by"
@@ -319,7 +334,30 @@ elif args.camera_zoom_steps is not None:
 else:
     camera_zoom_limit_controller = CameraZoomRatioLimitController()
 
+if args.search_strategy == 'rotate':
+    search_target_strategy = max_speed_and_acceleration_updater.add(
+        RotateSearchTargetStrategy(args.rotatingSearchSpeed))
+elif args.search_strategy == 'static':
+    search_strategy_zoom_limit_controller = CameraZoomIndexLimitController()
+    # TODO declare camera_observable before this statement or use event_emitter
+    # camera_observable.add_listener(
+    #     ObservableCameraProperty.ZOOM_INDEX,
+    #     search_strategy_zoom_limit_controller.update_zoom_index)
+    search_target_strategy = StaticSearchTargetStrategy(
+        pan_speed=args.rotatingSearchSpeed,
+        tilt_speed=args.rotatingSearchSpeed,
+        camera_zoom_limit_controller=search_strategy_zoom_limit_controller,
+        camera_angle_limit_controller=create_angle_limit_controller(
+            event_emitter))
+    event_emitter.add_listener(Event.ANGLES,
+                               search_target_strategy.update_current_angles)
+    max_speed_and_acceleration_updater.add_updatable_properties(
+        search_target_strategy, ['pan_speed', 'tilt_speed'])
+else:
+    print(f"Unknown search strategy {args.search_strategy}")
+    exit(1)
 camera_angle_limit_controller = create_angle_limit_controller(event_emitter)
+# noinspection PyUnboundLocalVariable
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
@@ -331,8 +369,7 @@ cameraman_mode_manager = CameramanModeManager(
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
-    search_target_strategy=max_speed_and_acceleration_updater.add(
-        RotateSearchTargetStrategy(args.rotatingSearchSpeed)),
+    search_target_strategy=search_target_strategy,
     gimbal=gimbal,
     event_emitter=event_emitter)
 
@@ -381,6 +418,7 @@ elif args.liveView == 'Panasonic':
     # noinspection PyUnreachableCode
     if False:
         from robot_cameraman.camera_observable import ExHeaderToCsvWriter
+
         live_view.add_ex_header_listener(ExHeaderToCsvWriter().on_ex_header)
     camera_observable.add_listener(
         ObservableCameraProperty.ZOOM_RATIO,

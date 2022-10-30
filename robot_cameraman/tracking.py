@@ -7,8 +7,12 @@ from typing import Optional
 
 from typing_extensions import Protocol
 
+from robot_cameraman.angle import get_delta_angle_clockwise
 from robot_cameraman.box import Box, TwoPointsBox, Point
+from robot_cameraman.camera_controller import CameraZoomLimitController, \
+    CameraAngleLimitController
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.gimbal import Angles
 from robot_cameraman.live_view import ImageSize
 
 logger: Logger = logging.getLogger(__name__)
@@ -368,3 +372,102 @@ class RotateSearchTargetStrategy(SearchTargetStrategy):
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         camera_speeds.pan_speed = self.speed
+
+
+class StaticSearchTargetStrategy(SearchTargetStrategy):
+    _target_pan_angle: Optional[float]
+    _target_tilt_angle: Optional[float]
+    _target_zoom_index: Optional[int]
+    _target_zoom_ratio: Optional[float]
+
+    _current_pan_angle: Optional[float]
+    _current_tilt_angle: Optional[float]
+    # TODO update zoom index and ratio
+    _current_zoom_index: Optional[int]
+    _current_zoom_ratio: Optional[float]
+
+    _camera_speeds: CameraSpeeds
+    _is_searching: bool
+
+    def __init__(
+            self,
+            pan_speed: float,
+            tilt_speed: float,
+            camera_zoom_limit_controller: CameraZoomLimitController,
+            camera_angle_limit_controller: CameraAngleLimitController):
+        self.pan_speed = pan_speed
+        self.tilt_speed = tilt_speed
+        self._camera_zoom_limit_controller = camera_zoom_limit_controller
+        self._camera_angle_limit_controller = camera_angle_limit_controller
+        self._target_pan_angle = None
+        self._target_tilt_angle = None
+        self._target_zoom_index = None
+        self._target_zoom_ratio = None
+        self._current_pan_angle = None
+        self._current_tilt_angle = None
+        self._current_zoom_index = None
+        self._current_zoom_ratio = None
+        self._camera_speeds = CameraSpeeds()
+        self._is_searching = False
+
+        # TODO remove test targets below
+        self._target_pan_angle = 10.0
+        self._target_tilt_angle = 5.0
+
+        # TODO add UI for target
+
+    def start(self) -> None:
+        assert not self._is_searching
+        assert self._current_pan_angle is not None
+        assert self._current_tilt_angle is not None
+        self._is_searching = True
+        if (self._target_pan_angle is not None
+                and self._current_pan_angle is not None):
+            delta_pan_angle_clockwise = get_delta_angle_clockwise(
+                left=self._current_pan_angle, right=self._target_pan_angle)
+            if delta_pan_angle_clockwise < 180:
+                self._camera_speeds.pan_speed = self.pan_speed
+                self._camera_angle_limit_controller.min_pan_angle = \
+                    self._current_pan_angle
+                self._camera_angle_limit_controller.max_pan_angle = \
+                    self._target_pan_angle
+            else:
+                self._camera_speeds.pan_speed = -self.pan_speed
+                self._camera_angle_limit_controller.min_pan_angle = \
+                    self._target_pan_angle
+                self._camera_angle_limit_controller.max_pan_angle = \
+                    self._current_pan_angle
+        if (self._target_tilt_angle is not None
+                and self._current_tilt_angle is not None):
+            if self._current_tilt_angle < self._target_tilt_angle:
+                self._camera_speeds.tilt_speed = self.tilt_speed
+                self._camera_angle_limit_controller.min_tilt_angle = \
+                    self._current_tilt_angle
+                self._camera_angle_limit_controller.max_tilt_angle = \
+                    self._target_tilt_angle
+            else:
+                self._camera_speeds.tilt_speed = -self.tilt_speed
+                self._camera_angle_limit_controller.min_tilt_angle = \
+                    self._target_tilt_angle
+                self._camera_angle_limit_controller.max_tilt_angle = \
+                    self._current_tilt_angle
+        # TODO zoom
+        # self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+
+    def update_current_angles(self, angles: Angles):
+        self._current_pan_angle = angles.pan_angle
+        self._current_tilt_angle = angles.tilt_angle
+        # TODO calculate camera speeds if current angles are set the first time
+        #   and target angles are already set
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        assert self._is_searching
+        camera_speeds.pan_speed = self._camera_speeds.pan_speed
+        camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
+        camera_speeds.zoom_speed = self._camera_speeds.zoom_speed
+        self._camera_zoom_limit_controller.update(camera_speeds)
+        self._camera_angle_limit_controller.update(camera_speeds)
+
+    def stop(self):
+        self._is_searching = False
+        self._camera_speeds.reset()
