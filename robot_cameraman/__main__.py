@@ -226,8 +226,8 @@ def parse_arguments() -> RobotCameramanArguments:
              " zoom-steps (see"
              " robot_cameraman/tools/analyze_zoom_of_camera.py)."
              " If this argument is given,"
-             " the PredictiveCameraZoomRatioLimitController is used to limit the"
-             " zoom of the camera.")
+             " the PredictiveCameraZoomRatioLimitController is used to limit"
+             " the zoom of the camera.")
     parser.add_argument(
         '--camera-zoom-ratio-index-ranges',
         type=Path,
