@@ -99,8 +99,8 @@ class StatusBar(UserInterface):
                       else f'{self._zoom_index:2}')
         # TODO ° is prepended with an unexpected character in native UI
         self.text = \
-            f"pan: {self._current_pan_angle :6.2f}° {pan_speed :6.2}°/s, " \
-            f"tilt: {self._current_tilt_angle :6.2f}° {tilt_speed :6.2}°/s, " \
+            f"pan: {self._current_pan_angle :6.2f}° {pan_speed :6.2f}°/s, " \
+            f"tilt: {self._current_tilt_angle :6.2f}° {tilt_speed :6.2f}°/s, " \
             f"zoom-ratio: {zoom_ratio}, " \
             f"zoom-index: {zoom_index}, " \
             f"{zoom_speed_str}"
