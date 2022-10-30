@@ -10,7 +10,8 @@ from typing_extensions import Protocol
 from robot_cameraman.angle import get_delta_angle_clockwise
 from robot_cameraman.box import Box, TwoPointsBox, Point
 from robot_cameraman.camera_controller import CameraZoomLimitController, \
-    CameraAngleLimitController
+    CameraAngleLimitController, CameraZoomIndexLimitController, \
+    CameraZoomRatioLimitController
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.gimbal import Angles
 from robot_cameraman.live_view import ImageSize
@@ -415,6 +416,8 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         # TODO remove test targets below
         self._target_pan_angle = 10.0
         self._target_tilt_angle = 5.0
+        # self._target_zoom_index = 10
+        # self._target_zoom_ratio = 2.0
 
         # TODO add UI for target
 
@@ -455,14 +458,58 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                     self._target_tilt_angle
                 self._camera_angle_limit_controller.max_tilt_angle = \
                     self._current_tilt_angle
-        # TODO zoom
-        # self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+        if (self._target_zoom_ratio is not None
+                and self._current_zoom_ratio is not None):
+            assert isinstance(self._camera_zoom_limit_controller,
+                              CameraZoomRatioLimitController)
+            if self._current_zoom_ratio < self._target_zoom_ratio:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_zoom_limit_controller.min_zoom_ratio = None
+                self._camera_zoom_limit_controller.max_zoom_ratio = \
+                    self._target_zoom_ratio
+            elif self._current_zoom_ratio > self._target_zoom_ratio:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_zoom_limit_controller.min_zoom_ratio = \
+                    self._target_zoom_ratio
+                self._camera_zoom_limit_controller.max_zoom_ratio = None
+            else:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_zoom_limit_controller.min_zoom_ratio = None
+                self._camera_zoom_limit_controller.max_zoom_ratio = None
+        if (self._target_zoom_index is not None
+                and self._current_zoom_index is not None):
+            assert isinstance(self._camera_zoom_limit_controller,
+                              CameraZoomIndexLimitController)
+            if self._current_zoom_index < self._target_zoom_index:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_zoom_limit_controller.min_zoom_index = None
+                self._camera_zoom_limit_controller.max_zoom_index = \
+                    self._target_zoom_index
+            elif self._current_zoom_index > self._target_zoom_index:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_zoom_limit_controller.min_zoom_index = \
+                    self._target_zoom_index
+                self._camera_zoom_limit_controller.max_zoom_index = None
+            else:
+                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_zoom_limit_controller.min_zoom_index = None
+                self._camera_zoom_limit_controller.max_zoom_index = None
 
     def update_current_angles(self, angles: Angles):
         self._current_pan_angle = angles.pan_angle
         self._current_tilt_angle = angles.tilt_angle
         # TODO calculate camera speeds if current angles are set the first time
         #   and target angles are already set
+
+    def update_current_zoom_ratio(self, zoom_ratio: float):
+        self._current_zoom_ratio = zoom_ratio
+        # TODO calculate camera zoom speed if current zoom ratio is set the
+        #   first time and target zoom speed is already set
+
+    def update_current_zoom_index(self, zoom_index: int):
+        self._current_zoom_index = zoom_index
+        # TODO calculate camera zoom speed if current zoom index is set the
+        #   first time and target zoom speed is already set
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         assert self._is_searching

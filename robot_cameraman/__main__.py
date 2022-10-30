@@ -325,31 +325,45 @@ configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
 
-if args.camera_zoom_ratio_index_ranges is not None:
-    camera_zoom_limit_controller = CameraZoomIndexLimitController()
-elif args.camera_zoom_steps is not None:
-    camera_zoom_limit_controller = PredictiveCameraZoomRatioLimitController(
-        zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
-else:
-    camera_zoom_limit_controller = CameraZoomRatioLimitController()
+
+def create_camera_zoom_limit_controller():
+    global event_emitter
+    if args.camera_zoom_ratio_index_ranges is not None:
+        controller = CameraZoomIndexLimitController()
+    elif args.camera_zoom_steps is not None:
+        controller = PredictiveCameraZoomRatioLimitController(
+            zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
+    else:
+        controller = CameraZoomRatioLimitController()
+    if hasattr(controller, 'update_zoom_ratio'):
+        event_emitter.add_listener(
+            Event.ZOOM_RATIO,
+            controller.update_zoom_ratio)
+    if hasattr(controller, 'update_zoom_index'):
+        event_emitter.add_listener(
+            Event.ZOOM_INDEX,
+            controller.update_zoom_index)
+    return controller
+
+
+camera_zoom_limit_controller = create_camera_zoom_limit_controller()
 
 if args.search_strategy == 'rotate':
     search_target_strategy = max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed))
 elif args.search_strategy == 'static':
-    search_strategy_zoom_limit_controller = CameraZoomIndexLimitController()
-    # TODO declare camera_observable before this statement or use event_emitter
-    # camera_observable.add_listener(
-    #     ObservableCameraProperty.ZOOM_INDEX,
-    #     search_strategy_zoom_limit_controller.update_zoom_index)
     search_target_strategy = StaticSearchTargetStrategy(
         pan_speed=args.rotatingSearchSpeed,
         tilt_speed=args.rotatingSearchSpeed,
-        camera_zoom_limit_controller=search_strategy_zoom_limit_controller,
+        camera_zoom_limit_controller=create_camera_zoom_limit_controller(),
         camera_angle_limit_controller=create_angle_limit_controller(
             event_emitter))
-    event_emitter.add_listener(Event.ANGLES,
-                               search_target_strategy.update_current_angles)
+    event_emitter.add_listener(
+        Event.ANGLES, search_target_strategy.update_current_angles)
+    event_emitter.add_listener(
+        Event.ZOOM_INDEX, search_target_strategy.update_current_zoom_index)
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO, search_target_strategy.update_current_zoom_ratio)
     max_speed_and_acceleration_updater.add_updatable_properties(
         search_target_strategy, ['pan_speed', 'tilt_speed'])
 else:
