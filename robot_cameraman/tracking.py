@@ -439,7 +439,9 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                     self._current_pan_angle
         if (self._target_tilt_angle is not None
                 and self._current_tilt_angle is not None):
-            if self._current_tilt_angle < self._target_tilt_angle:
+            delta_tilt_angle_clockwise = get_delta_angle_clockwise(
+                left=self._current_tilt_angle, right=self._target_tilt_angle)
+            if delta_tilt_angle_clockwise < 180:
                 self._camera_speeds.tilt_speed = self.tilt_speed
                 self._camera_angle_limit_controller.min_tilt_angle = \
                     self._current_tilt_angle
