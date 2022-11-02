@@ -558,7 +558,10 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
 
         pan_distance = get_angle_distance(left=self._target_pan_angle,
                                           right=self._current_pan_angle)
-        if pan_distance < abs(self._camera_speeds.pan_speed):
+        if pan_distance >= abs(self._camera_speeds.pan_speed):
+            # use "max speed", since:  distance > max speed
+            camera_speeds.pan_speed = self._camera_speeds.pan_speed
+        else:
             accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
             # use "close speed"
             if pan_distance > abs(accurate_pan_speed):
@@ -568,13 +571,13 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             else:
                 # use "accurate speed"
                 camera_speeds.pan_speed = accurate_pan_speed
-        else:
-            # use "max speed", since:  distance > max speed
-            camera_speeds.pan_speed = self._camera_speeds.pan_speed
 
         tilt_distance = get_angle_distance(left=self._target_tilt_angle,
                                            right=self._current_tilt_angle)
-        if tilt_distance < abs(self._camera_speeds.tilt_speed):
+        if tilt_distance >= abs(self._camera_speeds.tilt_speed):
+            # use "max speed", since:  distance > max speed
+            camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
+        else:
             accurate_tilt_speed = self._camera_speeds.tilt_speed / zoom_ratio
             # use "close speed"
             if tilt_distance > abs(accurate_tilt_speed):
@@ -584,9 +587,6 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             else:
                 # use "accurate speed"
                 camera_speeds.tilt_speed = accurate_tilt_speed
-        else:
-            # use "max speed", since:  distance > max speed
-            camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
 
         # TODO add option to zoom not until "close speed" (pan and tilt)
         #  is reached, since focus might be lost (=> blurry image),
