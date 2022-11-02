@@ -560,19 +560,14 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                                           right=self._current_pan_angle)
         if pan_distance < abs(self._camera_speeds.pan_speed):
             accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
-            # use "accurate speed"
-            camera_speeds.pan_speed = accurate_pan_speed
-            # increase to "close speed"
+            # use "close speed"
             if pan_distance > abs(accurate_pan_speed):
-                percentage = (
-                        abs(pan_distance - abs(accurate_pan_speed))
-                        / abs(self._camera_speeds.pan_speed
-                              - accurate_pan_speed))
-                camera_speeds.pan_speed += (
+                camera_speeds.pan_speed = (
                         numpy.sign(self._camera_speeds.pan_speed)
-                        * percentage
-                        * abs(self._camera_speeds.pan_speed
-                              - accurate_pan_speed))
+                        * pan_distance)
+            else:
+                # use "accurate speed"
+                camera_speeds.pan_speed = accurate_pan_speed
         else:
             # use "max speed", since:  distance > max speed
             camera_speeds.pan_speed = self._camera_speeds.pan_speed
@@ -581,19 +576,14 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                                            right=self._current_tilt_angle)
         if tilt_distance < abs(self._camera_speeds.tilt_speed):
             accurate_tilt_speed = self._camera_speeds.tilt_speed / zoom_ratio
-            # use "accurate speed"
-            camera_speeds.tilt_speed = accurate_tilt_speed
-            # increase to "close speed"
+            # use "close speed"
             if tilt_distance > abs(accurate_tilt_speed):
-                percentage = (
-                        abs(tilt_distance - abs(accurate_tilt_speed))
-                        / abs(self._camera_speeds.tilt_speed
-                              - accurate_tilt_speed))
-                camera_speeds.tilt_speed += (
+                camera_speeds.tilt_speed = (
                         numpy.sign(self._camera_speeds.tilt_speed)
-                        * percentage
-                        * abs(self._camera_speeds.tilt_speed
-                              - accurate_tilt_speed))
+                        * tilt_distance)
+            else:
+                # use "accurate speed"
+                camera_speeds.tilt_speed = accurate_tilt_speed
         else:
             # use "max speed", since:  distance > max speed
             camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
