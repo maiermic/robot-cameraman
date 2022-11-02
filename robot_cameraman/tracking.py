@@ -5,9 +5,10 @@ from enum import Enum, auto
 from logging import Logger
 from typing import Optional
 
+import numpy
 from typing_extensions import Protocol
 
-from robot_cameraman.angle import get_delta_angle_clockwise
+from robot_cameraman.angle import get_delta_angle_clockwise, get_angle_distance
 from robot_cameraman.box import Box, TwoPointsBox, Point
 from robot_cameraman.camera_controller import CameraZoomLimitController, \
     CameraAngleLimitController, CameraZoomIndexLimitController, \
@@ -495,6 +496,18 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                 self._camera_zoom_limit_controller.min_zoom_index = None
                 self._camera_zoom_limit_controller.max_zoom_index = None
 
+    def update_target(
+            self,
+            pan_angle: Optional[float],
+            tilt_angle: Optional[float],
+            zoom_index: Optional[int],
+            zoom_ratio: Optional[float]):
+        self._target_pan_angle = pan_angle
+        self._target_tilt_angle = tilt_angle
+        self._target_zoom_index = zoom_index
+        self._target_zoom_ratio = zoom_ratio
+        # TODO update camera speeds if called before start
+
     def update_current_angles(self, angles: Angles):
         self._current_pan_angle = angles.pan_angle
         self._current_tilt_angle = angles.tilt_angle
@@ -513,8 +526,81 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         assert self._is_searching
-        camera_speeds.pan_speed = self._camera_speeds.pan_speed
-        camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
+        # The live view of the camera moves faster at higher zoom ratios.
+        # Usually the pan and tilt speed should depend on the zoom ratio
+        # (see https://github.com/maiermic/robot-cameraman/issues/13).
+        # However, the camera should move in appropriate time
+        # to the target position. With increasing target zoom,
+        # the camera moves slower. If the pan/tilt distance is quite large,
+        # the camera would take inappropriately long to pan/tilt to the target.
+        # Hence, the camera should pan/tilt at maximum speed (as if zoom ratio
+        # is 1.0) to the target. However, the speed is decreased near the
+        # target to reach it more accurately. Angle deviations are reflected in
+        # greater deviations in the live view with increasing zom ratio.
+        #
+        # Speed-Distance Diagram:
+        #                     speed axis (ascending from bottom to top)
+        #                          A
+        #                          |
+        #                max speed | ----\
+        #              close speed |      \
+        #           accurate speed |       \----|
+        #                        0 |            \----
+        #                          |
+        #   distance axis (desc) --|--|--|||----|-------->
+        #                             |  |||    0
+        #    distance > max speed ----/  |||    |
+        #    distance = max speed -------/||    |
+        #    distance > accurate speed ---/|    |
+        #    distance = accurate speed ----/    |
+        #    distance = 0 ----------------------/
+        zoom_ratio = self._current_zoom_ratio or 1.0
+
+        pan_distance = get_angle_distance(left=self._target_pan_angle,
+                                          right=self._current_pan_angle)
+        if pan_distance < abs(self._camera_speeds.pan_speed):
+            accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
+            # use "accurate speed"
+            camera_speeds.pan_speed = accurate_pan_speed
+            # increase to "close speed"
+            if pan_distance > abs(accurate_pan_speed):
+                percentage = (
+                        abs(pan_distance - abs(accurate_pan_speed))
+                        / abs(self._camera_speeds.pan_speed
+                              - accurate_pan_speed))
+                camera_speeds.pan_speed += (
+                        numpy.sign(self._camera_speeds.pan_speed)
+                        * percentage
+                        * abs(self._camera_speeds.pan_speed
+                              - accurate_pan_speed))
+        else:
+            # use "max speed", since:  distance > max speed
+            camera_speeds.pan_speed = self._camera_speeds.pan_speed
+
+        tilt_distance = get_angle_distance(left=self._target_tilt_angle,
+                                           right=self._current_tilt_angle)
+        if tilt_distance < abs(self._camera_speeds.tilt_speed):
+            accurate_tilt_speed = self._camera_speeds.tilt_speed / zoom_ratio
+            # use "accurate speed"
+            camera_speeds.tilt_speed = accurate_tilt_speed
+            # increase to "close speed"
+            if tilt_distance > abs(accurate_tilt_speed):
+                percentage = (
+                        abs(tilt_distance - abs(accurate_tilt_speed))
+                        / abs(self._camera_speeds.tilt_speed
+                              - accurate_tilt_speed))
+                camera_speeds.tilt_speed += (
+                        numpy.sign(self._camera_speeds.tilt_speed)
+                        * percentage
+                        * abs(self._camera_speeds.tilt_speed
+                              - accurate_tilt_speed))
+        else:
+            # use "max speed", since:  distance > max speed
+            camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
+
+        # TODO add option to zoom not until "close speed" (pan and tilt)
+        #  is reached, since focus might be lost (=> blurry image),
+        #  while camera pans/tilts (too) fast (for current zoom ratio).
         camera_speeds.zoom_speed = self._camera_speeds.zoom_speed
         self._camera_zoom_limit_controller.update(camera_speeds)
         self._camera_angle_limit_controller.update(camera_speeds)

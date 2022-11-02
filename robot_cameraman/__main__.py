@@ -364,8 +364,6 @@ elif args.search_strategy == 'static':
         Event.ZOOM_INDEX, search_target_strategy.update_current_zoom_index)
     event_emitter.add_listener(
         Event.ZOOM_RATIO, search_target_strategy.update_current_zoom_ratio)
-    max_speed_and_acceleration_updater.add_updatable_properties(
-        search_target_strategy, ['pan_speed', 'tilt_speed'])
 else:
     print(f"Unknown search strategy {args.search_strategy}")
     exit(1)
