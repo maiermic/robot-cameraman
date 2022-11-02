@@ -413,6 +413,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._current_zoom_ratio = None
         self._camera_speeds = CameraSpeeds()
         self._is_searching = False
+        self.is_zoom_while_rotating = True
 
         # TODO remove test targets below
         self._target_pan_angle = 10.0
@@ -420,7 +421,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         # self._target_zoom_index = 10
         # self._target_zoom_ratio = 2.0
 
-        # TODO add UI for target
+        # TODO add UI for target and is_zoom_while_rotating
 
     def start(self) -> None:
         assert not self._is_searching
@@ -588,12 +589,12 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                 # use "accurate speed"
                 camera_speeds.tilt_speed = accurate_tilt_speed
 
-        # TODO add option to zoom not until "close speed" (pan and tilt)
-        #  is reached, since focus might be lost (=> blurry image),
-        #  while camera pans/tilts (too) fast (for current zoom ratio).
-        camera_speeds.zoom_speed = self._camera_speeds.zoom_speed
-        self._camera_zoom_limit_controller.update(camera_speeds)
         self._camera_angle_limit_controller.update(camera_speeds)
+        if (self.is_zoom_while_rotating
+                or (camera_speeds.pan_speed == 0
+                    and camera_speeds.tilt_speed == 0)):
+            camera_speeds.zoom_speed = self._camera_speeds.zoom_speed
+        self._camera_zoom_limit_controller.update(camera_speeds)
 
     def stop(self):
         self._is_searching = False
