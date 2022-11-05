@@ -528,14 +528,16 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._current_tilt_angle = angles.tilt_angle
 
     def update_current_zoom_ratio(self, zoom_ratio: float):
+        if (self._current_zoom_ratio is None
+                and self._target_zoom_ratio is not None):
+            self._is_update_od_camera_base_speeds_required = True
         self._current_zoom_ratio = zoom_ratio
-        # TODO calculate camera zoom speed if current zoom ratio is set the
-        #   first time and target zoom speed is already set
 
     def update_current_zoom_index(self, zoom_index: int):
+        if (self._current_zoom_index is None
+                and self._target_zoom_index is not None):
+            self._is_update_od_camera_base_speeds_required = True
         self._current_zoom_index = zoom_index
-        # TODO calculate camera zoom speed if current zoom index is set the
-        #   first time and target zoom speed is already set
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         assert self._is_searching

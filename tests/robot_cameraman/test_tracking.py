@@ -347,3 +347,41 @@ class TestStaticSearchTargetStrategy:
         assert camera_speeds.pan_speed == max_pan_speed
         assert camera_speeds.tilt_speed == max_tilt_speed
         assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_IN_SLOW
+
+    def test_update_does_not_zoom_before_current_zoom_is_set(
+            self,
+            search_target_strategy,
+            camera_angle_limit_controller,
+            camera_zoom_limit_controller,
+            camera_speeds,
+            max_pan_speed,
+            max_tilt_speed,
+            update_current_camera_state):
+        search_target_strategy.start()
+
+        search_target_strategy.update_target(
+            pan_angle=30.0,
+            tilt_angle=15.0,
+            zoom_index=20,
+            zoom_ratio=None)
+        search_target_strategy.update(camera_speeds)
+        assert camera_speeds.pan_speed == 0
+        assert camera_speeds.tilt_speed == 0
+        assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_STOPPED
+
+        # only update angles
+        angles = Angles(pan_angle=0, pan_speed=0, tilt_angle=0, tilt_speed=0)
+        search_target_strategy.update_current_angles(angles)
+        camera_angle_limit_controller.update_current_angles(angles)
+        search_target_strategy.update(camera_speeds)
+        assert camera_speeds.pan_speed == max_pan_speed
+        assert camera_speeds.tilt_speed == max_tilt_speed
+        assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_STOPPED
+
+        search_target_strategy.update_current_zoom_index(0)
+        search_target_strategy.update_current_zoom_ratio(1.0)
+        camera_zoom_limit_controller.update_zoom_index(0)
+        search_target_strategy.update(camera_speeds)
+        assert camera_speeds.pan_speed == max_pan_speed
+        assert camera_speeds.tilt_speed == max_tilt_speed
+        assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_IN_SLOW
