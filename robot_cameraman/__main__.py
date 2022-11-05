@@ -291,6 +291,10 @@ def configure_logging():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
+    # some devices on the network may cause upnpclient.discover to log quite
+    # verbose error messages. The log level is changed to avoid this
+    logging.getLogger('ssdp').setLevel(logging.CRITICAL)
+
 
 args = parse_arguments()
 configure_logging()
