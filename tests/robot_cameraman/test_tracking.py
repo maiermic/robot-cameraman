@@ -284,3 +284,35 @@ class TestStaticSearchTargetStrategy:
         assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_STOPPED
 
         search_target_strategy.stop()
+
+    def test_update_does_not_move_before_target_is_set(
+            self,
+            search_target_strategy,
+            camera_speeds,
+            max_pan_speed,
+            max_tilt_speed,
+            update_current_camera_state):
+        update_current_camera_state(
+            pan_angle=0,
+            pan_speed=0,
+            tilt_angle=0,
+            tilt_speed=0,
+            zoom_index=0,
+            zoom_ratio=1.0)
+
+        search_target_strategy.start()
+
+        search_target_strategy.update(camera_speeds)
+        assert camera_speeds.pan_speed == 0
+        assert camera_speeds.tilt_speed == 0
+        assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_STOPPED
+
+        search_target_strategy.update_target(
+            pan_angle=30.0,
+            tilt_angle=15.0,
+            zoom_index=20,
+            zoom_ratio=None)
+        search_target_strategy.update(camera_speeds)
+        assert camera_speeds.pan_speed == max_pan_speed
+        assert camera_speeds.tilt_speed == max_tilt_speed
+        assert camera_speeds.zoom_speed == ZoomSpeed.ZOOM_IN_SLOW

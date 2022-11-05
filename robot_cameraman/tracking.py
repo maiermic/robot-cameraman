@@ -397,6 +397,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
     when close to the target.
     """
 
+    _is_update_od_camera_base_speeds_required: bool
     _is_searching: bool
 
     def __init__(
@@ -418,6 +419,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._current_zoom_index = None
         self._current_zoom_ratio = None
         self._camera_base_speeds = CameraSpeeds()
+        self._is_update_od_camera_base_speeds_required = False
         self._is_searching = False
         self.is_zoom_while_rotating = True
 
@@ -434,6 +436,9 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         assert self._current_pan_angle is not None
         assert self._current_tilt_angle is not None
         self._is_searching = True
+        self._update_camera_base_speeds()
+
+    def _update_camera_base_speeds(self) -> None:
         if (self._target_pan_angle is not None
                 and self._current_pan_angle is not None):
             delta_pan_angle_clockwise = get_delta_angle_clockwise(
@@ -513,7 +518,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._target_tilt_angle = tilt_angle
         self._target_zoom_index = zoom_index
         self._target_zoom_ratio = zoom_ratio
-        # TODO update camera speeds if called before start
+        self._is_update_od_camera_base_speeds_required = True
 
     def update_current_angles(self, angles: Angles):
         self._current_pan_angle = angles.pan_angle
@@ -533,6 +538,9 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         assert self._is_searching
+        if self._is_update_od_camera_base_speeds_required:
+            self._update_camera_base_speeds()
+            self._is_update_od_camera_base_speeds_required = False
         # The live view of the camera moves faster at higher zoom ratios.
         # Usually the pan and tilt speed should depend on the zoom ratio
         # (see https://github.com/maiermic/robot-cameraman/issues/13).
