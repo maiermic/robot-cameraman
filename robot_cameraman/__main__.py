@@ -294,6 +294,11 @@ def configure_logging():
     # some devices on the network may cause upnpclient.discover to log quite
     # verbose error messages. The log level is changed to avoid this
     logging.getLogger('ssdp').setLevel(logging.CRITICAL)
+    # The web UI does frequent requests regarding the status bar
+    # that spam the logs. Usually, those INFO logs are not important,
+    # since the relevant interaction is covered by logs of other modules.
+    # Hence, the log level of werkzeug is changed.
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
 
 
 args = parse_arguments()
