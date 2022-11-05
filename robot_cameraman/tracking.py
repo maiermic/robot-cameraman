@@ -386,7 +386,6 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
 
     _current_pan_angle: Optional[float]
     _current_tilt_angle: Optional[float]
-    # TODO update zoom index and ratio
     _current_zoom_index: Optional[int]
     _current_zoom_ratio: Optional[float]
 
