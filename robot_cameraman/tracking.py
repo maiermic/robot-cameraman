@@ -390,7 +390,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
     _current_zoom_index: Optional[int]
     _current_zoom_ratio: Optional[float]
 
-    _camera_speeds: CameraSpeeds
+    _camera_base_speeds: CameraSpeeds
     _is_searching: bool
 
     def __init__(
@@ -411,7 +411,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._current_tilt_angle = None
         self._current_zoom_index = None
         self._current_zoom_ratio = None
-        self._camera_speeds = CameraSpeeds()
+        self._camera_base_speeds = CameraSpeeds()
         self._is_searching = False
         self.is_zoom_while_rotating = True
 
@@ -433,13 +433,13 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             delta_pan_angle_clockwise = get_delta_angle_clockwise(
                 left=self._current_pan_angle, right=self._target_pan_angle)
             if delta_pan_angle_clockwise < 180:
-                self._camera_speeds.pan_speed = self.pan_speed
+                self._camera_base_speeds.pan_speed = self.pan_speed
                 self._camera_angle_limit_controller.min_pan_angle = \
                     self._current_pan_angle
                 self._camera_angle_limit_controller.max_pan_angle = \
                     self._target_pan_angle
             else:
-                self._camera_speeds.pan_speed = -self.pan_speed
+                self._camera_base_speeds.pan_speed = -self.pan_speed
                 self._camera_angle_limit_controller.min_pan_angle = \
                     self._target_pan_angle
                 self._camera_angle_limit_controller.max_pan_angle = \
@@ -449,13 +449,13 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             delta_tilt_angle_clockwise = get_delta_angle_clockwise(
                 left=self._current_tilt_angle, right=self._target_tilt_angle)
             if delta_tilt_angle_clockwise < 180:
-                self._camera_speeds.tilt_speed = self.tilt_speed
+                self._camera_base_speeds.tilt_speed = self.tilt_speed
                 self._camera_angle_limit_controller.min_tilt_angle = \
                     self._current_tilt_angle
                 self._camera_angle_limit_controller.max_tilt_angle = \
                     self._target_tilt_angle
             else:
-                self._camera_speeds.tilt_speed = -self.tilt_speed
+                self._camera_base_speeds.tilt_speed = -self.tilt_speed
                 self._camera_angle_limit_controller.min_tilt_angle = \
                     self._target_tilt_angle
                 self._camera_angle_limit_controller.max_tilt_angle = \
@@ -465,17 +465,17 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             assert isinstance(self._camera_zoom_limit_controller,
                               CameraZoomRatioLimitController)
             if self._current_zoom_ratio < self._target_zoom_ratio:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
                 self._camera_zoom_limit_controller.min_zoom_ratio = None
                 self._camera_zoom_limit_controller.max_zoom_ratio = \
                     self._target_zoom_ratio
             elif self._current_zoom_ratio > self._target_zoom_ratio:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
                 self._camera_zoom_limit_controller.min_zoom_ratio = \
                     self._target_zoom_ratio
                 self._camera_zoom_limit_controller.max_zoom_ratio = None
             else:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
                 self._camera_zoom_limit_controller.min_zoom_ratio = None
                 self._camera_zoom_limit_controller.max_zoom_ratio = None
         if (self._target_zoom_index is not None
@@ -483,17 +483,17 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             assert isinstance(self._camera_zoom_limit_controller,
                               CameraZoomIndexLimitController)
             if self._current_zoom_index < self._target_zoom_index:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
                 self._camera_zoom_limit_controller.min_zoom_index = None
                 self._camera_zoom_limit_controller.max_zoom_index = \
                     self._target_zoom_index
             elif self._current_zoom_index > self._target_zoom_index:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
                 self._camera_zoom_limit_controller.min_zoom_index = \
                     self._target_zoom_index
                 self._camera_zoom_limit_controller.max_zoom_index = None
             else:
-                self._camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
                 self._camera_zoom_limit_controller.min_zoom_index = None
                 self._camera_zoom_limit_controller.max_zoom_index = None
 
@@ -561,15 +561,16 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                 and self._current_pan_angle is not None):
             pan_distance = get_angle_distance(left=self._target_pan_angle,
                                               right=self._current_pan_angle)
-            if pan_distance >= abs(self._camera_speeds.pan_speed):
+            if pan_distance >= abs(self._camera_base_speeds.pan_speed):
                 # use "max speed", since:  distance > max speed
-                camera_speeds.pan_speed = self._camera_speeds.pan_speed
+                camera_speeds.pan_speed = self._camera_base_speeds.pan_speed
             else:
-                accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
+                accurate_pan_speed = \
+                    self._camera_base_speeds.pan_speed / zoom_ratio
                 # use "close speed"
                 if pan_distance > abs(accurate_pan_speed):
                     camera_speeds.pan_speed = (
-                            numpy.sign(self._camera_speeds.pan_speed)
+                            numpy.sign(self._camera_base_speeds.pan_speed)
                             * pan_distance)
                 else:
                     # use "accurate speed"
@@ -579,16 +580,16 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
                 and self._current_tilt_angle is not None):
             tilt_distance = get_angle_distance(left=self._target_tilt_angle,
                                                right=self._current_tilt_angle)
-            if tilt_distance >= abs(self._camera_speeds.tilt_speed):
+            if tilt_distance >= abs(self._camera_base_speeds.tilt_speed):
                 # use "max speed", since:  distance > max speed
-                camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
+                camera_speeds.tilt_speed = self._camera_base_speeds.tilt_speed
             else:
                 accurate_tilt_speed = \
-                    self._camera_speeds.tilt_speed / zoom_ratio
+                    self._camera_base_speeds.tilt_speed / zoom_ratio
                 # use "close speed"
                 if tilt_distance > abs(accurate_tilt_speed):
                     camera_speeds.tilt_speed = (
-                            numpy.sign(self._camera_speeds.tilt_speed)
+                            numpy.sign(self._camera_base_speeds.tilt_speed)
                             * tilt_distance)
                 else:
                     # use "accurate speed"
@@ -598,9 +599,9 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         if (self.is_zoom_while_rotating
                 or (camera_speeds.pan_speed == 0
                     and camera_speeds.tilt_speed == 0)):
-            camera_speeds.zoom_speed = self._camera_speeds.zoom_speed
+            camera_speeds.zoom_speed = self._camera_base_speeds.zoom_speed
         self._camera_zoom_limit_controller.update(camera_speeds)
 
     def stop(self):
         self._is_searching = False
-        self._camera_speeds.reset()
+        self._camera_base_speeds.reset()
