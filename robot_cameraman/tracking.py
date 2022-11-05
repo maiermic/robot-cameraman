@@ -422,8 +422,8 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self.is_zoom_while_rotating = True
 
         # TODO remove test targets below
-        self._target_pan_angle = 10.0
-        self._target_tilt_angle = 5.0
+        # self._target_pan_angle = 10.0
+        # self._target_tilt_angle = 5.0
         # self._target_zoom_index = 10
         # self._target_zoom_ratio = 2.0
 
