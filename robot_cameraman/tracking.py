@@ -433,8 +433,6 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
 
     def start(self) -> None:
         assert not self._is_searching
-        assert self._current_pan_angle is not None
-        assert self._current_tilt_angle is not None
         self._is_searching = True
         self._update_camera_base_speeds()
 
