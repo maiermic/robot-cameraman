@@ -557,37 +557,42 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         #    distance = 0 ----------------------/
         zoom_ratio = self._current_zoom_ratio or 1.0
 
-        pan_distance = get_angle_distance(left=self._target_pan_angle,
-                                          right=self._current_pan_angle)
-        if pan_distance >= abs(self._camera_speeds.pan_speed):
-            # use "max speed", since:  distance > max speed
-            camera_speeds.pan_speed = self._camera_speeds.pan_speed
-        else:
-            accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
-            # use "close speed"
-            if pan_distance > abs(accurate_pan_speed):
-                camera_speeds.pan_speed = (
-                        numpy.sign(self._camera_speeds.pan_speed)
-                        * pan_distance)
+        if (self._target_pan_angle is not None
+                and self._current_pan_angle is not None):
+            pan_distance = get_angle_distance(left=self._target_pan_angle,
+                                              right=self._current_pan_angle)
+            if pan_distance >= abs(self._camera_speeds.pan_speed):
+                # use "max speed", since:  distance > max speed
+                camera_speeds.pan_speed = self._camera_speeds.pan_speed
             else:
-                # use "accurate speed"
-                camera_speeds.pan_speed = accurate_pan_speed
+                accurate_pan_speed = self._camera_speeds.pan_speed / zoom_ratio
+                # use "close speed"
+                if pan_distance > abs(accurate_pan_speed):
+                    camera_speeds.pan_speed = (
+                            numpy.sign(self._camera_speeds.pan_speed)
+                            * pan_distance)
+                else:
+                    # use "accurate speed"
+                    camera_speeds.pan_speed = accurate_pan_speed
 
-        tilt_distance = get_angle_distance(left=self._target_tilt_angle,
-                                           right=self._current_tilt_angle)
-        if tilt_distance >= abs(self._camera_speeds.tilt_speed):
-            # use "max speed", since:  distance > max speed
-            camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
-        else:
-            accurate_tilt_speed = self._camera_speeds.tilt_speed / zoom_ratio
-            # use "close speed"
-            if tilt_distance > abs(accurate_tilt_speed):
-                camera_speeds.tilt_speed = (
-                        numpy.sign(self._camera_speeds.tilt_speed)
-                        * tilt_distance)
+        if (self._target_tilt_angle is not None
+                and self._current_tilt_angle is not None):
+            tilt_distance = get_angle_distance(left=self._target_tilt_angle,
+                                               right=self._current_tilt_angle)
+            if tilt_distance >= abs(self._camera_speeds.tilt_speed):
+                # use "max speed", since:  distance > max speed
+                camera_speeds.tilt_speed = self._camera_speeds.tilt_speed
             else:
-                # use "accurate speed"
-                camera_speeds.tilt_speed = accurate_tilt_speed
+                accurate_tilt_speed = \
+                    self._camera_speeds.tilt_speed / zoom_ratio
+                # use "close speed"
+                if tilt_distance > abs(accurate_tilt_speed):
+                    camera_speeds.tilt_speed = (
+                            numpy.sign(self._camera_speeds.tilt_speed)
+                            * tilt_distance)
+                else:
+                    # use "accurate speed"
+                    camera_speeds.tilt_speed = accurate_tilt_speed
 
         self._camera_angle_limit_controller.update(camera_speeds)
         if (self.is_zoom_while_rotating
