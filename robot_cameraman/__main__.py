@@ -30,7 +30,7 @@ from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
-    ImageSize
+    ImageSize, DummyLiveView
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
@@ -142,7 +142,7 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--liveView', type=str,
                         default='Panasonic',
                         help="The live view (camera) to use."
-                             "Either 'Panasonic' or 'Webcam'")
+                             "Either 'Panasonic', 'Webcam' or 'Dummy'")
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
                         help="UDP Socket IP address of Panasonic live view.")
@@ -429,6 +429,8 @@ else:
 
 if args.liveView == 'Webcam':
     live_view = WebcamLiveView()
+elif args.liveView == 'Dummy':
+    live_view = DummyLiveView(live_view_image_size)
 elif args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
     camera_observable = PanasonicCameraObservable(

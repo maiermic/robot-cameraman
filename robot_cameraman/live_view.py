@@ -2,6 +2,7 @@ import io
 import logging
 import socket
 from logging import Logger
+from time import sleep
 from typing import Optional, NamedTuple
 
 import PIL.Image
@@ -10,6 +11,7 @@ import PIL.ImageDraw
 import PIL.ImageFile
 import PIL.ImageFont
 import cv2
+import PIL
 from PIL.Image import Image
 from typing_extensions import Protocol
 
@@ -51,3 +53,12 @@ class WebcamLiveView(LiveView):
         image = self._video_stream.read()
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return PIL.Image.fromarray(rgb_image)
+
+
+class DummyLiveView(LiveView):
+    def __init__(self, size: ImageSize) -> None:
+        self._image = PIL.Image.new('RGB', size, (228, 150, 150))
+
+    def image(self) -> Optional[Image]:
+        sleep(0.2)
+        return self._image
