@@ -519,10 +519,13 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._is_update_od_camera_base_speeds_required = True
 
     def update_current_angles(self, angles: Angles):
+        if (self._current_pan_angle is None
+                and self._current_tilt_angle is None
+                and self._target_pan_angle is not None
+                and self._target_tilt_angle is not None):
+            self._is_update_od_camera_base_speeds_required = True
         self._current_pan_angle = angles.pan_angle
         self._current_tilt_angle = angles.tilt_angle
-        # TODO calculate camera speeds if current angles are set the first time
-        #   and target angles are already set
 
     def update_current_zoom_ratio(self, zoom_ratio: float):
         self._current_zoom_ratio = zoom_ratio
