@@ -391,6 +391,12 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
     _current_zoom_ratio: Optional[float]
 
     _camera_base_speeds: CameraSpeeds
+    """The fastest speeds that move to the target. They are used in
+    :py:meth:`~robot_cameraman.tracking.StaticSearchTargetStrategy.update`
+    to calculate the actual camera speeds. The actual speeds might be decreased,
+    when close to the target.
+    """
+
     _is_searching: bool
 
     def __init__(
