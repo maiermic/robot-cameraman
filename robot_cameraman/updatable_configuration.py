@@ -7,6 +7,8 @@ from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
 from robot_cameraman.image_detection import DetectionEngine
+from robot_cameraman.tracking import SearchTargetStrategy, \
+    StaticSearchTargetStrategy
 from robot_cameraman.zoom import ZoomRatioIndexRange
 
 
@@ -19,11 +21,13 @@ class UpdatableConfiguration:
                 CameraZoomIndexLimitController, CameraZoomRatioLimitController],
             camera_angle_limit_controller: CameraAngleLimitController,
             configuration_file: Optional[Path],
-            camera_zoom_ratio_index_ranges: List[ZoomRatioIndexRange]):
+            camera_zoom_ratio_index_ranges: Optional[List[ZoomRatioIndexRange]],
+            search_target_strategy: SearchTargetStrategy):
         self.detection_engine = detection_engine
         self.cameraman_mode_manager = cameraman_mode_manager
         self.camera_zoom_limit_controller = camera_zoom_limit_controller
         self.camera_angle_limit_controller = camera_angle_limit_controller
+        self.search_target_strategy = search_target_strategy
         self.configuration_file = configuration_file
         self.configuration = read_configuration_file(configuration_file)
         if 'limits' not in self.configuration:
@@ -53,6 +57,21 @@ class UpdatableConfiguration:
                 'zoomIndex': (None if min_zoom_index is None
                               else [min_zoom_index, max_zoom_index]),
             }
+        if ('searchTarget' not in self.configuration
+                and isinstance(self.search_target_strategy,
+                               StaticSearchTargetStrategy)):
+            self.configuration['searchTarget'] = {
+                'isZoomWhileRotating':
+                    self.search_target_strategy.is_zoom_while_rotating,
+                'pan': self.search_target_strategy._target_pan_angle or 0,
+                'tilt': self.search_target_strategy._target_tilt_angle or 0,
+            }
+            if camera_zoom_ratio_index_ranges is None:
+                self.configuration['searchTarget']['zoomRatio'] = \
+                    self.search_target_strategy._target_zoom_ratio or 1.0
+            else:
+                self.configuration['searchTarget']['zoomIndex'] = \
+                    self.search_target_strategy._target_zoom_index or 0
         self.configuration['camera'] = {
             'zoomRatioIndexRanges': camera_zoom_ratio_index_ranges,
         }
@@ -103,3 +122,34 @@ class UpdatableConfiguration:
             self.camera_zoom_limit_controller.min_zoom_index = minimum
             self.camera_zoom_limit_controller.max_zoom_index = maximum
             self.configuration['limits']['zoomIndex'] = zoom_limit
+
+    def update_search_target(self, search_target):
+        if 'isZoomWhileRotating' in search_target:
+            is_zoom_while_rotating = search_target['isZoomWhileRotating']
+            self.cameraman_mode_manager.is_zoom_while_rotating = \
+                is_zoom_while_rotating
+            self.configuration['searchTarget']['isZoomWhileRotating'] = \
+                is_zoom_while_rotating
+        pan = None
+        if 'pan' in search_target:
+            pan = search_target['pan']
+            self.configuration['searchTarget']['pan'] = pan
+        tilt = None
+        if 'tilt' in search_target:
+            tilt = search_target['tilt']
+            self.configuration['searchTarget']['tilt'] = tilt
+        zoom_index = None
+        if 'zoomIndex' in search_target:
+            zoom_index = search_target['zoomIndex']
+            self.configuration['searchTarget']['zoomIndex'] = zoom_index
+        zoom_ratio = None
+        if 'zoomRatio' in search_target:
+            zoom_ratio = search_target['zoomRatio']
+            self.configuration['searchTarget']['zoomRatio'] = zoom_ratio
+        if isinstance(self.search_target_strategy,
+                      StaticSearchTargetStrategy):
+            self.search_target_strategy.update_target(
+                pan_angle=pan,
+                tilt_angle=tilt,
+                zoom_index=zoom_index,
+                zoom_ratio=zoom_ratio)

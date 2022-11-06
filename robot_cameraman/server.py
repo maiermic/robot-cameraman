@@ -155,6 +155,9 @@ def update_configuration():
                     max_hsv=color['max_hsv'])
     if 'limits' in request.json:
         updatable_configuration.update_limits(request.json['limits'])
+    if 'searchTarget' in request.json:
+        updatable_configuration.update_search_target(
+            request.json['searchTarget'])
     return '', 200
 
 

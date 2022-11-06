@@ -422,14 +422,6 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._is_searching = False
         self.is_zoom_while_rotating = True
 
-        # TODO remove test targets below
-        # self._target_pan_angle = 10.0
-        # self._target_tilt_angle = 5.0
-        # self._target_zoom_index = 10
-        # self._target_zoom_ratio = 2.0
-
-        # TODO add UI for target and is_zoom_while_rotating
-
     def start(self) -> None:
         assert not self._is_searching
         self._is_searching = True

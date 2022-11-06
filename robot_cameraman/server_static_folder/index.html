@@ -164,6 +164,7 @@
     <script type="module" src="color-picker.js" async></script>
     <script type="module" src="color-tracking-menu.js" async></script>
     <script type="module" src="limits-menu.js" async></script>
+    <script type="module" src="search-strategy-menu.js" async></script>
 </head>
 <body>
     <div class="live-view-container">
@@ -208,6 +209,11 @@
                  onpointerup="menu.navigateToSubMenu('limits')">
                 <i class="menu__button__icon bi bi-bricks"></i>
                 limits
+            </div>
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('search-strategy')">
+                <i class="menu__button__icon bi bi-search"></i>
+                search strategy
             </div>
         </template>
 
@@ -286,6 +292,10 @@
 
         <template data-menu-name="limits">
             <x-limits-menu>...loading</x-limits-menu>
+        </template>
+
+        <template data-menu-name="search-strategy">
+            <x-search-strategy-menu>...loading</x-search-strategy-menu>
         </template>
 
         <script>
