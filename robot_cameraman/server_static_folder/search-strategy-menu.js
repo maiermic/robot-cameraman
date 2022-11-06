@@ -9,7 +9,7 @@ template.innerHTML = `
     }
     .numbered-range-input {
         display: grid;
-        grid-template-columns: 11ch 1fr auto 1ch;
+        grid-template-columns: 4ch 1fr auto 1ch;
         white-space: nowrap;
     }
     .dropdown {
@@ -24,7 +24,7 @@ template.innerHTML = `
 </style>
 <div>
   <label class="partial-input">
-      <span>Allow zoom while rotating</span>
+      <span>Zoom while rotating</span>
       <input class="is-zoom-while-rotating" type="checkbox">
   </label>
   <label class="partial-input numbered-range-input pan-target">

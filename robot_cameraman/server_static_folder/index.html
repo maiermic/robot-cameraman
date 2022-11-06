@@ -13,7 +13,7 @@
 
         body {
             display: grid;
-            grid-template-columns: auto 1fr;
+            grid-template-columns: max-content 1fr;
         }
 
         #debugLog {
@@ -34,7 +34,8 @@
                 grid-template-rows: min-content 1fr;
             }
 
-            .live-view {
+            .live-view,
+            .menu {
                 /* subtract height of #debugLog (status bar) */
                 /* Due to unknown reason, additional 0.1em have to be */
                 /* subtracted to fit the content to the display. */
@@ -68,6 +69,7 @@
         .menu {
             margin: 0.3em 0.5em 0 0.5em;
             font-size: 2em;
+            overflow-y: auto;
         }
 
         /*noinspection CssUnusedSymbol*/

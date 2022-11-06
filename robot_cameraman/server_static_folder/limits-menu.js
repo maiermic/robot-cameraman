@@ -4,17 +4,20 @@ import {range} from "./util.js";
 const template = document.createElement('template')
 template.innerHTML = `
 <style>
+    .angle-limits {
+        font-size: 0.9em;
+    }
     .partial-input {
         font-size: 0.8em;
     }
     .range-limit {
         display: grid;
-        grid-template-columns: 9ch 1fr auto 2ch;
+        grid-template-columns: 4ch 1fr auto 2ch;
         white-space: nowrap;
     }
     .dropdown {
         display: grid;
-        grid-template-columns: 9ch 1fr auto;
+        grid-template-columns: 4ch 1fr auto;
         white-space: nowrap;
     }
 
@@ -24,7 +27,7 @@ template.innerHTML = `
 </style>
 <div class="angle-limits">
   <label class="partial-input">
-      <span>Apply Limits In Manual Mode</span>
+      <span>Apply In Manual Mode</span>
       <input class="are-limits-applied-in-manual-mode" type="checkbox">
   </label>
   <details open class="pan-limit">
@@ -36,7 +39,7 @@ template.innerHTML = `
           <input class="active" type="checkbox">
       </label>
       <label class="partial-input range-limit">
-          <span>Minimum</span>
+          <span>Min</span>
           <input class="minimum-range"
                  type="range"
                  min="0"
@@ -52,7 +55,7 @@ template.innerHTML = `
           <span>°</span>
       </label>
       <label class="partial-input range-limit">
-          <span>Maximum</span>
+          <span>Max</span>
           <input class="maximum-range"
                  type="range"
                  min="0"
@@ -77,7 +80,7 @@ template.innerHTML = `
           <input class="active" type="checkbox">
       </label>
       <label class="partial-input range-limit">
-          <span>Minimum</span>
+          <span>Min</span>
           <input class="minimum-range"
                  type="range"
                  min="0"
@@ -93,7 +96,7 @@ template.innerHTML = `
           <span>°</span>
       </label>
       <label class="partial-input range-limit">
-          <span>Maximum</span>
+          <span>Max</span>
           <input class="maximum-range"
                  type="range"
                  min="0"
@@ -118,7 +121,7 @@ template.innerHTML = `
           <input class="active" type="checkbox">
       </label>
       <label class="partial-input range-limit">
-          <span>Minimum</span>
+          <span>Min</span>
           <input class="minimum-range"
                  type="range"
                  min="1"
@@ -136,7 +139,7 @@ template.innerHTML = `
           <span>x</span>
       </label>
       <label class="partial-input range-limit">
-          <span>Maximum</span>
+          <span>Max</span>
           <input class="maximum-range"
                  type="range"
                  min="1"
@@ -308,11 +311,11 @@ class LimitsMenu extends HTMLElement {
       return $select
     }
     const $minimum = createDropdown({
-      labelText: 'Minimum',
+      labelText: 'Min',
       selected: value ? value.at(0) : values.at(0).index
     })
     const $maximum = createDropdown({
-      labelText: 'Maximum',
+      labelText: 'Max',
       selected: value ? value.at(-1) : values.at(-1).index
     })
     /** @type {HTMLInputElement} */
