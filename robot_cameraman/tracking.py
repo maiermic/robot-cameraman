@@ -511,10 +511,14 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             tilt_angle: Optional[float],
             zoom_index: Optional[int],
             zoom_ratio: Optional[float]):
-        self._target_pan_angle = pan_angle
-        self._target_tilt_angle = tilt_angle
-        self._target_zoom_index = zoom_index
-        self._target_zoom_ratio = zoom_ratio
+        if pan_angle is not None:
+            self._target_pan_angle = pan_angle
+        if tilt_angle is not None:
+            self._target_tilt_angle = tilt_angle
+        if zoom_index is not None:
+            self._target_zoom_index = zoom_index
+        if zoom_ratio is not None:
+            self._target_zoom_ratio = zoom_ratio
         self._is_update_od_camera_base_speeds_required = True
 
     def update_current_angles(self, angles: Angles):
