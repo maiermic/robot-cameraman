@@ -396,7 +396,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
     when close to the target.
     """
 
-    _is_update_od_camera_base_speeds_required: bool
+    _is_update_of_camera_base_speeds_required: bool
     _is_searching: bool
 
     def __init__(
@@ -418,7 +418,7 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
         self._current_zoom_index = None
         self._current_zoom_ratio = None
         self._camera_base_speeds = CameraSpeeds()
-        self._is_update_od_camera_base_speeds_required = False
+        self._is_update_of_camera_base_speeds_required = False
         self._is_searching = False
         self.is_zoom_while_rotating = True
 
@@ -511,34 +511,34 @@ class StaticSearchTargetStrategy(SearchTargetStrategy):
             self._target_zoom_index = zoom_index
         if zoom_ratio is not None:
             self._target_zoom_ratio = zoom_ratio
-        self._is_update_od_camera_base_speeds_required = True
+        self._is_update_of_camera_base_speeds_required = True
 
     def update_current_angles(self, angles: Angles):
         if (self._current_pan_angle is None
                 and self._current_tilt_angle is None
                 and self._target_pan_angle is not None
                 and self._target_tilt_angle is not None):
-            self._is_update_od_camera_base_speeds_required = True
+            self._is_update_of_camera_base_speeds_required = True
         self._current_pan_angle = angles.pan_angle
         self._current_tilt_angle = angles.tilt_angle
 
     def update_current_zoom_ratio(self, zoom_ratio: float):
         if (self._current_zoom_ratio is None
                 and self._target_zoom_ratio is not None):
-            self._is_update_od_camera_base_speeds_required = True
+            self._is_update_of_camera_base_speeds_required = True
         self._current_zoom_ratio = zoom_ratio
 
     def update_current_zoom_index(self, zoom_index: int):
         if (self._current_zoom_index is None
                 and self._target_zoom_index is not None):
-            self._is_update_od_camera_base_speeds_required = True
+            self._is_update_of_camera_base_speeds_required = True
         self._current_zoom_index = zoom_index
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         assert self._is_searching
-        if self._is_update_od_camera_base_speeds_required:
+        if self._is_update_of_camera_base_speeds_required:
             self._update_camera_base_speeds()
-            self._is_update_od_camera_base_speeds_required = False
+            self._is_update_of_camera_base_speeds_required = False
         # The live view of the camera moves faster at higher zoom ratios.
         # Usually the pan and tilt speed should depend on the zoom ratio
         # (see https://github.com/maiermic/robot-cameraman/issues/13).
