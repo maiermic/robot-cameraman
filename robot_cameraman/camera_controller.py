@@ -354,11 +354,6 @@ class CameraAngleLimitController:
         self.max_pan_angle = None
         self.min_tilt_angle = None
         self.max_tilt_angle = None
-        # TODO keep None as default, i.e. remove the following lines
-        # self.min_pan_angle = 2.0
-        # self.max_pan_angle = 40.0
-        # self.min_tilt_angle = 350.0
-        # self.max_tilt_angle = 5.0
         self._current_pan_angle = None
         self._current_tilt_angle = None
 
