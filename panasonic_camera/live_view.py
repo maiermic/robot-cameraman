@@ -72,6 +72,8 @@ class ExHeader(ABC):
 @dataclass()
 class ExHeader1(ExHeader):
     zoomRatio: int
+    # b seems to be related to the zoom ratio.
+    # It's value increases/decreases relative to zoomRatio.
     b: int
     c: int
     zoomRatioPos: int

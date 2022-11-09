@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from dataclasses import dataclass
 
 from serial import Serial
 from typing_extensions import Protocol
@@ -6,6 +7,16 @@ from typing_extensions import Protocol
 import simplebgc.gimbal
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import ControlMode
+from simplebgc.units import to_360_degree, to_degree_per_sec
+
+
+@dataclass
+class Angles:
+    # TODO document units (360, degree/second)
+    pan_angle: float
+    tilt_angle: float
+    pan_speed: float
+    tilt_speed: float
 
 
 # TODO interface should be independent from simplebgc module,
@@ -47,6 +58,7 @@ class Gimbal(Protocol):
     def stop(self) -> None:
         raise NotImplementedError
 
+    # TODO should return Angles
     @abstractmethod
     def get_angles(self) -> GetAnglesInCmd:
         raise NotImplementedError
@@ -121,3 +133,11 @@ def create_simple_bgc_gimbal(connection: Serial = None) -> Gimbal:
     # Tilt direction of simplebgc.gimbal.Gimbal has to be inverted,
     # since it uses the opposite direction than robot_cameraman.gimbal.Gimbal
     return TiltInvertedGimbal(simplebgc.gimbal.Gimbal(connection))
+
+
+def convert_simple_bgc_angles(angles: GetAnglesInCmd) -> Angles:
+    return Angles(
+        pan_angle=to_360_degree(angles.target_angle_3),
+        tilt_angle=to_360_degree(angles.target_angle_2),
+        pan_speed=to_degree_per_sec(angles.target_speed_3),
+        tilt_speed=to_degree_per_sec(angles.target_speed_2))

@@ -23,7 +23,8 @@ from robot_cameraman.image_detection import DetectionCandidate, \
 from robot_cameraman.live_view import LiveView, ImageSize
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer, ServerImageSource
-from robot_cameraman.tracking import Destination, CameraSpeeds, ZoomSpeed
+from robot_cameraman.tracking import Destination
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
 logger: Logger = logging.getLogger(__name__)

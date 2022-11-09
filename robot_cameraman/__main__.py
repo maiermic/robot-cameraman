@@ -4,6 +4,7 @@ import signal
 import threading
 # noinspection Mypy
 from pathlib import Path
+from typing import Optional
 
 import PIL.Image
 import PIL.ImageFont
@@ -13,30 +14,35 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.annotation import ImageAnnotator
 from robot_cameraman.camera_controller import SmoothCameraController, \
-    SpeedManager
-from robot_cameraman.camera_observable import \
-    PanasonicCameraObservable, ObservableCameraProperty
+    SpeedManager, CameraAngleLimitController, \
+    PredictiveCameraZoomRatioLimitController, CameraZoomRatioLimitController, \
+    CameraZoomIndexLimitController
+from robot_cameraman.camera_observable import PanasonicCameraObservable
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.cameraman import Cameraman
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.configuration import read_configuration_file
 from robot_cameraman.detection_engine.color import ColorDetectionEngine, \
     ColorDetectionEngineUI
+from robot_cameraman.events import EventEmitter, Event
 from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
     create_simple_bgc_gimbal
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
-    ImageSize
+    ImageSize, DummyLiveView
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
-    RotateSearchTargetStrategy, CameraSpeeds, ConfigurableTrackingStrategy, \
-    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, ZoomSpeed
-from robot_cameraman.ui import ShowSpeedsInStatusBar
+    RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
+    ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
+    StaticSearchTargetStrategy
+from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
+from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -48,6 +54,14 @@ def create_video_writer(output_file: Path, image_size: ImageSize):
         cv2.VideoWriter_fourcc(*'MJPG'),
         15,
         image_size)
+
+
+def create_angle_limit_controller(
+        event_emitter: EventEmitter) -> CameraAngleLimitController:
+    controller = CameraAngleLimitController()
+    event_emitter.add_listener(Event.ANGLES,
+                               controller.update_current_angles)
+    return controller
 
 
 class RobotCameramanArguments(Protocol):
@@ -68,6 +82,7 @@ class RobotCameramanArguments(Protocol):
     font: Path
     fontSize: int
     debug: bool
+    search_strategy: str
     rotatingSearchSpeed: int
     rotationalAccelerationPerSecond: int
     tiltingAccelerationPerSecond: int
@@ -76,6 +91,8 @@ class RobotCameramanArguments(Protocol):
     liveViewHeight: int
     cameraMinFocalLength: float
     cameraMaxFocalLength: float
+    camera_zoom_steps: Optional[Path]
+    camera_zoom_ratio_index_ranges: Optional[Path]
     ssl_key: Path
     ssl_certificate: Path
 
@@ -125,7 +142,7 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--liveView', type=str,
                         default='Panasonic',
                         help="The live view (camera) to use."
-                             "Either 'Panasonic' or 'Webcam'")
+                             "Either 'Panasonic', 'Webcam' or 'Dummy'")
     parser.add_argument('--ip', type=str,
                         default='0.0.0.0',
                         help="UDP Socket IP address of Panasonic live view.")
@@ -155,6 +172,19 @@ def parse_arguments() -> RobotCameramanArguments:
     parser.add_argument('--debug',
                         action='store_true',
                         help="Enable debug logging")
+    parser.add_argument('--search-strategy',
+                        type=str, default='rotate',
+                        help="If target is lost,"
+                             " the camera searches for a new target."
+                             " If the strategy 'rotate' (default) is used,"
+                             " the gimbal pans clockwise at constant speed"
+                             " (given by argument --rotatingSearchSpeed)."
+                             " If the strategy 'static' is used,"
+                             " the gimbal moves (pans, tilts and zooms)"
+                             " with constant speed"
+                             " (given by argument --rotatingSearchSpeed)"
+                             " to a certain position"
+                             " (can be configured in the web UI).")
     parser.add_argument('--rotatingSearchSpeed',
                         type=int, default=0,
                         help="If target is lost, search for new target by"
@@ -187,6 +217,28 @@ def parse_arguments() -> RobotCameramanArguments:
                         help="Maximum focal length in millimeter"
                              "of the used camera. The actual focal length"
                              "and not the 35mm equivalent is expected.")
+    parser.add_argument(
+        '--camera-zoom-steps',
+        type=Path,
+        default=None,
+        help="Path to file that contains the configuration of the camera's"
+             " zoom-steps (see"
+             " robot_cameraman/tools/analyze_zoom_of_camera.py)."
+             " If this argument is given,"
+             " the PredictiveCameraZoomRatioLimitController is used to limit"
+             " the zoom of the camera.")
+    parser.add_argument(
+        '--camera-zoom-ratio-index-ranges',
+        type=Path,
+        default=None,
+        help="Path to file that contains the configuration of the camera's"
+             " zoom-ratio-index-ranges (see"
+             " analyze_zoom_indices_of_panasonic_camera.py and"
+             " analyze_zoom_indices_of_panasonic_camera_interactively.py"
+             " in directory robot_cameraman/tools)."
+             " If this argument is given,"
+             " the CameraZoomIndexLimitController is used to limit the"
+             " zoom of the camera.")
     parser.add_argument(
         '--ssl-key',
         type=Path,
@@ -239,10 +291,20 @@ def configure_logging():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
+    # some devices on the network may cause upnpclient.discover to log quite
+    # verbose error messages. The log level is changed to avoid this
+    logging.getLogger('ssdp').setLevel(logging.CRITICAL)
+    # The web UI does frequent requests regarding the status bar
+    # that spam the logs. Usually, those INFO logs are not important,
+    # since the relevant interaction is covered by logs of other modules.
+    # Hence, the log level of werkzeug is changed.
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
 
 args = parse_arguments()
 configure_logging()
 configuration = read_configuration_file(args.config)
+event_emitter = EventEmitter()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
 live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
@@ -271,18 +333,65 @@ tilt_speed_manager = max_speed_and_acceleration_updater.add(
 configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination, live_view_image_size, max_allowed_speed=16)
+
+
+def create_camera_zoom_limit_controller():
+    global event_emitter
+    if args.camera_zoom_ratio_index_ranges is not None:
+        controller = CameraZoomIndexLimitController()
+    elif args.camera_zoom_steps is not None:
+        controller = PredictiveCameraZoomRatioLimitController(
+            zoom_steps=parse_zoom_steps(args.camera_zoom_steps))
+    else:
+        controller = CameraZoomRatioLimitController()
+    if hasattr(controller, 'update_zoom_ratio'):
+        event_emitter.add_listener(
+            Event.ZOOM_RATIO,
+            controller.update_zoom_ratio)
+    if hasattr(controller, 'update_zoom_index'):
+        event_emitter.add_listener(
+            Event.ZOOM_INDEX,
+            controller.update_zoom_index)
+    return controller
+
+
+camera_zoom_limit_controller = create_camera_zoom_limit_controller()
+
+if args.search_strategy == 'rotate':
+    search_target_strategy = max_speed_and_acceleration_updater.add(
+        RotateSearchTargetStrategy(args.rotatingSearchSpeed))
+elif args.search_strategy == 'static':
+    search_target_strategy = StaticSearchTargetStrategy(
+        pan_speed=args.rotatingSearchSpeed,
+        tilt_speed=args.rotatingSearchSpeed,
+        camera_zoom_limit_controller=create_camera_zoom_limit_controller(),
+        camera_angle_limit_controller=create_angle_limit_controller(
+            event_emitter))
+    event_emitter.add_listener(
+        Event.ANGLES, search_target_strategy.update_current_angles)
+    event_emitter.add_listener(
+        Event.ZOOM_INDEX, search_target_strategy.update_current_zoom_index)
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO, search_target_strategy.update_current_zoom_ratio)
+else:
+    print(f"Unknown search strategy {args.search_strategy}")
+    exit(1)
+camera_angle_limit_controller = create_angle_limit_controller(event_emitter)
+# noinspection PyUnboundLocalVariable
 cameraman_mode_manager = CameramanModeManager(
     camera_controller=SmoothCameraController(
         gimbal,
         camera_manager,
         rotate_speed_manager=rotate_speed_manager,
         tilt_speed_manager=tilt_speed_manager),
+    camera_zoom_limit_controller=camera_zoom_limit_controller,
+    camera_angle_limit_controller=camera_angle_limit_controller,
     align_tracking_strategy=max_speed_and_acceleration_updater.add(
         configurable_align_tracking_strategy),
     tracking_strategy=tracking_strategy,
-    search_target_strategy=max_speed_and_acceleration_updater.add(
-        RotateSearchTargetStrategy(args.rotatingSearchSpeed)),
-    gimbal=gimbal)
+    search_target_strategy=search_target_strategy,
+    gimbal=gimbal,
+    event_emitter=event_emitter)
 
 # noinspection PyListCreation
 user_interfaces = []
@@ -291,12 +400,13 @@ user_interfaces.append(
     ConfigurableTrackingStrategyUi(
         tracking_strategy=configurable_tracking_strategy,
         align_strategy=configurable_align_tracking_strategy))
+
 # noinspection PyProtectedMember
-user_interfaces.append(
-    ShowSpeedsInStatusBar(
-        pan_speed_manager=rotate_speed_manager,
-        tilt_speed_manager=tilt_speed_manager,
-        camera_speeds=cameraman_mode_manager._camera_speeds))
+status_bar = StatusBar(pan_speed_manager=rotate_speed_manager,
+                       tilt_speed_manager=tilt_speed_manager,
+                       camera_speeds=cameraman_mode_manager._camera_speeds)
+event_emitter.add_listener(Event.ANGLES, status_bar.update_current_angles)
+user_interfaces.append(status_bar)
 
 if args.detectionEngine == 'Dummy':
     detection_engine = DummyDetectionEngine()
@@ -319,14 +429,37 @@ else:
 
 if args.liveView == 'Webcam':
     live_view = WebcamLiveView()
+elif args.liveView == 'Dummy':
+    live_view = DummyLiveView(live_view_image_size)
 elif args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
     camera_observable = PanasonicCameraObservable(
-        min_focal_length=args.cameraMinFocalLength)
+        min_focal_length=args.cameraMinFocalLength,
+        event_emitter=event_emitter)
     live_view.add_ex_header_listener(camera_observable.on_ex_header)
-    camera_observable.add_listener(
-        ObservableCameraProperty.ZOOM_RATIO,
+    # TODO add CLI argument to enable ExHeaderToCsvWriter
+    # noinspection PyUnreachableCode
+    if False:
+        from robot_cameraman.camera_observable import ExHeaderToCsvWriter
+
+        live_view.add_ex_header_listener(ExHeaderToCsvWriter().on_ex_header)
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO,
         max_speed_and_acceleration_updater.on_zoom_ratio)
+    event_emitter.add_listener(
+        Event.ZOOM_INDEX,
+        status_bar.update_zoom_index)
+    event_emitter.add_listener(
+        Event.ZOOM_RATIO,
+        status_bar.update_zoom_ratio)
+    if hasattr(camera_zoom_limit_controller, 'update_zoom_ratio'):
+        event_emitter.add_listener(
+            Event.ZOOM_RATIO,
+            camera_zoom_limit_controller.update_zoom_ratio)
+    if hasattr(camera_zoom_limit_controller, 'update_zoom_index'):
+        event_emitter.add_listener(
+            Event.ZOOM_INDEX,
+            camera_zoom_limit_controller.update_zoom_index)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
@@ -358,12 +491,21 @@ camera_manager.start()
 cameraman_thread = threading.Thread(target=run_cameraman, daemon=True)
 cameraman_thread.start()
 print('Open https://localhost:9000/index.html in your browser')
+camera_zoom_ratio_index_ranges = (
+    None if args.camera_zoom_ratio_index_ranges is None
+    else parse_zoom_ratio_index_ranges(args.camera_zoom_ratio_index_ranges))
 run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
            _server_image=server_image,
            _manual_camera_speeds=manual_camera_speeds,
            _updatable_configuration=UpdatableConfiguration(
                detection_engine=detection_engine,
-               configuration_file=args.config),
+               cameraman_mode_manager=cameraman_mode_manager,
+               camera_zoom_limit_controller=camera_zoom_limit_controller,
+               camera_angle_limit_controller=camera_angle_limit_controller,
+               configuration_file=args.config,
+               camera_zoom_ratio_index_ranges=camera_zoom_ratio_index_ranges,
+               search_target_strategy=search_target_strategy),
+           _status_bar=status_bar,
            ssl_certificate=args.ssl_certificate,
            ssl_key=args.ssl_key)

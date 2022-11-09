@@ -14,8 +14,9 @@ from typing_extensions import Protocol
 from panasonic_camera.camera_manager import PanasonicCameraManager
 from robot_cameraman.angle import get_delta_angle_clockwise, \
     get_delta_angle_counter_clockwise
-from robot_cameraman.gimbal import Gimbal
-from robot_cameraman.tracking import CameraSpeeds, ZoomSpeed
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.gimbal import Gimbal, Angles
+from robot_cameraman.zoom import ZoomSteps, ZoomStep
 from simplebgc.commands import GetAnglesInCmd
 from simplebgc.gimbal import ControlMode
 from simplebgc.units import to_degree, to_degree_per_sec
@@ -82,6 +83,9 @@ class ElapsedTime:
         elapsed_time = current_time - self._last_update_time
         self._last_update_time = current_time
         return elapsed_time
+
+    def get(self) -> float:
+        return time() - self._last_update_time
 
 
 class SpeedManager:
@@ -183,6 +187,247 @@ class SmoothCameraController(CameraController):
             self.update(camera_speeds)
 
 
+class CameraZoomLimitController(Protocol):
+    @abstractmethod
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        raise NotImplementedError
+
+
+class CameraZoomRatioLimitController(CameraZoomLimitController):
+    zoom_ratio: Optional[float]
+    min_zoom_ratio: Optional[float]
+    max_zoom_ratio: Optional[float]
+
+    def __init__(self) -> None:
+        self.zoom_ratio = None
+        self.min_zoom_ratio = None
+        self.max_zoom_ratio = None
+
+    def update_zoom_ratio(self, zoom_ratio: float):
+        self.zoom_ratio = zoom_ratio
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        if self.zoom_ratio is None:
+            return
+        logger.debug(
+            f'check if current zoom ratio {self.zoom_ratio} reached limit')
+        if (self._is_heading_towards_min(camera_speeds.zoom_speed)
+                and self._is_min_reached()):
+            logger.debug('min zoom ratio reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if (self._is_heading_towards_max(camera_speeds.zoom_speed)
+                and self._is_max_reached()):
+            logger.debug('max zoom ratio reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+    def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
+        return self.min_zoom_ratio is not None and zoom_speed < 0
+
+    def _is_min_reached(self):
+        return self.zoom_ratio <= self.min_zoom_ratio
+
+    def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
+        return self.max_zoom_ratio is not None and zoom_speed > 0
+
+    def _is_max_reached(self):
+        return self.zoom_ratio >= self.max_zoom_ratio
+
+
+class PredictiveCameraZoomRatioLimitController(CameraZoomRatioLimitController):
+    _zoom_steps: ZoomSteps
+    _previous_zoom_speed: Optional[ZoomSpeed]
+    _previous_zoom_ratio: Optional[float]
+    _current_zoom_step: Optional[ZoomStep]
+    _time_since_zoom_ratio_reached: ElapsedTime
+    _time_since_last_update: Optional[ElapsedTime]
+
+    def __init__(self, zoom_steps: ZoomSteps) -> None:
+        super().__init__()
+        self._zoom_steps = zoom_steps
+        self._previous_zoom_speed = None
+        self._previous_zoom_ratio = None
+        self._current_zoom_step = None
+        self._time_since_zoom_ratio_reached = ElapsedTime()
+        self._time_since_last_update = None
+
+    def update_zoom_ratio(self, zoom_ratio: float):
+        self._previous_zoom_ratio = self.zoom_ratio
+        super().update_zoom_ratio(zoom_ratio)
+        if (self._previous_zoom_ratio is None
+                or self._previous_zoom_ratio != self.zoom_ratio):
+            self._time_since_zoom_ratio_reached.reset()
+            self._current_zoom_step = \
+                self._zoom_steps.get_by_zoom_ratio(self.zoom_ratio)
+
+    def _update_time_since_last_update(self) -> Optional[float]:
+        if self._time_since_last_update is None:
+            self._time_since_last_update = ElapsedTime()
+            return None
+        return self._time_since_last_update.update()
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        time_since_last_update = self._update_time_since_last_update()
+        super().update(camera_speeds)
+        # TODO predict zoom out similar to zoom in
+        # if self._is_heading_towards_min(camera_speeds.zoom_speed):
+        #     logger.debug('min zoom ratio reached, zoom speed is set to 0')
+        #     camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if self._is_heading_towards_max(camera_speeds.zoom_speed):
+            next_zoom_step = \
+                self._zoom_steps.get_next_greater(self._current_zoom_step)
+            t = self._time_since_zoom_ratio_reached.get()
+            t_up = time_since_last_update or 0
+            # TODO the magic number 0.25 led to better results in experiments
+            #   with a Panasonic DMC-LF1, but this value/delay might not work
+            #   as well with all cameras (different FPS) or configurations
+            #   (object tracking vs. color tracking)
+            time_to_stop = t + t_up + 0.25
+            logger.debug(
+                f'heading towards max zoom ratio {self.max_zoom_ratio},'
+                f' time since last update={time_since_last_update},'
+                f' current={self.zoom_ratio},'
+                f' time since current has been reached={t},'
+                f' next={next_zoom_step.zoom_ratio},'
+                f' min stop time={next_zoom_step.min_stop_zoom_in_time},'
+                f' time to stop={time_to_stop}')
+            if (next_zoom_step.zoom_ratio == self.max_zoom_ratio
+                    and next_zoom_step.min_stop_zoom_in_time <= time_to_stop):
+                logger.debug('max zoom ratio is predicted to be reached soon,'
+                             ' zoom speed is set to 0')
+                camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if camera_speeds.zoom_speed == ZoomSpeed.ZOOM_STOPPED:
+            self._time_since_zoom_ratio_reached.reset()
+        self._previous_zoom_speed = camera_speeds.zoom_speed
+
+
+class CameraZoomIndexLimitController(CameraZoomLimitController):
+    zoom_index: Optional[int]
+    min_zoom_index: Optional[int]
+    max_zoom_index: Optional[int]
+
+    def __init__(self) -> None:
+        self.zoom_index = None
+        self.min_zoom_index = None
+        self.max_zoom_index = None
+
+    def update_zoom_index(self, zoom_index: int):
+        self.zoom_index = zoom_index
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        if self.zoom_index is None:
+            return
+        logger.debug(
+            f'check if current zoom index {self.zoom_index} reached limit')
+        if (self._is_heading_towards_min(camera_speeds.zoom_speed)
+                and self._is_min_reached()):
+            logger.debug('min zoom index reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+        if (self._is_heading_towards_max(camera_speeds.zoom_speed)
+                and self._is_max_reached()):
+            logger.debug('max zoom index reached, zoom speed is set to 0')
+            camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+
+    def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
+        return self.min_zoom_index is not None and zoom_speed < 0
+
+    def _is_min_reached(self):
+        return self.zoom_index <= self.min_zoom_index
+
+    def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
+        return self.max_zoom_index is not None and zoom_speed > 0
+
+    def _is_max_reached(self):
+        return self.zoom_index >= self.max_zoom_index
+
+
+class CameraAngleLimitController:
+    min_pan_angle: Optional[float]
+    max_pan_angle: Optional[float]
+    min_tilt_angle: Optional[float]
+    max_tilt_angle: Optional[float]
+    _current_pan_angle: Optional[float]
+    _current_tilt_angle: Optional[float]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.min_pan_angle = None
+        self.max_pan_angle = None
+        self.min_tilt_angle = None
+        self.max_tilt_angle = None
+        self._current_pan_angle = None
+        self._current_tilt_angle = None
+
+    def update_current_angles(self, angles: Angles):
+        self._current_pan_angle = angles.pan_angle
+        self._current_tilt_angle = angles.tilt_angle
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        if (self._current_pan_angle is None
+                or self._current_tilt_angle is None):
+            logger.debug('current angles are not set yet')
+            return
+        logger.debug(', '.join((
+            f"pan angle: {self._current_pan_angle:4.1f}",
+            f"tilt angle: {self._current_tilt_angle:4.1f}",
+        )))
+
+        # Since camera might rotate full circle, a single limit could be
+        # reached rotating clockwise or counter clockwise. It is unrealistic
+        # that the exact limit is reached and kept. Thereby, the camera might
+        # pass over the limit. If there is only one limit,
+        # the camera may continue to move after it passed the limit,
+        # since the limit is in the opposite rotating direction than the camera
+        # is moving.
+        #
+        # Minimum and maximum have to be defined both.
+        # They define a range, in which the camera stops,
+        # i.e. the camera stops after a limit is passed.
+        # The camera may only move to the closer limit to exit this range.
+        if (self.min_pan_angle is not None
+                and self.max_pan_angle is not None
+                and is_angle_between(
+                    left=self.min_pan_angle,
+                    angle=self._current_pan_angle,
+                    right=self.max_pan_angle,
+                    clockwise=False)):
+            min_pan_delta = get_delta_angle_clockwise(
+                left=self._current_pan_angle, right=self.min_pan_angle)
+            max_pan_delta = get_delta_angle_counter_clockwise(
+                left=self._current_pan_angle, right=self.max_pan_angle)
+            if min_pan_delta < max_pan_delta:
+                if camera_speeds.pan_speed < 0:
+                    logger.debug(
+                        'min pan angle reached, pan speed is set to 0')
+                    camera_speeds.pan_speed = 0
+            else:
+                if camera_speeds.pan_speed > 0:
+                    logger.debug(
+                        'max pan angle reached, pan speed is set to 0')
+                    camera_speeds.pan_speed = 0
+
+        if (self.min_tilt_angle is not None
+                and self.max_tilt_angle is not None
+                and is_angle_between(
+                    left=self.min_tilt_angle,
+                    angle=self._current_tilt_angle,
+                    right=self.max_tilt_angle,
+                    clockwise=False)):
+            min_tilt_delta = get_delta_angle_clockwise(
+                left=self._current_tilt_angle, right=self.min_tilt_angle)
+            max_tilt_delta = get_delta_angle_counter_clockwise(
+                left=self._current_tilt_angle, right=self.max_tilt_angle)
+            if min_tilt_delta < max_tilt_delta:
+                if camera_speeds.tilt_speed < 0:
+                    logger.debug(
+                        'min tilt angle reached, tilt speed is set to 0')
+                    camera_speeds.tilt_speed = 0
+            else:
+                if camera_speeds.tilt_speed > 0:
+                    logger.debug(
+                        'max tilt angle reached, tilt speed is set to 0')
+                    camera_speeds.tilt_speed = 0
+
+
 @dataclass()
 class PointOfMotion:
     pan_angle: float = 0
@@ -238,6 +483,7 @@ class PointOfMotionTargetSpeedCalculator:
             delta_angle = get_delta_angle_counter_clockwise(
                 left=current_angle, right=target_angle)
         return delta_angle / travel_time
+
 
 class PathOfMotionCameraController(ABC):
     def __init__(self):

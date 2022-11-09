@@ -13,7 +13,7 @@
 
         body {
             display: grid;
-            grid-template-columns: auto 1fr;
+            grid-template-columns: max-content 1fr;
         }
 
         #debugLog {
@@ -21,19 +21,26 @@
             grid-column-end: end;
         }
 
-        #angles {
+        #angles, #statusBar {
             margin: 0.1em 0 0.1em 1.5em;
+        }
+        #statusBar {
+            white-space: pre-wrap;
         }
 
         @media (orientation: landscape) {
             body {
-                /* subtract height of #debugLog #angles */
-                grid-template-rows: calc(100vh - 1.2em) 1.2em;
+                grid-template-rows: min-content 1fr;
             }
 
-            .live-view {
-                /* subtract height of #debugLog #angles */
-                height: calc(100vh - 1.2em);
+            .live-view,
+            .menu {
+                /* subtract height of #debugLog (status bar) */
+                /* Due to unknown reason, additional 0.1em have to be */
+                /* subtracted to fit the content to the display. */
+                /* Otherwise, the margin of the debugLog (status bar) */
+                /* is cut off. */
+                height: calc(100vh - 1.2em - 0.1em);
                 /* TODO should depend on live view height */
                 max-height: 480px;
             }
@@ -61,6 +68,7 @@
         .menu {
             margin: 0.3em 0.5em 0 0.5em;
             font-size: 2em;
+            overflow-y: auto;
         }
 
         /*noinspection CssUnusedSymbol*/
@@ -95,11 +103,15 @@
         }
 
         @media (orientation: portrait) {
+            #debugLog {
+                grid-row: 2;
+            }
+
             .menu,
             .buttons {
-                /* show buttons below live view */
-                grid-row: 2;
-                margin-top: 0.1em;
+                /* show buttons below debugLog and live view */
+                grid-row: 3;
+                margin-top: 0.2em;
             }
 
             .buttons .grid-item {
@@ -142,12 +154,18 @@
 
         .live-view-container {
             position: relative;
+            /* Required to fill the available height of the row */
+            /* of the parent's grid layout. */
+            /* The container gets to high with `display: block` */
+            display: inherit;
         }
     </style>
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <script type="module" src="color-picker.js" async></script>
     <script type="module" src="color-tracking-menu.js" async></script>
+    <script type="module" src="limits-menu.js" async></script>
+    <script type="module" src="search-strategy-menu.js" async></script>
 </head>
 <body>
     <div class="live-view-container">
@@ -187,6 +205,16 @@
                  onpointerup="menu.navigateToSubMenu('overlay')">
                 <i class="menu__button__icon bi bi-layers"></i>
                 overlay
+            </div>
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('limits')">
+                <i class="menu__button__icon bi bi-bricks"></i>
+                limits
+            </div>
+            <div class="menu__button"
+                 onpointerup="menu.navigateToSubMenu('search-strategy')">
+                <i class="menu__button__icon bi bi-search"></i>
+                search strategy
             </div>
         </template>
 
@@ -261,6 +289,14 @@
 
         <template data-menu-name="color tracking">
             <x-color-tracking-menu>...loading</x-color-tracking-menu>
+        </template>
+
+        <template data-menu-name="limits">
+            <x-limits-menu>...loading</x-limits-menu>
+        </template>
+
+        <template data-menu-name="search-strategy">
+            <x-search-strategy-menu>...loading</x-search-strategy-menu>
         </template>
 
         <script>
@@ -370,6 +406,7 @@
     </div>
     <div id="debugLog">
         <p id="angles"></p>
+        <p id="statusBar"></p>
     </div>
     <script>
       let isOrientationEnabled = false;
@@ -426,6 +463,29 @@
           document.documentElement.requestFullscreen();
         }
       }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      ;(async () => {
+        const $statusBar = document.getElementById('statusBar');
+        const updateStatusBar = async () => {
+          const newStatusBarText = await (await fetch('api/status-bar')).text();
+          if ($statusBar.innerText !== newStatusBarText) {
+            $statusBar.innerText = newStatusBarText;
+          }
+        }
+        // noinspection InfiniteLoopJS
+        while (true) {
+          const start = new Date();
+          await updateStatusBar();
+          const finished = new Date();
+          // Start the next request at least one second after the last request
+          // was started.
+          await sleep(1000 - (finished - start));
+        }
+      })();
     </script>
 </body>
 </html>

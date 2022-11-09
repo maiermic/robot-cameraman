@@ -1,14 +1,20 @@
 import logging
 import time
 from abc import abstractmethod
-from dataclasses import dataclass
-from enum import Enum, auto, IntEnum
+from enum import Enum, auto
 from logging import Logger
 from typing import Optional
 
+import numpy
 from typing_extensions import Protocol
 
+from robot_cameraman.angle import get_delta_angle_clockwise, get_angle_distance
 from robot_cameraman.box import Box, TwoPointsBox, Point
+from robot_cameraman.camera_controller import CameraZoomLimitController, \
+    CameraAngleLimitController, CameraZoomIndexLimitController, \
+    CameraZoomRatioLimitController
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.gimbal import Angles
 from robot_cameraman.live_view import ImageSize
 
 logger: Logger = logging.getLogger(__name__)
@@ -42,42 +48,6 @@ class Destination:
         self.min_size_box.x = x - self.min_size_box.width / 2
         self.min_size_box.y = y - self.min_size_box.height / 2
         self.min_size_box.center.set(x, y)
-
-
-class ZoomSpeed(IntEnum):
-    ZOOM_OUT_FAST = -200
-    ZOOM_OUT_SLOW = -100
-    ZOOM_STOPPED = 0
-    ZOOM_IN_SLOW = 100
-    ZOOM_IN_FAST = 200
-
-
-@dataclass
-class CameraSpeeds:
-    pan_speed: float = 0
-    """Speed in degree per second. Positive values mean clockwise,
-    negative values stand for counter clockwise moving direction from the
-    camera's point of view.
-    """
-
-    tilt_speed: float = 0
-    """Speed in degree per second. Positive values mean upwards,
-    negative values stand for downwards moving direction from the camera's
-    point of view.
-    """
-
-    zoom_speed: ZoomSpeed = ZoomSpeed.ZOOM_STOPPED
-    """Abstract speed unit, i.e. the actual speed depends on camera model.
-    Positive values mean camera should zoom in (larger values mean that camera
-    should zoom faster), negative values stand for zooming out.
-    """
-
-    def reset(self) -> None:
-        """Stop camera movements.
-        """
-        self.pan_speed = 0
-        self.tilt_speed = 0
-        self.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
 
 class TrackingStrategy(Protocol):
@@ -404,3 +374,246 @@ class RotateSearchTargetStrategy(SearchTargetStrategy):
 
     def update(self, camera_speeds: CameraSpeeds) -> None:
         camera_speeds.pan_speed = self.speed
+
+
+class StaticSearchTargetStrategy(SearchTargetStrategy):
+    _camera_zoom_limit_controller: CameraZoomLimitController
+    _camera_angle_limit_controller: CameraAngleLimitController
+    _target_pan_angle: Optional[float]
+    _target_tilt_angle: Optional[float]
+    _target_zoom_index: Optional[int]
+    _target_zoom_ratio: Optional[float]
+
+    _current_pan_angle: Optional[float]
+    _current_tilt_angle: Optional[float]
+    _current_zoom_index: Optional[int]
+    _current_zoom_ratio: Optional[float]
+
+    _camera_base_speeds: CameraSpeeds
+    """The fastest speeds that move to the target. They are used in
+    :py:meth:`~robot_cameraman.tracking.StaticSearchTargetStrategy.update`
+    to calculate the actual camera speeds. The actual speeds might be decreased,
+    when close to the target.
+    """
+
+    _is_update_of_camera_base_speeds_required: bool
+    _is_searching: bool
+
+    def __init__(
+            self,
+            pan_speed: float,
+            tilt_speed: float,
+            camera_zoom_limit_controller: CameraZoomLimitController,
+            camera_angle_limit_controller: CameraAngleLimitController):
+        self.pan_speed = pan_speed
+        self.tilt_speed = tilt_speed
+        self._camera_zoom_limit_controller = camera_zoom_limit_controller
+        self._camera_angle_limit_controller = camera_angle_limit_controller
+        self._target_pan_angle = None
+        self._target_tilt_angle = None
+        self._target_zoom_index = None
+        self._target_zoom_ratio = None
+        self._current_pan_angle = None
+        self._current_tilt_angle = None
+        self._current_zoom_index = None
+        self._current_zoom_ratio = None
+        self._camera_base_speeds = CameraSpeeds()
+        self._is_update_of_camera_base_speeds_required = False
+        self._is_searching = False
+        self.is_zoom_while_rotating = True
+
+    def start(self) -> None:
+        assert not self._is_searching
+        self._is_searching = True
+        self._update_camera_base_speeds()
+
+    def _update_camera_base_speeds(self) -> None:
+        if (self._target_pan_angle is not None
+                and self._current_pan_angle is not None):
+            delta_pan_angle_clockwise = get_delta_angle_clockwise(
+                left=self._current_pan_angle, right=self._target_pan_angle)
+            if delta_pan_angle_clockwise < 180:
+                self._camera_base_speeds.pan_speed = self.pan_speed
+                self._camera_angle_limit_controller.min_pan_angle = \
+                    self._current_pan_angle
+                self._camera_angle_limit_controller.max_pan_angle = \
+                    self._target_pan_angle
+            else:
+                self._camera_base_speeds.pan_speed = -self.pan_speed
+                self._camera_angle_limit_controller.min_pan_angle = \
+                    self._target_pan_angle
+                self._camera_angle_limit_controller.max_pan_angle = \
+                    self._current_pan_angle
+        if (self._target_tilt_angle is not None
+                and self._current_tilt_angle is not None):
+            delta_tilt_angle_clockwise = get_delta_angle_clockwise(
+                left=self._current_tilt_angle, right=self._target_tilt_angle)
+            if delta_tilt_angle_clockwise < 180:
+                self._camera_base_speeds.tilt_speed = self.tilt_speed
+                self._camera_angle_limit_controller.min_tilt_angle = \
+                    self._current_tilt_angle
+                self._camera_angle_limit_controller.max_tilt_angle = \
+                    self._target_tilt_angle
+            else:
+                self._camera_base_speeds.tilt_speed = -self.tilt_speed
+                self._camera_angle_limit_controller.min_tilt_angle = \
+                    self._target_tilt_angle
+                self._camera_angle_limit_controller.max_tilt_angle = \
+                    self._current_tilt_angle
+        if (self._target_zoom_ratio is not None
+                and self._current_zoom_ratio is not None):
+            assert isinstance(self._camera_zoom_limit_controller,
+                              CameraZoomRatioLimitController)
+            if self._current_zoom_ratio < self._target_zoom_ratio:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_zoom_limit_controller.min_zoom_ratio = None
+                self._camera_zoom_limit_controller.max_zoom_ratio = \
+                    self._target_zoom_ratio
+            elif self._current_zoom_ratio > self._target_zoom_ratio:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_zoom_limit_controller.min_zoom_ratio = \
+                    self._target_zoom_ratio
+                self._camera_zoom_limit_controller.max_zoom_ratio = None
+            else:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_zoom_limit_controller.min_zoom_ratio = None
+                self._camera_zoom_limit_controller.max_zoom_ratio = None
+        if (self._target_zoom_index is not None
+                and self._current_zoom_index is not None):
+            assert isinstance(self._camera_zoom_limit_controller,
+                              CameraZoomIndexLimitController)
+            if self._current_zoom_index < self._target_zoom_index:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_IN_SLOW
+                self._camera_zoom_limit_controller.min_zoom_index = None
+                self._camera_zoom_limit_controller.max_zoom_index = \
+                    self._target_zoom_index
+            elif self._current_zoom_index > self._target_zoom_index:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_OUT_SLOW
+                self._camera_zoom_limit_controller.min_zoom_index = \
+                    self._target_zoom_index
+                self._camera_zoom_limit_controller.max_zoom_index = None
+            else:
+                self._camera_base_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
+                self._camera_zoom_limit_controller.min_zoom_index = None
+                self._camera_zoom_limit_controller.max_zoom_index = None
+
+    def update_target(
+            self,
+            pan_angle: Optional[float],
+            tilt_angle: Optional[float],
+            zoom_index: Optional[int],
+            zoom_ratio: Optional[float]):
+        if pan_angle is not None:
+            self._target_pan_angle = pan_angle
+        if tilt_angle is not None:
+            self._target_tilt_angle = tilt_angle
+        if zoom_index is not None:
+            self._target_zoom_index = zoom_index
+        if zoom_ratio is not None:
+            self._target_zoom_ratio = zoom_ratio
+        self._is_update_of_camera_base_speeds_required = True
+
+    def update_current_angles(self, angles: Angles):
+        if (self._current_pan_angle is None
+                and self._current_tilt_angle is None
+                and self._target_pan_angle is not None
+                and self._target_tilt_angle is not None):
+            self._is_update_of_camera_base_speeds_required = True
+        self._current_pan_angle = angles.pan_angle
+        self._current_tilt_angle = angles.tilt_angle
+
+    def update_current_zoom_ratio(self, zoom_ratio: float):
+        if (self._current_zoom_ratio is None
+                and self._target_zoom_ratio is not None):
+            self._is_update_of_camera_base_speeds_required = True
+        self._current_zoom_ratio = zoom_ratio
+
+    def update_current_zoom_index(self, zoom_index: int):
+        if (self._current_zoom_index is None
+                and self._target_zoom_index is not None):
+            self._is_update_of_camera_base_speeds_required = True
+        self._current_zoom_index = zoom_index
+
+    def update(self, camera_speeds: CameraSpeeds) -> None:
+        assert self._is_searching
+        if self._is_update_of_camera_base_speeds_required:
+            self._update_camera_base_speeds()
+            self._is_update_of_camera_base_speeds_required = False
+        # The live view of the camera moves faster at higher zoom ratios.
+        # Usually the pan and tilt speed should depend on the zoom ratio
+        # (see https://github.com/maiermic/robot-cameraman/issues/13).
+        # However, the camera should move in appropriate time
+        # to the target position. With increasing target zoom,
+        # the camera moves slower. If the pan/tilt distance is quite large,
+        # the camera would take inappropriately long to pan/tilt to the target.
+        # Hence, the camera should pan/tilt at maximum speed (as if zoom ratio
+        # is 1.0) to the target. However, the speed is decreased near the
+        # target to reach it more accurately. Angle deviations are reflected in
+        # greater deviations in the live view with increasing zom ratio.
+        #
+        # Speed-Distance Diagram:
+        #                     speed axis (ascending from bottom to top)
+        #                          A
+        #                          |
+        #                max speed | ----\
+        #              close speed |      \
+        #           accurate speed |       \----|
+        #                        0 |            \----
+        #                          |
+        #   distance axis (desc) --|--|--|||----|-------->
+        #                             |  |||    0
+        #    distance > max speed ----/  |||    |
+        #    distance = max speed -------/||    |
+        #    distance > accurate speed ---/|    |
+        #    distance = accurate speed ----/    |
+        #    distance = 0 ----------------------/
+        zoom_ratio = self._current_zoom_ratio or 1.0
+
+        if (self._target_pan_angle is not None
+                and self._current_pan_angle is not None):
+            pan_distance = get_angle_distance(left=self._target_pan_angle,
+                                              right=self._current_pan_angle)
+            if pan_distance >= abs(self._camera_base_speeds.pan_speed):
+                # use "max speed", since:  distance > max speed
+                camera_speeds.pan_speed = self._camera_base_speeds.pan_speed
+            else:
+                accurate_pan_speed = \
+                    self._camera_base_speeds.pan_speed / zoom_ratio
+                # use "close speed"
+                if pan_distance > abs(accurate_pan_speed):
+                    camera_speeds.pan_speed = (
+                            numpy.sign(self._camera_base_speeds.pan_speed)
+                            * pan_distance)
+                else:
+                    # use "accurate speed"
+                    camera_speeds.pan_speed = accurate_pan_speed
+
+        if (self._target_tilt_angle is not None
+                and self._current_tilt_angle is not None):
+            tilt_distance = get_angle_distance(left=self._target_tilt_angle,
+                                               right=self._current_tilt_angle)
+            if tilt_distance >= abs(self._camera_base_speeds.tilt_speed):
+                # use "max speed", since:  distance > max speed
+                camera_speeds.tilt_speed = self._camera_base_speeds.tilt_speed
+            else:
+                accurate_tilt_speed = \
+                    self._camera_base_speeds.tilt_speed / zoom_ratio
+                # use "close speed"
+                if tilt_distance > abs(accurate_tilt_speed):
+                    camera_speeds.tilt_speed = (
+                            numpy.sign(self._camera_base_speeds.tilt_speed)
+                            * tilt_distance)
+                else:
+                    # use "accurate speed"
+                    camera_speeds.tilt_speed = accurate_tilt_speed
+
+        self._camera_angle_limit_controller.update(camera_speeds)
+        if (self.is_zoom_while_rotating
+                or (camera_speeds.pan_speed == 0
+                    and camera_speeds.tilt_speed == 0)):
+            camera_speeds.zoom_speed = self._camera_base_speeds.zoom_speed
+        self._camera_zoom_limit_controller.update(camera_speeds)
+
+    def stop(self):
+        self._is_searching = False
+        self._camera_base_speeds.reset()

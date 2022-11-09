@@ -10,7 +10,8 @@ import PIL.Image
 from flask import Flask, Response, request, redirect, jsonify
 
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
-from robot_cameraman.tracking import ZoomSpeed, CameraSpeeds
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 
 logger: Logger = getLogger(__name__)
@@ -31,6 +32,7 @@ to_exit: threading.Event
 server_image: ImageContainer
 manual_camera_speeds: CameraSpeeds
 updatable_configuration: UpdatableConfiguration
+status_bar: StatusBar
 cameraman_mode_manager: CameramanModeManager
 
 app = Flask(__name__,
@@ -126,6 +128,12 @@ def angle():
     return '', 204
 
 
+@app.route('/api/status-bar', methods=['GET'])
+def get_status_bar():
+    global status_bar
+    return status_bar.text, 200
+
+
 @app.route('/api/configuration', methods=['GET'])
 def get_configuration():
     global updatable_configuration
@@ -145,6 +153,11 @@ def update_configuration():
             if 'max_hsv' in color:
                 updatable_configuration.update_tracking_color(
                     max_hsv=color['max_hsv'])
+    if 'limits' in request.json:
+        updatable_configuration.update_limits(request.json['limits'])
+    if 'searchTarget' in request.json:
+        updatable_configuration.update_search_target(
+            request.json['searchTarget'])
     return '', 200
 
 
@@ -184,15 +197,17 @@ def run_server(_to_exit: threading.Event,
                _server_image: ImageContainer,
                _manual_camera_speeds: CameraSpeeds,
                _updatable_configuration: UpdatableConfiguration,
+               _status_bar: StatusBar,
                ssl_certificate: Path,
                ssl_key: Path):
     # TODO use dependency injection instead of global variables
-    global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds,\
-        updatable_configuration
+    global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds, \
+        updatable_configuration, status_bar
     to_exit = _to_exit
     cameraman_mode_manager = _cameraman_mode_manager
     server_image = _server_image
     manual_camera_speeds = _manual_camera_speeds
     updatable_configuration = _updatable_configuration
+    status_bar = _status_bar
     app.run(host='0.0.0.0', port=9000, threaded=True,
             ssl_context=(ssl_certificate, ssl_key))
