@@ -361,23 +361,11 @@ class CameraAngleLimitController:
         self._current_pan_angle = angles.pan_angle
         self._current_tilt_angle = angles.tilt_angle
 
-    # TODO remove if not used
-    def _get_angle_limits(self):
-        return (
-            self.min_pan_angle,
-            self.max_pan_angle,
-            self.min_tilt_angle,
-            self.max_tilt_angle,
-        )
-
     def update(self, camera_speeds: CameraSpeeds) -> None:
         if (self._current_pan_angle is None
                 or self._current_tilt_angle is None):
             logger.debug('current angles are not set yet')
             return
-        # TODO uncomment
-        # if all(map(lambda a: a is None, self._get_angle_limits())):
-        #     return
         logger.debug(', '.join((
             f"pan angle: {self._current_pan_angle:4.1f}",
             f"tilt angle: {self._current_tilt_angle:4.1f}",
