@@ -14,7 +14,7 @@ import numpy
 from imutils.video import FPS
 
 from robot_cameraman.annotation import ImageAnnotator, draw_destination
-from robot_cameraman.box import Box
+from robot_cameraman.box import Box, Point
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
@@ -23,6 +23,8 @@ from robot_cameraman.image_detection import DetectionCandidate, \
 from robot_cameraman.live_view import LiveView, ImageSize
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer, ServerImageSource
+from robot_cameraman.target_selection import SelectTargetStrategy, \
+    SelectTargetAtCoordinateStrategy
 from robot_cameraman.tracking import Destination
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.ui import UserInterface, create_attribute_checkbox
@@ -43,6 +45,7 @@ class Cameraman:
             mode_manager: CameramanModeManager,
             object_tracker: ObjectTracker,
             target_label_id: int,
+            select_target_strategy: SelectTargetStrategy,
             output: Optional[cv2.VideoWriter],
             user_interfaces: List[UserInterface],
             manual_camera_speeds: CameraSpeeds) -> None:
@@ -57,6 +60,7 @@ class Cameraman:
         self._user_interfaces = user_interfaces
         self._manual_camera_speeds = manual_camera_speeds
         self._window_title = 'Robot Cameraman'
+        self._select_target_strategy = select_target_strategy
 
     def _is_target_id_registered(self) -> bool:
         return (self._target_id is not None
@@ -74,6 +78,13 @@ class Cameraman:
                 'is_zoom_enabled')
             for ui in self._user_interfaces:
                 ui.open()
+            if isinstance(self._select_target_strategy,
+                          SelectTargetAtCoordinateStrategy):
+                def set_search_coordinate(event, x, y, _flags, _param):
+                    if event == cv2.EVENT_LBUTTONDOWN:
+                        self._select_target_strategy.coordinate = Point(x, y)
+
+                cv2.setMouseCallback(self._window_title, set_search_coordinate)
         # Parts at the end of the live view image are sometimes not received.
         # These truncated images cause an exception in the detection engine,
         # if the following option is not enabled. In the cases observed so far,
@@ -118,9 +129,11 @@ class Cameraman:
                             target = candidates[self._target_id]
                             self._target_box = target.bounding_box
                     else:
-                        ts = candidates.items()
-                        if ts:
-                            (self._target_id, target) = next(iter(ts))
+                        selected_target = self._select_target_strategy.select(
+                            candidates)
+                        if selected_target:
+                            self._target_id = selected_target.id
+                            target = selected_target.candidate
                             self._target_box = target.bounding_box
                             logger.debug('track target %d', self._target_id)
                         else:

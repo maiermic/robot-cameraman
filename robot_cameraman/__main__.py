@@ -36,6 +36,8 @@ from robot_cameraman.max_speed_and_acceleration_updater import \
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
+from robot_cameraman.target_selection import SelectFirstTargetStrategy, \
+    SelectTargetAtCoordinateStrategy
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
@@ -82,6 +84,7 @@ class RobotCameramanArguments(Protocol):
     font: Path
     fontSize: int
     debug: bool
+    select_target_strategy: str
     search_strategy: str
     rotatingSearchSpeed: int
     rotationalAccelerationPerSecond: int
@@ -185,6 +188,18 @@ def parse_arguments() -> RobotCameramanArguments:
                              " (given by argument --rotatingSearchSpeed)"
                              " to a certain position"
                              " (can be configured in the web UI).")
+    parser.add_argument('--select-target-strategy',
+                        type=str, default='first',
+                        help="Defines which/how the target to be tracked is"
+                             " selected from the found (detection) candidates."
+                             " If the strategy 'first' (default) is used,"
+                             " the first candidate is (automatically) selected."
+                             " The ordering of candidates depends on the"
+                             " detection engine and the object tracker."
+                             " If the strategy 'manually' is used,"
+                             " the target has to be selected manually"
+                             " by clicking in the bounding rectangle of the"
+                             " candidate in the live view shown by the UI.")
     parser.add_argument('--rotatingSearchSpeed',
                         type=int, default=0,
                         help="If target is lost, search for new target by"
@@ -466,6 +481,14 @@ else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
 
+if args.select_target_strategy.lower() == 'first':
+    select_target_strategy = SelectFirstTargetStrategy()
+elif args.select_target_strategy.lower() == 'manually':
+    select_target_strategy = SelectTargetAtCoordinateStrategy()
+else:
+    print(f"Unknown select target strategy {args.select_target_strategy}")
+    exit(1)
+
 manual_camera_speeds = max_speed_and_acceleration_updater.add(
     CameraSpeeds(pan_speed=8, tilt_speed=4, zoom_speed=ZoomSpeed.ZOOM_IN_SLOW))
 # noinspection PyUnboundLocalVariable
@@ -477,6 +500,7 @@ cameraman = Cameraman(
     mode_manager=cameraman_mode_manager,
     object_tracker=ObjectTracker(max_disappeared=25),
     target_label_id=args.targetLabelId,
+    select_target_strategy=select_target_strategy,
     output=create_video_writer(args.output, live_view_image_size),
     user_interfaces=user_interfaces,
     # TODO get max speeds from separate CLI arguments
