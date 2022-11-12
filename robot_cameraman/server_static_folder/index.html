@@ -24,6 +24,7 @@
         #angles, #statusBar {
             margin: 0.1em 0 0.1em 1.5em;
         }
+
         #statusBar {
             white-space: pre-wrap;
         }
@@ -486,6 +487,69 @@
           await sleep(1000 - (finished - start));
         }
       })();
+    </script>
+    <script type="module">
+      import {RequestQueue} from "./api.js";
+
+      /**
+       * @param $element {HTMLElement}
+       * @return {{x, y}|{x: number, y: number}}
+       * @see https://www.chestysoft.com/imagefile/javascript/get-coordinates.asp
+       */
+      function getPositionOfElement($element) {
+        if ($element.offsetParent === undefined) {
+          let x = 0
+          let y = 0
+          for (; $element; $element = $element.offsetParent) {
+            x += $element.offsetLeft;
+            y += $element.offsetTop;
+          }
+          return {x, y}
+        }
+        return {
+          x: $element.x,
+          y: $element.y,
+        };
+      }
+
+      /**
+       * @param e {MouseEvent}
+       * @param $element {HTMLElement}
+       * @see https://www.chestysoft.com/imagefile/javascript/get-coordinates.asp
+       */
+      function getCoordinatesOfMouseEventRelativeToElement(e, $element) {
+        let x = 0;
+        let y = 0;
+        let elementPosition = getPositionOfElement($element);
+        if (e.pageX || e.pageY) {
+          x = e.pageX;
+          y = e.pageY;
+        } else if (e.clientX || e.clientY) {
+          x = e.clientX + document.body.scrollLeft
+            + document.documentElement.scrollLeft;
+          y = e.clientY + document.body.scrollTop
+            + document.documentElement.scrollTop;
+        }
+        return {
+          x: x - elementPosition.x,
+          y: y - elementPosition.y,
+        }
+      }
+
+      const requestQueue = new RequestQueue('api/select-target-at-coordinate')
+      const $liveView = document.querySelector('.live-view');
+      $liveView.addEventListener('pointerdown', e => {
+        // noinspection JSCheckFunctionSignatures
+        let {x, y} =
+          getCoordinatesOfMouseEventRelativeToElement(e, $liveView);
+        x = Math.min(
+          $liveView.naturalWidth,
+          Math.round(x * $liveView.naturalWidth / $liveView.clientWidth));
+        y = Math.min(
+          $liveView.naturalHeight,
+          Math.round(y * $liveView.naturalHeight / $liveView.clientHeight));
+        requestQueue.add({x, y})
+      })
     </script>
 </body>
 </html>

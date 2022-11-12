@@ -523,6 +523,7 @@ camera_zoom_ratio_index_ranges = (
     else parse_zoom_ratio_index_ranges(args.camera_zoom_ratio_index_ranges))
 run_server(_to_exit=to_exit,
            _cameraman_mode_manager=cameraman_mode_manager,
+           _select_target_strategy=select_target_strategy,
            _server_image=server_image,
            _manual_camera_speeds=manual_camera_speeds,
            _updatable_configuration=UpdatableConfiguration(
