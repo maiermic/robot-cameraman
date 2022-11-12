@@ -147,6 +147,9 @@ def update_configuration():
         tracking = request.json['tracking']
         if 'color' in tracking:
             color = tracking['color']
+            if 'is_single_object_detection' in color:
+                updatable_configuration.update_tracking_color(
+                    is_single_object_detection=color['is_single_object_detection'])
             if 'min_hsv' in color:
                 updatable_configuration.update_tracking_color(
                     min_hsv=color['min_hsv'])

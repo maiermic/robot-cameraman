@@ -428,6 +428,7 @@ if args.detectionEngine == 'Dummy':
 elif args.detectionEngine == 'Color':
     detection_engine = ColorDetectionEngine(
         target_label_id=args.targetLabelId,
+        is_single_object_detection=configuration['tracking']['color']['is_single_object_detection'],
         min_hsv=configuration['tracking']['color']['min_hsv'],
         max_hsv=configuration['tracking']['color']['max_hsv'])
     user_interfaces.append(

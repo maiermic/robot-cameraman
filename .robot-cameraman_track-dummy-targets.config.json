@@ -1,6 +1,7 @@
 {
   "tracking": {
     "color": {
+      "is_single_object_detection": false,
       "min_hsv": [
         30,
         0,

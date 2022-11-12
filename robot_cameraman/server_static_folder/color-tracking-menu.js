@@ -2,6 +2,10 @@ import {configurationRequestQueue, getJson, putJson} from "./api.js";
 
 const template = document.createElement('template')
 template.innerHTML = `
+<label>
+    <span>Single Object Detection</span>
+    <input id="is-single-object-detection" type="checkbox">
+</label>
 <x-color-picker id="minimumColor" color="hsv(0, 0, 0)">
     <span slot="title">Minimum</span>
 </x-color-picker>
@@ -37,6 +41,7 @@ class ColorTrackingMenu extends HTMLElement {
     const {
       tracking: {
         color: {
+          is_single_object_detection,
           min_hsv,
           max_hsv,
         }
@@ -52,6 +57,20 @@ class ColorTrackingMenu extends HTMLElement {
       element: node.getElementById('maximumColor'),
       color: max_hsv,
       configurationKey: 'max_hsv',
+    })
+    const $isSingleObjectDetection =
+      node.getElementById('is-single-object-detection');
+    $isSingleObjectDetection.checked = Boolean(is_single_object_detection)
+    $isSingleObjectDetection.addEventListener('input', () => {
+      // noinspection JSIgnoredPromiseFromCall
+      configurationRequestQueue.add({
+        tracking: {
+          color: {
+            is_single_object_detection:
+              Boolean($isSingleObjectDetection.checked),
+          }
+        }
+      });
     })
     this.shadowRoot.append(node)
   }

@@ -78,15 +78,22 @@ class UpdatableConfiguration:
 
     def update_tracking_color(
             self,
+            is_single_object_detection: Optional[bool] = None,
             min_hsv: Optional[List[int]] = None,
             max_hsv: Optional[List[int]] = None):
-        if isinstance(self.detection_engine, ColorDetectionEngine):
-            if min_hsv is not None:
-                self.detection_engine.min_hsv[:] = min_hsv
-                self.configuration['tracking']['color']['min_hsv'] = min_hsv
-            if max_hsv is not None:
-                self.detection_engine.max_hsv[:] = max_hsv
-                self.configuration['tracking']['color']['max_hsv'] = max_hsv
+        if not isinstance(self.detection_engine, ColorDetectionEngine):
+            return
+        config = self.configuration['tracking']['color']
+        if is_single_object_detection is not None:
+            self.detection_engine.is_single_object_detection = \
+                is_single_object_detection
+            config['is_single_object_detection'] = is_single_object_detection
+        if min_hsv is not None:
+            self.detection_engine.min_hsv[:] = min_hsv
+            config['min_hsv'] = min_hsv
+        if max_hsv is not None:
+            self.detection_engine.max_hsv[:] = max_hsv
+            config['max_hsv'] = max_hsv
 
     def update_limits(self, limits):
         if 'areLimitsAppliedInManualMode' in limits:
