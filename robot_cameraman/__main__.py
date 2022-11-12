@@ -30,7 +30,7 @@ from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
-    ImageSize, DummyLiveView
+    ImageSize, DummyLiveView, DummyWithTargetsLiveView
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
@@ -431,6 +431,8 @@ if args.liveView == 'Webcam':
     live_view = WebcamLiveView()
 elif args.liveView == 'Dummy':
     live_view = DummyLiveView(live_view_image_size)
+elif args.liveView == 'DummyWithTargets':
+    live_view = DummyWithTargetsLiveView(live_view_image_size)
 elif args.liveView == 'Panasonic':
     live_view = PanasonicLiveView(args.ip, args.port)
     camera_observable = PanasonicCameraObservable(
