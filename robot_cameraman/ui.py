@@ -107,3 +107,12 @@ class StatusBar(UserInterface):
             f"zoom-index: {zoom_index}, " \
             f"{zoom_speed_str}"
         cv2.displayStatusBar('Robot Cameraman', self.text)
+
+
+def open_file_dialog():
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+    return filedialog.askopenfilename(title='Select input file')
