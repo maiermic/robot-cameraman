@@ -166,7 +166,8 @@ class Cameraman:
             server_image.image = image
         elif (server_image.source is ServerImageSource.COLOR_MASK
               and isinstance(self.detection_engine, ColorDetectionEngine)):
-            server_image.image = PIL.Image.fromarray(self.detection_engine.mask)
+            server_image.image = PIL.Image.fromarray(
+                self.detection_engine.mask_ui)
 
     def handle_keyboard_input(self, to_exit):
         # Display the frame for 5ms, and close the window so that the
