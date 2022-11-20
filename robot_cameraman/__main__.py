@@ -30,7 +30,7 @@ from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
-    ImageSize, DummyLiveView
+    ImageSize, DummyLiveView, FileLiveView
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
@@ -40,7 +40,7 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
     StaticSearchTargetStrategy
-from robot_cameraman.ui import StatusBar
+from robot_cameraman.ui import StatusBar, open_file_dialog
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
 
@@ -460,6 +460,12 @@ elif args.liveView == 'Panasonic':
         event_emitter.add_listener(
             Event.ZOOM_INDEX,
             camera_zoom_limit_controller.update_zoom_index)
+elif args.liveView == 'File':
+    video_or_image_file = open_file_dialog()
+    if not video_or_image_file:
+        print(f"No file selected")
+        exit(1)
+    live_view = FileLiveView(file=video_or_image_file)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)

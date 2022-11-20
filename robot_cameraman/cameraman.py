@@ -20,7 +20,7 @@ from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
 from robot_cameraman.image_detection import DetectionCandidate, \
     DetectionEngine
-from robot_cameraman.live_view import LiveView, ImageSize
+from robot_cameraman.live_view import LiveView, ImageSize, FileLiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer, ServerImageSource
 from robot_cameraman.tracking import Destination
@@ -212,6 +212,15 @@ class Cameraman:
         elif self._mode_manager.is_manual_mode() and key == ord('o'):
             logger.debug('manually stop')
             self._mode_manager.stop_camera()
+        elif isinstance(self._live_view, FileLiveView):
+            if key == ord('n'):
+                self._live_view.next_frame()
+            elif key == ord('p'):
+                self._live_view.previous_frame()
+            elif key == ord('s'):
+                self._live_view.start_frame()
+            elif key == ord('e'):
+                self._live_view.end_frame()
 
     @staticmethod
     def log_candidates(
