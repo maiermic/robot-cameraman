@@ -58,6 +58,13 @@ class WebcamLiveView(LiveView):
 
 
 class FileLiveView(LiveView):
+    @staticmethod
+    def get_image_size(video_or_image_file):
+        video = cv2.VideoCapture(video_or_image_file)
+        height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        return ImageSize(int(width), int(height))
+
     _previous_image: Optional[Image]
 
     def __init__(self, file: Path) -> None:

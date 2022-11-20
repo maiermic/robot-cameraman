@@ -307,7 +307,15 @@ configuration = read_configuration_file(args.config)
 event_emitter = EventEmitter()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
+if args.liveView == 'File':
+    live_view_video_or_image_file = open_file_dialog()
+    if not live_view_video_or_image_file:
+        print(f"No file selected")
+        exit(1)
+    live_view_image_size = \
+        FileLiveView.get_image_size(live_view_video_or_image_file)
+else:
+    live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager(
     identify_as=args.identifyToPanasonicCameraAs)
@@ -461,11 +469,9 @@ elif args.liveView == 'Panasonic':
             Event.ZOOM_INDEX,
             camera_zoom_limit_controller.update_zoom_index)
 elif args.liveView == 'File':
-    video_or_image_file = open_file_dialog()
-    if not video_or_image_file:
-        print(f"No file selected")
-        exit(1)
-    live_view = FileLiveView(file=video_or_image_file)
+    # noinspection PyUnboundLocalVariable
+    assert live_view_video_or_image_file
+    live_view = FileLiveView(file=live_view_video_or_image_file)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
