@@ -323,7 +323,7 @@ class CameraZoomIndexLimitController(CameraZoomLimitController):
             logger.debug('min zoom index reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
         if (self._is_heading_towards_max(camera_speeds.zoom_speed)
-                and self._is_max_reached()):
+                and self.is_max_reached()):
             logger.debug('max zoom index reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
@@ -336,7 +336,7 @@ class CameraZoomIndexLimitController(CameraZoomLimitController):
     def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
         return self.max_zoom_index is not None and zoom_speed > 0
 
-    def _is_max_reached(self):
+    def is_max_reached(self):
         return self.zoom_index >= self.max_zoom_index
 
 
