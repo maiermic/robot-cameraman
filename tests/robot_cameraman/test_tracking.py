@@ -1,10 +1,58 @@
 import pytest
 
+from robot_cameraman.box import Box, Point
 from robot_cameraman.camera_controller import CameraZoomIndexLimitController, \
     CameraAngleLimitController
 from robot_cameraman.camera_speeds import CameraSpeeds, ZoomSpeed
 from robot_cameraman.gimbal import Angles
-from robot_cameraman.tracking import StaticSearchTargetStrategy
+from robot_cameraman.live_view import ImageSize
+from robot_cameraman.tracking import StaticSearchTargetStrategy, \
+    ConfigurableAlignTrackingStrategy, Destination
+
+
+class TestConfigurableAlignTrackingStrategy:
+    @pytest.fixture()
+    def image_size(self):
+        return ImageSize(width=640, height=480)
+
+    @pytest.fixture()
+    def destination(self, image_size):
+        return Destination(image_size)
+
+    @pytest.fixture()
+    def strategy(self, image_size, destination):
+        return ConfigurableAlignTrackingStrategy(
+            destination=destination,
+            image_size=image_size)
+
+    def test_is_aligned(self, image_size, destination, strategy):
+        assert strategy.is_aligned(
+            Box.from_center_and_size(
+                center=destination.center, width=120, height=240))
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                center=destination.center, width=180, height=360)), \
+            'target should be too large (in height) to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                center=destination.center, width=60, height=120)), \
+            'target should be too small (in height) to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=60, y=destination.center.y), width=120, height=240)), \
+            'target should be too far to the left to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=500, y=destination.center.y), width=120, height=240)), \
+            'target should be too far to the right to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=destination.center.x, y=120), width=120, height=240)), \
+            'target should be too far up to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=destination.center.x, y=360), width=120, height=240)), \
+            'target should be too far down to be aligned'
 
 
 class TestStaticSearchTargetStrategy:
