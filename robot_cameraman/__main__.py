@@ -190,11 +190,11 @@ def parse_arguments() -> RobotCameramanArguments:
                         help="If target is lost, search for new target by"
                              " rotating at the given speed")
     parser.add_argument('--rotationalAccelerationPerSecond',
-                        type=int, default=400,
+                        type=int, default=24,
                         help="Defines how fast the gimbal may accelerate"
                              " rotational per second")
     parser.add_argument('--tiltingAccelerationPerSecond',
-                        type=int, default=400,
+                        type=int, default=16,
                         help="Defines how fast the gimbal may accelerate"
                              " in tilting direction per second")
     parser.add_argument('--variance',
