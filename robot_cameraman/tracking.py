@@ -16,6 +16,7 @@ from robot_cameraman.camera_controller import CameraZoomLimitController, \
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.gimbal import Angles
 from robot_cameraman.live_view import ImageSize
+from robot_cameraman.zoom_limits import ZoomLimits
 
 logger: Logger = logging.getLogger(__name__)
 
@@ -312,10 +313,27 @@ class SimpleAlignTrackingStrategy(SimpleTrackingStrategy,
 class ConfigurableAlignTrackingStrategy(ConfigurableTrackingStrategy,
                                         AlignTrackingStrategy):
 
+    def __init__(
+            self,
+            destination: Destination,
+            image_size: ImageSize,
+            max_allowed_speed: float = 1000,
+            zoom_limits: Optional[ZoomLimits] = None):
+        super().__init__(destination, image_size, max_allowed_speed)
+        self._zoom_limits = zoom_limits
+
     def _is_zoom_aligned(self, target: Box) -> bool:
         min_height = self._destination.min_size_box.height
         max_height = self._destination.max_size_box.height
-        return min_height <= target.height <= max_height
+        if self._zoom_limits is None:
+            return min_height <= target.height <= max_height
+        if min_height <= target.height:
+            if target.height <= max_height:
+                return True
+            else:
+                return self._zoom_limits.is_min_zoom_reached()
+        else:
+            return self._zoom_limits.is_max_zoom_reached()
 
     def is_aligned(self, target: Box) -> bool:
         return self._is_xy_aligned(target) and self._is_zoom_aligned(target)
