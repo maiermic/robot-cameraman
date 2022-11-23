@@ -44,6 +44,8 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
 from robot_cameraman.ui import StatusBar, open_file_dialog
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
+from robot_cameraman.zoom_limits import ZoomLimits, \
+    get_zoom_ratio_limits_from_configuration
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -343,9 +345,6 @@ rotate_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.rotationalAccelerationPerSecond))
 tilt_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.tiltingAccelerationPerSecond))
-configurable_align_tracking_strategy = \
-    ConfigurableAlignTrackingStrategy(
-        destination, live_view_image_size, max_allowed_speed=16)
 
 
 def create_camera_zoom_limit_controller():
@@ -369,6 +368,23 @@ def create_camera_zoom_limit_controller():
 
 
 camera_zoom_limit_controller = create_camera_zoom_limit_controller()
+min_zoom_ratio, max_zoom_ratio = get_zoom_ratio_limits_from_configuration(
+    zoom_steps_file=args.camera_zoom_steps,
+    zoom_ratio_index_ranges_file=args.camera_zoom_ratio_index_ranges)
+zoom_limits = ZoomLimits(camera_zoom_limit_controller,
+                         min_zoom_ratio=min_zoom_ratio,
+                         max_zoom_ratio=max_zoom_ratio)
+event_emitter.add_listener(
+    Event.ZOOM_RATIO,
+    zoom_limits.update_current_zoom_ratio)
+# TODO make max_allowed_speed configurable (e.g. using CLI argument)
+configurable_align_tracking_strategy = \
+    ConfigurableAlignTrackingStrategy(
+        destination,
+        live_view_image_size,
+        max_allowed_speed=16,
+        zoom_limits=zoom_limits)
+
 
 if args.search_strategy == 'rotate':
     search_target_strategy = max_speed_and_acceleration_updater.add(
