@@ -9,6 +9,7 @@ from typing import Optional
 import PIL.Image
 import PIL.ImageFont
 import cv2
+import time
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
@@ -250,7 +251,11 @@ def parse_arguments() -> RobotCameramanArguments:
         default=resources / 'server.pem',
         help="Path to server SSL-certificate file.")
     # noinspection PyTypeChecker
-    return parser.parse_args()
+    _args: RobotCameramanArguments = parser.parse_args()
+    if _args.output.is_dir():
+        _args.output /= time.strftime('robot-cameraman_%Y-%m-%d_%H-%M-%S.avi')
+        print(f'output directory given => use output file {_args.output}')
+    return _args
 
 
 def quit(sig=None, frame=None):
