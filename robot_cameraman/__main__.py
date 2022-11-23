@@ -254,7 +254,7 @@ def parse_arguments() -> RobotCameramanArguments:
         help="Path to server SSL-certificate file.")
     # noinspection PyTypeChecker
     _args: RobotCameramanArguments = parser.parse_args()
-    if _args.output.is_dir():
+    if _args.output and _args.output.is_dir():
         _args.output /= time.strftime('robot-cameraman_%Y-%m-%d_%H-%M-%S.avi')
         print(f'output directory given => use output file {_args.output}')
     return _args
