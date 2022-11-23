@@ -24,7 +24,8 @@ class TestConfigurableAlignTrackingStrategy:
     def test_is_aligned(self, image_size, destination):
         strategy = ConfigurableAlignTrackingStrategy(
             destination=destination,
-            image_size=image_size)
+            image_size=image_size,
+            max_allowed_speed=42)
         self.assert_is_aligned(destination, strategy)
 
     def assert_is_aligned(
@@ -81,6 +82,7 @@ class TestConfigurableAlignTrackingStrategy:
         strategy = ConfigurableAlignTrackingStrategy(
             destination=destination,
             image_size=image_size,
+            max_allowed_speed=42,
             zoom_limits=zoom_limits)
 
         def assert_is_aligned(

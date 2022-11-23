@@ -70,7 +70,7 @@ class SimpleTrackingStrategy(TrackingStrategy):
             self,
             destination: Destination,
             image_size: ImageSize,
-            max_allowed_speed: float = 1000):
+            max_allowed_speed: float):
         self._destination = destination
         self._image_size = image_size
         self.max_allowed_speed = max_allowed_speed
@@ -188,7 +188,7 @@ class ConfigurableTrackingStrategy(SimpleTrackingStrategy):
             self,
             destination: Destination,
             image_size: ImageSize,
-            max_allowed_speed: float = 1000):
+            max_allowed_speed: float):
         super().__init__(destination, image_size, max_allowed_speed)
         self.rotation_mode = TrackingStrategyRotationMode.QUADRATIC_TO_LINEAR
         self.zoom_in_mode = TrackingStrategyZoomInMode.SLOW_WHEN_ALIGNED
@@ -317,7 +317,7 @@ class ConfigurableAlignTrackingStrategy(ConfigurableTrackingStrategy,
             self,
             destination: Destination,
             image_size: ImageSize,
-            max_allowed_speed: float = 1000,
+            max_allowed_speed: float,
             zoom_limits: Optional[ZoomLimits] = None):
         super().__init__(destination, image_size, max_allowed_speed)
         self._zoom_limits = zoom_limits
