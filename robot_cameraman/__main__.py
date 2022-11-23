@@ -329,7 +329,7 @@ camera_manager = PanasonicCameraManager(
 max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
 configurable_tracking_strategy = \
     ConfigurableTrackingStrategy(
-        destination, live_view_image_size, max_allowed_speed=24)
+        destination, live_view_image_size, max_allowed_speed=64)
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
     max_speed_and_acceleration_updater.add(
@@ -382,7 +382,7 @@ configurable_align_tracking_strategy = \
     ConfigurableAlignTrackingStrategy(
         destination,
         live_view_image_size,
-        max_allowed_speed=16,
+        max_allowed_speed=32,
         zoom_limits=zoom_limits)
 
 
