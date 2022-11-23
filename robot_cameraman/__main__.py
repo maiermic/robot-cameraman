@@ -282,7 +282,6 @@ def run_cameraman():
 
 
 def configure_logging():
-    # TODO filename or output directory as program argument
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.ERROR,
         filename=f'{args.output}.log' if args.output else None,
