@@ -37,7 +37,16 @@ class ColorDetectionEngine(DetectionEngine):
         blurred = cv2.GaussianBlur(image_array, (11, 11), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)
 
-        self.mask = cv2.inRange(hsv, self.min_hsv, self.max_hsv)
+        if self.min_hsv[0] <= self.max_hsv[0]:
+            self.mask = cv2.inRange(hsv, self.min_hsv, self.max_hsv)
+        else:
+            max_h, max_s, max_v = self.max_hsv
+            min_h, min_s, min_v = self.min_hsv
+            mask_1 = cv2.inRange(
+                hsv, self.min_hsv, numpy.asarray((255, max_s, max_v)))
+            mask_2 = cv2.inRange(
+                hsv, numpy.asarray((0, min_s, min_v)), self.max_hsv)
+            self.mask = cv2.bitwise_or(mask_1, mask_2)
         # remove any small blobs left in the mask
         self.mask = cv2.erode(self.mask, None, iterations=2)
         self.mask = cv2.dilate(self.mask, None, iterations=2)
