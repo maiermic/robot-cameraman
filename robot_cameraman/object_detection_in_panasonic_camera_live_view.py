@@ -8,21 +8,21 @@
 #
 
 import argparse
-import io
 import os
-import time
 from typing import Dict, List
 
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
 import cv2
-import edgetpu.detection.engine
 import numpy
-from edgetpu.detection.engine import DetectionCandidate
+import time
 from imutils.video import FPS
 
-from panasonic_camera.live_view import LiveView
+from panasonic_camera.camera_manager import PanasonicCameraManager
+from robot_cameraman.image_detection import EdgeTpuDetectionEngine, \
+    DetectionCandidate
+from robot_cameraman.live_view import PanasonicLiveView
 from robot_cameraman.resource import read_label_file
 
 # Variable to store command line arguments
@@ -45,16 +45,16 @@ def annotate(
         draw = PIL.ImageDraw.Draw(image)
 
         # Prepare boundary box
-        box = obj.bounding_box.flatten().tolist()
+        box = obj.bounding_box
 
         # Draw rectangle to desired thickness
         for x in range(0, 4):
-            draw.rectangle(box, outline=(255, 255, 0))
+            draw.rectangle(box.coordinates(), outline=(255, 255, 0))
 
         # Annotate image with label and confidence score
         display_str = labels[obj.label_id] + ": " + str(
             round(obj.score * 100, 2)) + "%"
-        draw.text((box[0], box[1]), display_str, font=font)
+        draw.text((box.x, box.y), display_str, font=font)
 
         # Log the current result to terminal
         print("Object (" + str(idx + 1) + " of " + str(result_size) + "): "
@@ -74,7 +74,10 @@ def main() -> None:
     font = PIL.ImageFont.truetype(
         "/usr/share/fonts/truetype/roboto/hinted/Roboto-Regular.ttf", 30)
     # font = None
-    engine = edgetpu.detection.engine.DetectionEngine(ARGS.model)
+    engine = EdgeTpuDetectionEngine(
+        model=ARGS.model,
+        confidence=ARGS.confidence,
+        max_objects=ARGS.maxobjects)
 
     width = 640
     height = 480
@@ -86,22 +89,22 @@ def main() -> None:
     # Use imutils to count Frames Per Second (FPS)
     fps = FPS().start()
 
-    live_view = LiveView(ARGS.ip, ARGS.port)
+    camera_manager = PanasonicCameraManager()
+    camera_manager.start()
+    live_view = PanasonicLiveView(ARGS.ip, ARGS.port)
     while True:
         try:
             try:
-                image = PIL.Image.open(io.BytesIO(live_view.image()))
+                image = live_view.image()
             except OSError:
                 print('could not identify image file')
+                continue
+            if image is None:
                 continue
             # Perform inference and note time taken
             startMs = time.time()
             try:
-                inferenceResults = engine.DetectWithImage(image,
-                                                          threshold=ARGS.confidence,
-                                                          keep_aspect_ratio=True,
-                                                          relative_coord=False,
-                                                          top_k=ARGS.maxobjects)
+                inferenceResults = list(engine.detect(image))
                 elapsedMs = time.time() - startMs
 
                 annotate(image, inferenceResults, elapsedMs, labels, font)

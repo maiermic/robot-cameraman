@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable
 
 from math import sqrt
 from typing_extensions import Protocol
@@ -31,8 +31,8 @@ class Box(Protocol):
     height: float
     center: Point
 
-    def coordinates(self) -> List[float]:
-        return [self.x, self.y, self.x + self.width, self.y + self.height]
+    def coordinates(self) -> tuple[float, float, float, float]:
+        return self.x, self.y, self.x + self.width, self.y + self.height
 
     @staticmethod
     def from_coordinates(x1: float, y1: float, x2: float, y2: float):

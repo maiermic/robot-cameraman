@@ -55,6 +55,12 @@ class ZoomSteps:
         except (ValueError, IndexError):
             return None
 
+    def get_min_zoom_ratio(self) -> float:
+        return self._zoom_steps[0].zoom_ratio
+
+    def get_max_zoom_ratio(self) -> float:
+        return self._zoom_steps[-1].zoom_ratio
+
 
 def parse_zoom_steps(file: Path) -> ZoomSteps:
     with open(file) as file_descriptor:

@@ -212,24 +212,24 @@ class CameraZoomRatioLimitController(CameraZoomLimitController):
         logger.debug(
             f'check if current zoom ratio {self.zoom_ratio} reached limit')
         if (self._is_heading_towards_min(camera_speeds.zoom_speed)
-                and self._is_min_reached()):
+                and self.is_min_reached()):
             logger.debug('min zoom ratio reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
         if (self._is_heading_towards_max(camera_speeds.zoom_speed)
-                and self._is_max_reached()):
+                and self.is_max_reached()):
             logger.debug('max zoom ratio reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
     def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
         return self.min_zoom_ratio is not None and zoom_speed < 0
 
-    def _is_min_reached(self):
+    def is_min_reached(self):
         return self.zoom_ratio <= self.min_zoom_ratio
 
     def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
         return self.max_zoom_ratio is not None and zoom_speed > 0
 
-    def _is_max_reached(self):
+    def is_max_reached(self):
         return self.zoom_ratio >= self.max_zoom_ratio
 
 
@@ -319,24 +319,24 @@ class CameraZoomIndexLimitController(CameraZoomLimitController):
         logger.debug(
             f'check if current zoom index {self.zoom_index} reached limit')
         if (self._is_heading_towards_min(camera_speeds.zoom_speed)
-                and self._is_min_reached()):
+                and self.is_min_reached()):
             logger.debug('min zoom index reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
         if (self._is_heading_towards_max(camera_speeds.zoom_speed)
-                and self._is_max_reached()):
+                and self.is_max_reached()):
             logger.debug('max zoom index reached, zoom speed is set to 0')
             camera_speeds.zoom_speed = ZoomSpeed.ZOOM_STOPPED
 
     def _is_heading_towards_min(self, zoom_speed: ZoomSpeed):
         return self.min_zoom_index is not None and zoom_speed < 0
 
-    def _is_min_reached(self):
+    def is_min_reached(self):
         return self.zoom_index <= self.min_zoom_index
 
     def _is_heading_towards_max(self, zoom_speed: ZoomSpeed):
         return self.max_zoom_index is not None and zoom_speed > 0
 
-    def _is_max_reached(self):
+    def is_max_reached(self):
         return self.zoom_index >= self.max_zoom_index
 
 

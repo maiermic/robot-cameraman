@@ -8,6 +8,8 @@ import PIL.ImageFont
 import cv2
 import numpy
 
+from robot_cameraman.ui import open_file_dialog
+
 
 def create_video_writer(vs, output_file: Path):
     width = int(vs.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -83,6 +85,7 @@ class VideoFramePlayer:
         draw = PIL.ImageDraw.Draw(image, 'RGBA')
         frame_text = get_frame_text(frame_index, self._frame_count)
         draw_text_box(draw, frame_text, self._font)
+        # noinspection PyTypeChecker
         return numpy.asarray(image)
 
 
@@ -127,12 +130,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
     if args.file is None:
-        import tkinter as tk
-        from tkinter import filedialog
-
-        root = tk.Tk()
-        root.withdraw()
-        args.file = filedialog.askopenfilename(title='Select input file')
+        args.file = open_file_dialog()
         if not args.file:
             exit(0)
     file = Path(args.file)

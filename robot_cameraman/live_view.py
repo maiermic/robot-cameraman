@@ -2,6 +2,8 @@ import io
 import logging
 import socket
 from logging import Logger
+
+from pathlib import Path
 from time import sleep
 from typing import Optional, NamedTuple
 
@@ -53,6 +55,74 @@ class WebcamLiveView(LiveView):
         image = self._video_stream.read()
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return PIL.Image.fromarray(rgb_image)
+
+
+class FileLiveView(LiveView):
+    @staticmethod
+    def get_image_size(video_or_image_file):
+        video = cv2.VideoCapture(video_or_image_file)
+        height = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        return ImageSize(int(width), int(height))
+
+    _previous_image: Optional[Image]
+
+    def __init__(self, file: Path) -> None:
+        self._previous_image = None
+        self._file = file
+        self._video_stream = cv2.VideoCapture(str(self._file))
+        self._frame_count = self._get_frame_count()
+        self._is_play = True
+        self._frame_index = 0
+
+    def _get_frame_count(self):
+        vs = cv2.VideoCapture(str(self._file))
+        frame_count = int(vs.get(cv2.CAP_PROP_FRAME_COUNT))
+        if (frame_count != 0):
+            return frame_count
+        logger.warning(
+            'CAP_PROP_FRAME_COUNT not available => counting frames...')
+        while True:
+            success, frame = vs.read()
+            if success:
+                frame_count += 1
+            else:
+                break
+        return frame_count
+
+    def image(self) -> Optional[Image]:
+        success, image = False, None
+        if self._is_play:
+            self._video_stream.set(cv2.CAP_PROP_POS_FRAMES, self._frame_index)
+            success, image = self._video_stream.read()
+            self._is_play = False
+        if not success or image is None:
+            if self._previous_image is None:
+                return None
+            return self._previous_image.copy()
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        self._previous_image = PIL.Image.fromarray(rgb_image)
+        return self._previous_image.copy()
+
+    def next_frame(self):
+        self._is_play = True
+        if (self._frame_index + 1) < self._frame_count:
+            self._frame_index += 1
+        print(f'{self._frame_index}/{self._frame_count}')
+
+    def previous_frame(self):
+        self._is_play = True
+        if 0 <= (self._frame_index - 1):
+            self._frame_index -= 1
+        print(f'{self._frame_index}/{self._frame_count}')
+
+    def start_frame(self):
+        self._is_play = True
+        self._frame_index = 0
+
+    def end_frame(self):
+        self._is_play = True
+        self._frame_index = self._frame_count - 1
 
 
 class DummyLiveView(LiveView):

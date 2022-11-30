@@ -1,10 +1,111 @@
 import pytest
+from unittest.mock import Mock
 
+from robot_cameraman.box import Box, Point
 from robot_cameraman.camera_controller import CameraZoomIndexLimitController, \
     CameraAngleLimitController
 from robot_cameraman.camera_speeds import CameraSpeeds, ZoomSpeed
 from robot_cameraman.gimbal import Angles
-from robot_cameraman.tracking import StaticSearchTargetStrategy
+from robot_cameraman.live_view import ImageSize
+from robot_cameraman.tracking import StaticSearchTargetStrategy, \
+    ConfigurableAlignTrackingStrategy, Destination
+from robot_cameraman.zoom_limits import ZoomLimits
+
+
+class TestConfigurableAlignTrackingStrategy:
+    @pytest.fixture()
+    def image_size(self):
+        return ImageSize(width=640, height=480)
+
+    @pytest.fixture()
+    def destination(self, image_size):
+        return Destination(image_size)
+
+    def test_is_aligned(self, image_size, destination):
+        strategy = ConfigurableAlignTrackingStrategy(
+            destination=destination,
+            image_size=image_size,
+            max_allowed_speed=42)
+        self.assert_is_aligned(destination, strategy)
+
+    def assert_is_aligned(
+            self,
+            destination,
+            strategy,
+            is_max_zoom_reached=False,
+            is_min_zoom_reached=False):
+        assert strategy.is_aligned(
+            Box.from_center_and_size(
+                center=destination.center, width=120, height=240))
+        if is_min_zoom_reached:
+            assert strategy.is_aligned(
+                Box.from_center_and_size(
+                    center=destination.center, width=180, height=360)), \
+                ('target should be aligned (even though it is too large),'
+                 'since camera can not zoom in any further')
+        else:
+            assert not strategy.is_aligned(
+                Box.from_center_and_size(
+                    center=destination.center, width=180, height=360)), \
+                'target should be too large (in height) to be aligned'
+        if is_max_zoom_reached:
+            assert strategy.is_aligned(
+                Box.from_center_and_size(
+                    center=destination.center, width=60, height=120)), \
+                ('target should be aligned (even though it is too small),'
+                 'since camera can not zoom out any further')
+        else:
+            assert not strategy.is_aligned(
+                Box.from_center_and_size(
+                    center=destination.center, width=60, height=120)), \
+                'target should be too small (in height) to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=60, y=destination.center.y), width=120, height=240)), \
+            'target should be too far to the left to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=500, y=destination.center.y), width=120, height=240)), \
+            'target should be too far to the right to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=destination.center.x, y=120), width=120, height=240)), \
+            'target should be too far up to be aligned'
+        assert not strategy.is_aligned(
+            Box.from_center_and_size(
+                Point(x=destination.center.x, y=360), width=120, height=240)), \
+            'target should be too far down to be aligned'
+
+    def test_is_aligned_considering_zoom_limits(
+            self, image_size, destination):
+        zoom_limits = Mock(spec=ZoomLimits)
+        strategy = ConfigurableAlignTrackingStrategy(
+            destination=destination,
+            image_size=image_size,
+            max_allowed_speed=42,
+            zoom_limits=zoom_limits)
+
+        def assert_is_aligned(
+                current_zoom_ratio: float,
+                is_max_zoom_reached=False,
+                is_min_zoom_reached=False):
+            zoom_limits.update_current_zoom_ratio = \
+                Mock(return_value=current_zoom_ratio)
+            zoom_limits.is_max_zoom_reached = \
+                Mock(return_value=is_max_zoom_reached)
+            zoom_limits.is_min_zoom_reached = \
+                Mock(return_value=is_min_zoom_reached)
+            self.assert_is_aligned(
+                destination,
+                strategy,
+                is_min_zoom_reached=is_min_zoom_reached,
+                is_max_zoom_reached=is_max_zoom_reached)
+
+        assert_is_aligned(current_zoom_ratio=2.0)
+        assert_is_aligned(current_zoom_ratio=1.0,
+                          is_min_zoom_reached=True)
+        assert_is_aligned(current_zoom_ratio=14.3,
+                          is_max_zoom_reached=True)
 
 
 class TestStaticSearchTargetStrategy:

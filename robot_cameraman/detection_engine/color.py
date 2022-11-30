@@ -30,6 +30,7 @@ class ColorDetectionEngine(DetectionEngine):
         self.min_hsv = numpy.asarray(min_hsv)
         self.max_hsv = numpy.asarray(max_hsv)
         self.mask = None
+        self.mask_ui = None
         self.is_single_object_detection = is_single_object_detection
         self.minimum_contour_size = 20
 
@@ -40,10 +41,23 @@ class ColorDetectionEngine(DetectionEngine):
         blurred = cv2.GaussianBlur(image_array, (11, 11), 0)
         hsv = cv2.cvtColor(blurred, cv2.COLOR_RGB2HSV)
 
-        self.mask = cv2.inRange(hsv, self.min_hsv, self.max_hsv)
+        if self.min_hsv[0] <= self.max_hsv[0]:
+            self.mask = cv2.inRange(hsv, self.min_hsv, self.max_hsv)
+        else:
+            max_h, max_s, max_v = self.max_hsv
+            min_h, min_s, min_v = self.min_hsv
+            mask_1 = cv2.inRange(
+                hsv, self.min_hsv, numpy.asarray((255, max_s, max_v)))
+            mask_2 = cv2.inRange(
+                hsv, numpy.asarray((0, min_s, min_v)), self.max_hsv)
+            self.mask = cv2.bitwise_or(mask_1, mask_2)
         # remove any small blobs left in the mask
         self.mask = cv2.erode(self.mask, None, iterations=2)
         self.mask = cv2.dilate(self.mask, None, iterations=2)
+
+        if self.mask_ui is None:
+            self.mask_ui = self.mask.copy()
+        self.mask_ui = cv2.bitwise_and(image_array, image_array, mask=self.mask)
 
         contours = cv2.findContours(self.mask.copy(), cv2.RETR_EXTERNAL,
                                     cv2.CHAIN_APPROX_SIMPLE)
@@ -150,7 +164,8 @@ class ColorDetectionEngineUI(UserInterface):
         cv2.createTrackbar(name, self._window_title, value, 255, on_change)
 
     def update(self):
-        if self.engine.mask is not None:
-            cv2.imshow('Mask', self.engine.mask)
+        if self.engine.mask_ui is not None:
+            cv2.imshow('Mask',
+                       cv2.cvtColor(self.engine.mask_ui, cv2.COLOR_RGB2BGR))
         else:
             logger.error('Mask is None')

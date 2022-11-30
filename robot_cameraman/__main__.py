@@ -9,6 +9,7 @@ from typing import Optional
 import PIL.Image
 import PIL.ImageFont
 import cv2
+import time
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
@@ -30,7 +31,7 @@ from robot_cameraman.gimbal import DummyGimbal, TiltInvertedGimbal, \
 from robot_cameraman.image_detection import DummyDetectionEngine, \
     EdgeTpuDetectionEngine
 from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
-    ImageSize, DummyLiveView, DummyWithTargetsLiveView
+    ImageSize, DummyLiveView, DummyWithTargetsLiveView, FileLiveView
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
@@ -42,9 +43,11 @@ from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
     StaticSearchTargetStrategy
-from robot_cameraman.ui import StatusBar
+from robot_cameraman.ui import StatusBar, open_file_dialog
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 from robot_cameraman.zoom import parse_zoom_steps, parse_zoom_ratio_index_ranges
+from robot_cameraman.zoom_limits import ZoomLimits, \
+    get_zoom_ratio_limits_from_configuration
 
 to_exit: threading.Event
 server_image: ImageContainer
@@ -205,11 +208,11 @@ def parse_arguments() -> RobotCameramanArguments:
                         help="If target is lost, search for new target by"
                              " rotating at the given speed")
     parser.add_argument('--rotationalAccelerationPerSecond',
-                        type=int, default=400,
+                        type=int, default=24,
                         help="Defines how fast the gimbal may accelerate"
                              " rotational per second")
     parser.add_argument('--tiltingAccelerationPerSecond',
-                        type=int, default=400,
+                        type=int, default=16,
                         help="Defines how fast the gimbal may accelerate"
                              " in tilting direction per second")
     parser.add_argument('--variance',
@@ -265,7 +268,11 @@ def parse_arguments() -> RobotCameramanArguments:
         default=resources / 'server.pem',
         help="Path to server SSL-certificate file.")
     # noinspection PyTypeChecker
-    return parser.parse_args()
+    _args: RobotCameramanArguments = parser.parse_args()
+    if _args.output and _args.output.is_dir():
+        _args.output /= time.strftime('robot-cameraman_%Y-%m-%d_%H-%M-%S.avi')
+        print(f'output directory given => use output file {_args.output}')
+    return _args
 
 
 def quit(sig=None, frame=None):
@@ -290,7 +297,6 @@ def run_cameraman():
 
 
 def configure_logging():
-    # TODO filename or output directory as program argument
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.ERROR,
         filename=f'{args.output}.log' if args.output else None,
@@ -322,14 +328,22 @@ configuration = read_configuration_file(args.config)
 event_emitter = EventEmitter()
 labels = read_label_file(args.labels)
 font = PIL.ImageFont.truetype(str(args.font), args.fontSize)
-live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
+if args.liveView == 'File':
+    live_view_video_or_image_file = open_file_dialog()
+    if not live_view_video_or_image_file:
+        print(f"No file selected")
+        exit(1)
+    live_view_image_size = \
+        FileLiveView.get_image_size(live_view_video_or_image_file)
+else:
+    live_view_image_size = ImageSize(args.liveViewWith, args.liveViewHeight)
 destination = Destination(live_view_image_size, variance=args.variance)
 camera_manager = PanasonicCameraManager(
     identify_as=args.identifyToPanasonicCameraAs)
 max_speed_and_acceleration_updater = MaxSpeedAndAccelerationUpdater()
 configurable_tracking_strategy = \
     ConfigurableTrackingStrategy(
-        destination, live_view_image_size, max_allowed_speed=24)
+        destination, live_view_image_size, max_allowed_speed=64)
 tracking_strategy = StopIfLostTrackingStrategy(
     destination,
     max_speed_and_acceleration_updater.add(
@@ -345,9 +359,6 @@ rotate_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.rotationalAccelerationPerSecond))
 tilt_speed_manager = max_speed_and_acceleration_updater.add(
     SpeedManager(args.tiltingAccelerationPerSecond))
-configurable_align_tracking_strategy = \
-    ConfigurableAlignTrackingStrategy(
-        destination, live_view_image_size, max_allowed_speed=16)
 
 
 def create_camera_zoom_limit_controller():
@@ -371,6 +382,23 @@ def create_camera_zoom_limit_controller():
 
 
 camera_zoom_limit_controller = create_camera_zoom_limit_controller()
+min_zoom_ratio, max_zoom_ratio = get_zoom_ratio_limits_from_configuration(
+    zoom_steps_file=args.camera_zoom_steps,
+    zoom_ratio_index_ranges_file=args.camera_zoom_ratio_index_ranges)
+zoom_limits = ZoomLimits(camera_zoom_limit_controller,
+                         min_zoom_ratio=min_zoom_ratio,
+                         max_zoom_ratio=max_zoom_ratio)
+event_emitter.add_listener(
+    Event.ZOOM_RATIO,
+    zoom_limits.update_current_zoom_ratio)
+# TODO make max_allowed_speed configurable (e.g. using CLI argument)
+configurable_align_tracking_strategy = \
+    ConfigurableAlignTrackingStrategy(
+        destination,
+        live_view_image_size,
+        max_allowed_speed=32,
+        zoom_limits=zoom_limits)
+
 
 if args.search_strategy == 'rotate':
     search_target_strategy = max_speed_and_acceleration_updater.add(
@@ -478,6 +506,10 @@ elif args.liveView == 'Panasonic':
         event_emitter.add_listener(
             Event.ZOOM_INDEX,
             camera_zoom_limit_controller.update_zoom_index)
+elif args.liveView == 'File':
+    # noinspection PyUnboundLocalVariable
+    assert live_view_video_or_image_file
+    live_view = FileLiveView(file=live_view_video_or_image_file)
 else:
     print(f"Unknown live view {args.liveView}")
     exit(1)
