@@ -1,4 +1,4 @@
-from typing import Optional, Dict, NamedTuple
+from typing import Optional, Dict, NamedTuple, Callable
 
 import PIL.Image
 import PIL.ImageDraw
@@ -98,3 +98,6 @@ def draw_point(
         radius: int = 3) -> None:
     x, y = point
     draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=color)
+
+
+AnnotateImage = Callable[[PIL.Image.Image], None]

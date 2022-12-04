@@ -9,6 +9,9 @@ class Event(Enum):
     FOCAL_LENGTH = auto()
     ZOOM_RATIO = auto()
     ZOOM_INDEX = auto()
+    LIVE_VIEW_IMAGE = auto()
+    """Image of live view is emitted after it is read
+    and before it is annotated."""
 
 
 Listener = Callable

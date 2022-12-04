@@ -4,7 +4,7 @@ import signal
 import threading
 # noinspection Mypy
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import PIL.Image
 import PIL.ImageFont
@@ -13,7 +13,7 @@ import time
 from typing_extensions import Protocol
 
 from panasonic_camera.camera_manager import PanasonicCameraManager
-from robot_cameraman.annotation import ImageAnnotator
+from robot_cameraman.annotation import ImageAnnotator, AnnotateImage
 from robot_cameraman.camera_controller import SmoothCameraController, \
     SpeedManager, CameraAngleLimitController, \
     PredictiveCameraZoomRatioLimitController, CameraZoomRatioLimitController, \
@@ -35,10 +35,13 @@ from robot_cameraman.live_view import WebcamLiveView, PanasonicLiveView, \
 from robot_cameraman.max_speed_and_acceleration_updater import \
     MaxSpeedAndAccelerationUpdater
 from robot_cameraman.object_tracking import ObjectTracker
+from robot_cameraman.pose_detection.detection import EdgeTpuPoseDetectionEngine
+from robot_cameraman.pose_detection.draw import PoseDraw
 from robot_cameraman.resource import read_label_file
 from robot_cameraman.server import run_server, ImageContainer
 from robot_cameraman.target_selection import SelectFirstTargetStrategy, \
-    SelectTargetAtCoordinateStrategy
+    SelectTargetAtCoordinateStrategy, PoseSelectTargetStrategy, \
+    PoseSelectTargetStrategyImageAnnotator, HandsUpPoseMatcher
 from robot_cameraman.tracking import Destination, StopIfLostTrackingStrategy, \
     RotateSearchTargetStrategy, ConfigurableTrackingStrategy, \
     ConfigurableAlignTrackingStrategy, ConfigurableTrackingStrategyUi, \
@@ -74,6 +77,7 @@ class RobotCameramanArguments(Protocol):
     detectionEngine: str
     model: Path
     labels: Path
+    pose_detection_model: Path
     maxObjects: int
     confidence: float
     gimbal: str
@@ -106,6 +110,7 @@ class RobotCameramanArguments(Protocol):
 def parse_arguments() -> RobotCameramanArguments:
     resources: Path = Path(__file__).parent / 'resources'
     mobilenet = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
+    movenet = 'movenet_single_pose_lightning_ptq_edgetpu.tflite'
     parser = argparse.ArgumentParser(
         description="Detect objects in a video file using Google Coral USB.")
     parser.add_argument(
@@ -129,6 +134,11 @@ def parse_arguments() -> RobotCameramanArguments:
         type=Path,
         default=resources / 'coco_labels.txt',
         help="Path to labels file.")
+    parser.add_argument(
+        '--pose-detection-model',
+        type=Path,
+        default=resources / movenet,
+        help="File path of .tflite file that is used to detect poses.")
     parser.add_argument('--maxObjects', type=int,
                         default=10,
                         help="Maximum objects to infer in each frame of video.")
@@ -399,7 +409,6 @@ configurable_align_tracking_strategy = \
         max_allowed_speed=32,
         zoom_limits=zoom_limits)
 
-
 if args.search_strategy == 'rotate':
     search_target_strategy = max_speed_and_acceleration_updater.add(
         RotateSearchTargetStrategy(args.rotatingSearchSpeed))
@@ -436,6 +445,8 @@ cameraman_mode_manager = CameramanModeManager(
     gimbal=gimbal,
     event_emitter=event_emitter)
 
+image_draws: List[AnnotateImage] = []
+
 # noinspection PyListCreation
 user_interfaces = []
 
@@ -456,7 +467,8 @@ if args.detectionEngine == 'Dummy':
 elif args.detectionEngine == 'Color':
     detection_engine = ColorDetectionEngine(
         target_label_id=args.targetLabelId,
-        is_single_object_detection=configuration['tracking']['color']['is_single_object_detection'],
+        is_single_object_detection=configuration['tracking']['color'][
+            'is_single_object_detection'],
         min_hsv=configuration['tracking']['color']['min_hsv'],
         max_hsv=configuration['tracking']['color']['max_hsv'])
     user_interfaces.append(
@@ -518,6 +530,17 @@ if args.select_target_strategy.lower() == 'first':
     select_target_strategy = SelectFirstTargetStrategy()
 elif args.select_target_strategy.lower() == 'manually':
     select_target_strategy = SelectTargetAtCoordinateStrategy()
+elif args.select_target_strategy.lower() == 'pose':
+    pose_detection_engine = EdgeTpuPoseDetectionEngine(
+        model=args.pose_detection_model)
+    select_target_strategy = PoseSelectTargetStrategy(
+        pose_detection_engine=pose_detection_engine,
+        pose_matcher=HandsUpPoseMatcher())
+    event_emitter.add_listener(Event.LIVE_VIEW_IMAGE,
+                               select_target_strategy.update_live_view_image)
+    pose_annotator = PoseSelectTargetStrategyImageAnnotator(
+        select_target_strategy, PoseDraw())
+    image_draws.append(pose_annotator.annotate)
 else:
     print(f"Unknown select target strategy {args.select_target_strategy}")
     exit(1)
@@ -537,7 +560,9 @@ cameraman = Cameraman(
     output=create_video_writer(args.output, live_view_image_size),
     user_interfaces=user_interfaces,
     # TODO get max speeds from separate CLI arguments
-    manual_camera_speeds=manual_camera_speeds)
+    manual_camera_speeds=manual_camera_speeds,
+    event_emitter=event_emitter,
+    image_draws=image_draws)
 
 to_exit = threading.Event()
 server_image = ImageContainer(
