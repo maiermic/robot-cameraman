@@ -28,7 +28,7 @@ export function putJson(url, data) {
  * When the request finishes, another request is send with the merged payload,
  * that has been gathered in the meantime.
  */
-class RequestQueue {
+export class RequestQueue {
   constructor(url) {
     this._url = url;
     this._payload = null;

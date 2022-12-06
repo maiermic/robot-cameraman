@@ -9,8 +9,11 @@ from typing import Optional
 import PIL.Image
 from flask import Flask, Response, request, redirect, jsonify
 
+from robot_cameraman.box import Point
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
+from robot_cameraman.target_selection import SelectTargetAtCoordinateStrategy, \
+    SelectTargetStrategy
 from robot_cameraman.ui import StatusBar
 from robot_cameraman.updatable_configuration import UpdatableConfiguration
 
@@ -34,6 +37,7 @@ manual_camera_speeds: CameraSpeeds
 updatable_configuration: UpdatableConfiguration
 status_bar: StatusBar
 cameraman_mode_manager: CameramanModeManager
+select_target_strategy: SelectTargetStrategy
 
 app = Flask(__name__,
             static_url_path='',
@@ -147,6 +151,10 @@ def update_configuration():
         tracking = request.json['tracking']
         if 'color' in tracking:
             color = tracking['color']
+            if 'is_single_object_detection' in color:
+                updatable_configuration.update_tracking_color(
+                    is_single_object_detection=color[
+                        'is_single_object_detection'])
             if 'min_hsv' in color:
                 updatable_configuration.update_tracking_color(
                     min_hsv=color['min_hsv'])
@@ -192,8 +200,19 @@ def live_view():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
+@app.route('/api/select-target-at-coordinate', methods=['PUT'])
+def select_target_at_coordinate():
+    global select_target_strategy
+    if isinstance(select_target_strategy,
+                  SelectTargetAtCoordinateStrategy):
+        select_target_strategy.coordinate = Point(int(request.json['x']),
+                                                  int(request.json['y']))
+    return '', 200
+
+
 def run_server(_to_exit: threading.Event,
                _cameraman_mode_manager: CameramanModeManager,
+               _select_target_strategy: SelectTargetStrategy,
                _server_image: ImageContainer,
                _manual_camera_speeds: CameraSpeeds,
                _updatable_configuration: UpdatableConfiguration,
@@ -202,9 +221,10 @@ def run_server(_to_exit: threading.Event,
                ssl_key: Path):
     # TODO use dependency injection instead of global variables
     global to_exit, cameraman_mode_manager, server_image, manual_camera_speeds, \
-        updatable_configuration, status_bar
+        updatable_configuration, status_bar, select_target_strategy
     to_exit = _to_exit
     cameraman_mode_manager = _cameraman_mode_manager
+    select_target_strategy = _select_target_strategy
     server_image = _server_image
     manual_camera_speeds = _manual_camera_speeds
     updatable_configuration = _updatable_configuration

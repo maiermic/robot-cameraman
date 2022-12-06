@@ -1,7 +1,6 @@
 import logging
 import os
 import threading
-import time
 from logging import Logger
 from typing import Optional, Iterable, List
 
@@ -11,20 +10,25 @@ import PIL.ImageFile
 import PIL.ImageFont
 import cv2
 import numpy
+import time
 from imutils.video import FPS
 
-from robot_cameraman.annotation import ImageAnnotator, draw_destination
-from robot_cameraman.box import Box
+from robot_cameraman.annotation import ImageAnnotator, draw_destination, \
+    AnnotateImage
+from robot_cameraman.box import Box, Point
+from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.cameraman_mode_manager import CameramanModeManager
 from robot_cameraman.candidate_filter import filter_intersections
 from robot_cameraman.detection_engine.color import ColorDetectionEngine
+from robot_cameraman.events import EventEmitter, Event
 from robot_cameraman.image_detection import DetectionCandidate, \
     DetectionEngine
 from robot_cameraman.live_view import LiveView, ImageSize, FileLiveView
 from robot_cameraman.object_tracking import ObjectTracker
 from robot_cameraman.server import ImageContainer, ServerImageSource
+from robot_cameraman.target_selection import SelectTargetStrategy, \
+    SelectTargetAtCoordinateStrategy
 from robot_cameraman.tracking import Destination
-from robot_cameraman.camera_speeds import ZoomSpeed, CameraSpeeds
 from robot_cameraman.ui import UserInterface, create_attribute_checkbox
 
 logger: Logger = logging.getLogger(__name__)
@@ -43,9 +47,12 @@ class Cameraman:
             mode_manager: CameramanModeManager,
             object_tracker: ObjectTracker,
             target_label_id: int,
+            select_target_strategy: SelectTargetStrategy,
             output: Optional[cv2.VideoWriter],
             user_interfaces: List[UserInterface],
-            manual_camera_speeds: CameraSpeeds) -> None:
+            manual_camera_speeds: CameraSpeeds,
+            event_emitter: EventEmitter,
+            image_draws: List[AnnotateImage]) -> None:
         self._live_view = live_view
         self.annotator = annotator
         self.detection_engine = detection_engine
@@ -57,6 +64,9 @@ class Cameraman:
         self._user_interfaces = user_interfaces
         self._manual_camera_speeds = manual_camera_speeds
         self._window_title = 'Robot Cameraman'
+        self._select_target_strategy = select_target_strategy
+        self._event_emitter = event_emitter
+        self._image_draws = image_draws
 
     def _is_target_id_registered(self) -> bool:
         return (self._target_id is not None
@@ -74,6 +84,13 @@ class Cameraman:
                 'is_zoom_enabled')
             for ui in self._user_interfaces:
                 ui.open()
+            if isinstance(self._select_target_strategy,
+                          SelectTargetAtCoordinateStrategy):
+                def set_search_coordinate(event, x, y, _flags, _param):
+                    if event == cv2.EVENT_LBUTTONDOWN:
+                        self._select_target_strategy.coordinate = Point(x, y)
+
+                cv2.setMouseCallback(self._window_title, set_search_coordinate)
         # Parts at the end of the live view image are sometimes not received.
         # These truncated images cause an exception in the detection engine,
         # if the following option is not enabled. In the cases observed so far,
@@ -98,6 +115,7 @@ class Cameraman:
                     f"{expected_image_size}" \
                     f"but got size" \
                     f"{image.size}"
+                self._event_emitter.emit(Event.LIVE_VIEW_IMAGE, image)
                 # Perform inference and note time taken
                 start_ms = time.time()
                 try:
@@ -118,14 +136,18 @@ class Cameraman:
                             target = candidates[self._target_id]
                             self._target_box = target.bounding_box
                     else:
-                        ts = candidates.items()
-                        if ts:
-                            (self._target_id, target) = next(iter(ts))
+                        selected_target = self._select_target_strategy.select(
+                            candidates)
+                        if selected_target:
+                            self._target_id = selected_target.id
+                            target = selected_target.candidate
                             self._target_box = target.bounding_box
                             logger.debug('track target %d', self._target_id)
                         else:
                             is_target_lost = True
                             self._target_box = None
+                    for annotate_image in self._image_draws:
+                        annotate_image(image)
                     # The mode manager updates the destination as a side effect.
                     # The destination has to be drawn afterwards.
                     self._mode_manager.update(self._target_box, is_target_lost)

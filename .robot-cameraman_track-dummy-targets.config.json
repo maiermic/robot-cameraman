@@ -1,0 +1,17 @@
+{
+  "tracking": {
+    "color": {
+      "is_single_object_detection": false,
+      "min_hsv": [
+        30,
+        0,
+        0
+      ],
+      "max_hsv": [
+        255,
+        255,
+        255
+      ]
+    }
+  }
+}

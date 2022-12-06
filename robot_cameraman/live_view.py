@@ -132,3 +132,16 @@ class DummyLiveView(LiveView):
     def image(self) -> Optional[Image]:
         sleep(0.2)
         return self._image
+
+
+class DummyWithTargetsLiveView(LiveView):
+    def __init__(self, size: ImageSize) -> None:
+        self._size = size
+
+    def image(self) -> Optional[Image]:
+        sleep(0.2)
+        image = PIL.Image.new('RGB', self._size, (228, 150, 150))
+        draw = PIL.ImageDraw.Draw(image)
+        draw.rectangle((15, 30, 50, 100), fill=(0, 0, 255))
+        draw.rectangle((350, 300, 450, 400), fill=(255, 0, 255))
+        return image

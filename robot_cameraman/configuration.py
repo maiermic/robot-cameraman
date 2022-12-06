@@ -9,6 +9,7 @@ def read_configuration_file(file: Path):
     initial_configuration = {
         'tracking': {
             'color': {
+                'is_single_object_detection': True,
                 'min_hsv': [69, 30, 114],
                 'max_hsv': [100, 255, 255],
             }

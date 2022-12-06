@@ -20,14 +20,18 @@ logger: Logger = logging.getLogger(__name__)
 
 
 class ColorDetectionEngine(DetectionEngine):
-    def __init__(self, target_label_id: int, min_hsv=(0, 0, 0),
-                 max_hsv=(0, 0, 0)) -> None:
+    def __init__(
+            self,
+            target_label_id: int,
+            is_single_object_detection: bool,
+            min_hsv=(0, 0, 0),
+            max_hsv=(0, 0, 0)) -> None:
         self.target_label_id = target_label_id
         self.min_hsv = numpy.asarray(min_hsv)
         self.max_hsv = numpy.asarray(max_hsv)
         self.mask = None
         self.mask_ui = None
-        self.is_single_object_detection = True
+        self.is_single_object_detection = is_single_object_detection
         self.minimum_contour_size = 20
 
     def detect(self, image) -> Iterable[DetectionCandidate]:
@@ -104,6 +108,8 @@ class ColorDetectionEngineUI(UserInterface):
     def _update_configuration(self, *_args):
         configuration = read_configuration_file(self._configuration_file)
         color_configuration = configuration['tracking']['color']
+        color_configuration['is_single_object_detection'] = \
+            bool(self.engine.is_single_object_detection)
         color_configuration['min_hsv'] = list(map(int, self.engine.min_hsv))
         color_configuration['max_hsv'] = list(map(int, self.engine.max_hsv))
         save_configuration_file(self._configuration_file, configuration)
