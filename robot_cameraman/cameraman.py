@@ -246,6 +246,8 @@ class Cameraman:
                 self._live_view.start_frame()
             elif key == ord('e'):
                 self._live_view.end_frame()
+            elif key == ord('f'):
+                self._live_view.jump_to_frame()
 
     @staticmethod
     def log_candidates(

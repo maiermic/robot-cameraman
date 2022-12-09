@@ -8,7 +8,7 @@ import PIL.ImageFont
 import cv2
 import numpy
 
-from robot_cameraman.ui import open_file_dialog
+from robot_cameraman.ui import open_file_dialog, open_simple_value_dialog
 
 
 def create_video_writer(vs, output_file: Path):
@@ -75,6 +75,12 @@ class VideoFramePlayer:
                 elif key == ord('e'):
                     is_play = True
                     frame_index = self._frame_count - 1
+                elif key == ord('f'):
+                    new_frame_index = open_simple_value_dialog(frame_index)
+                    if (new_frame_index is not None
+                            and 0 <= new_frame_index < self._frame_count):
+                        is_play = True
+                        frame_index = new_frame_index
             except KeyboardInterrupt:
                 break
         self._vs.release()

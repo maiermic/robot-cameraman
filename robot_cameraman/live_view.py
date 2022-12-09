@@ -124,6 +124,14 @@ class FileLiveView(LiveView):
         self._is_play = True
         self._frame_index = self._frame_count - 1
 
+    def jump_to_frame(self):
+        from robot_cameraman.ui import open_simple_value_dialog
+        new_frame_index = open_simple_value_dialog(self._frame_index)
+        if (new_frame_index is not None
+                and 0 <= new_frame_index < self._frame_count):
+            self._is_play = True
+            self._frame_index = new_frame_index
+
 
 class DummyLiveView(LiveView):
     def __init__(self, size: ImageSize) -> None:
