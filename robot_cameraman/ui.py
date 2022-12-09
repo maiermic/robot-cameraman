@@ -110,9 +110,42 @@ class StatusBar(UserInterface):
 
 
 def open_file_dialog():
-    import tkinter as tk
-    from tkinter import filedialog
+    from tkinter import Tk, filedialog
 
-    root = tk.Tk()
+    root = Tk()
     root.withdraw()
-    return filedialog.askopenfilename(title='Select input file')
+    file_name = filedialog.askopenfilename(title='Select input file')
+    root.destroy()
+    return file_name
+
+
+def open_simple_value_dialog(default_input_value):
+    from tkinter import Tk, IntVar, StringVar, Label, Entry, Button
+
+    root = Tk()
+
+    if isinstance(default_input_value, str):
+        input_variable = StringVar()
+    elif isinstance(default_input_value, int):
+        input_variable = IntVar()
+    else:
+        raise ValueError('expected string or integer as default input value')
+    input_variable.set(default_input_value)
+    result = None
+
+    def close_dialog():
+        nonlocal root
+        root.destroy()
+        root.quit()
+
+    def on_ok():
+        nonlocal result
+        result = input_variable.get()
+        close_dialog()
+
+    Label(root, text='enter something').pack()
+    Entry(root, textvariable=input_variable).pack()
+    Button(root, text='Ok', command=on_ok).pack()
+    Button(root, text='Cancel', command=close_dialog).pack()
+    root.mainloop()
+    return result
