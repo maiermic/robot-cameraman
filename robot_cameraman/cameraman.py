@@ -181,6 +181,8 @@ class Cameraman:
         logger.debug("Elapsed time: " + str(fps.elapsed()))
         logger.debug("Approx FPS: :" + str(fps.fps()))
 
+        if self._output:
+            self._output.release()
         cv2.destroyAllWindows()
 
     def update_server_image(self, server_image, image):
