@@ -40,6 +40,6 @@ typing_extensions==4.4.0
 upnpclient==1.0.3
 urllib3==1.26.12
 wcwidth==0.2.5
-Werkzeug==2.2.2
+Werkzeug==2.2.3
 zeroconf==0.39.4
 zipp==3.10.0
